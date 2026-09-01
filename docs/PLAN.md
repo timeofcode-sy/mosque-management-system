@@ -1,9 +1,10 @@
 # خطة نظام إدارة معهد تحفيظ القرآن (مساجد/حلقات)
 
-> **حالة الخطة:** محدّثة بعد تنفيذ المراحل 0 و1 و2.
+> **حالة الخطة:** محدّثة بعد تنفيذ المراحل 0 إلى 4.
 > ما نُفِّذ موسوم بـ ✅، وما تغيّر عن الخطة الأصلية موسوم بـ 🔄 مع سبب التغيير.
-> التوثيق التفصيلي للمخطط في [ERD.md](ERD.md)، ونقطتا التفتيش في
-> [CHECKPOINT-PHASE-1.MD](CHECKPOINT-PHASE-1.MD) و[CHECKPOINT-PHASE-2.MD](CHECKPOINT-PHASE-2.MD).
+> التوثيق التفصيلي للمخطط في [ERD.md](ERD.md)، ونقاط التفتيش في
+> [CHECKPOINT-PHASE-1.MD](CHECKPOINT-PHASE-1.MD)، [CHECKPOINT-PHASE-2.MD](CHECKPOINT-PHASE-2.MD)،
+> [CHECKPOINT-PHASE-3.MD](CHECKPOINT-PHASE-3.MD)، و[CHECKPOINT-PHASE-4.MD](CHECKPOINT-PHASE-4.MD).
 
 ## 1. السياق — لماذا هذا العمل؟
 
@@ -267,15 +268,17 @@ institute (معهد)
 - ✅ `app/Support/` — `Quran` (جدول السور)، `HijriDate` (أم القرى عبر intl)
 - ✅ `app/Http/Controllers/ReportPrintController.php` — المتحكّم الوحيد: صفحات الطباعة/PDF
   استجاباتُ HTTP ساكنة بلا حالة، فلا معنى لجعلها مكوّنات Livewire
-- ⬜ `app/Services/Sync/` — `SyncPuller`, `SyncPusher`, `ConflictResolver` (المرحلة 4)
-- ⬜ `app/Http/Resources/V1/` — Eloquent API Resources (المرحلة 4)
+- ✅ `app/Actions/SyncPush.php` + `SyncPull.php` + `RecordChange.php` + `ResolveAttendanceConflicts.php` —
+  تُعيد استخدام أفعال اللوحة نفسها بدل إعادة كتابة منطقها (م.4)
+- ✅ `app/Http/Resources/V1/` — Eloquent API Resources (م.4)
+- ✅ `app/Support/ApiScope.php` — نظير `InteractsWithInstitute` لمستخدم Sanctum بلا جلسة (م.4)
 - ✅ `resources/views/pages/` — 19 مكوّن Livewire 4 أحادي الملف (SFC) للوحة التحكم
   🔄 لا مجلد `app/Livewire/`: هذا المشروع على Livewire 4 حيث المكوّن ملف Blade واحد تحت `pages::`
   🔄 أُزيلت سابقة ⚡ من أسماء الملفات: اختيارية في Livewire 4 (`Finder` يجرّبها ثم يسقط إلى الاسم
   المجرّد)، وكانت تُعقّد أوامر الطرفية والبحث بلا مقابل
 - ✅ `app/Concerns/InteractsWithInstitute.php` — المعهد العامل والدورة الجارية لكل شاشة
 
-**نقاط الـ API (`routes/api.php`, prefix `/api/v1`) — المرحلة 4:**
+**نقاط الـ API (`routes/api.php`, prefix `/api/v1`) — ✅ المرحلة 4:**
 
 ```
 POST   /auth/login              /auth/logout   GET /auth/me
@@ -284,24 +287,29 @@ GET    /bootstrap               لقطة أولية لنطاق المستخدم
 GET    /sync/pull?since={seq}   تغييرات ضمن نطاق المستخدم فقط
 POST   /sync/push               دفعة عمليات مع op_uuid (idempotent)
 GET    /teacher/circles         /teacher/sessions/{date}
-POST   /teacher/sessions        POST /teacher/sessions/{id}/complete
 GET    /guardian/children       /guardian/children/{id}/attendance
 POST   /guardian/excuses
 GET    /student/me/attendance   /student/me/progress
-GET    /reports/circle/{id}/weekly|monthly (PDF)
 ```
 
-**بروتوكول المزامنة (`docs/sync-protocol.md` — يُكتب في المرحلة 4):**
+🔄 لا `POST /teacher/sessions` منفصلة ولا `/reports/*` في هذه المرحلة: فتح/إكمال الجلسة يمرّان عبر
+`sync/push` (نوعا العملية `attendance.session.open`/`attendance.session.complete`)، وتقارير PDF تبقى
+صفحات طباعة من اللوحة (`ReportPrintController`، المرحلة 3) — لا حاجة موبايلية لها بعد.
+
+**بروتوكول المزامنة — ✅ المرحلة 4 (التفصيل في [CHECKPOINT-PHASE-4.MD](CHECKPOINT-PHASE-4.MD)):**
 
 1. كل صف يحمل `uuid` يولّده العميل ⇒ الإنشاء أوف-لاين لا يحتاج الخادم. ✅ جاهز
 2. **الدفع:** العميل يرسل عمليات مرتّبة، كل عملية بـ `op_uuid` فريد. الخادم يتجاهل ما نُفّذ سابقاً
-   (idempotency) ويكتب في `change_log`.
+   (idempotency) ويكتب في `change_log`. ✅ `SyncPush`
 3. **السحب:** `since=last_pulled_seq` يعيد كل تغييرات `change_log` ضمن `scope_key` المسموح للمستخدم.
-4. **حلّ التعارض:** آخر `recorded_at` يفوز على مستوى صفّ `attendances` (المفتاح `session+student`
-   يجعل التعارضات نادرة جداً)، والقيمة المُستبدَلة تُحفظ في `sync_conflicts` لعرضها للمشرف.
-5. **قفل الجلسة:** عند `completed` تُقفَل. أي تعديل لاحق يتطلب صلاحية `attendance.amend` ويُسجَّل في
-   `activity_log`. ✅ `AttendanceSession::isEditable()` جاهزة
-6. النطاق: الأستاذ يزامن حلقاته فقط؛ الديسكتوب يزامن المعهد كاملاً؛ الأهل/الطالب للقراءة فقط.
+   ✅ `SyncPull` — 🔄 النطاق الآن معهدٌ كامل لكل الأدوار، لا حلقات الأستاذ وحدها؛ التضييق مؤجَّل لِما
+   بعد قياس أداء حقيقي (م.5).
+4. **حلّ التعارض:** آخر `recorded_at` يفوز على مستوى صفّ `attendances`، والقيمة المُستبدَلة تُحفظ في
+   `sync_conflicts` لعرضها للمشرف. ✅ `ResolveAttendanceConflicts`
+5. **قفل الجلسة:** عند `completed` تُقفَل. أي تعديل لاحق يتطلب صلاحية `attendance.amend`. ✅
+   `AttendanceSession::isEditable()` جاهزة — تسجيل `activity_log` ما زال مؤجَّلاً.
+6. النطاق: 🔄 كل الأدوار تزامن معهدها كاملاً الآن (انظر البند 3)؛ الأهل/الطالب للقراءة فقط فعلياً عبر
+   صلاحية `sync.pull` بلا `sync.push`.
 
 ---
 
@@ -376,8 +384,8 @@ RTL كامل (`dir="rtl"`, `lang="ar"`)، خصائص Tailwind المنطقية (
 | 1 | نواة الباك إند | 38 migration، 37 نموذجاً، 18 enum، 25 factory، 4 بذور، الأدوار والصلاحيات، 25 اختباراً | ٤–٥ أيام | ✅ **منفَّذة** — 58/58 اختباراً |
 | 2 | لوحة التحكم — الإدارة | 14 شاشة Livewire، 5 إجراءات دومين، هوية بصرية RTL، 35 اختباراً | ٦–٨ أيام | ✅ **منفَّذة** — 93/93 اختباراً |
 | 3 | التفقّد والتقارير | شاشة التفقّد، الإحصاء والترتيب، الداشبورد، التقارير والطباعة، طبقة `app/Queries/` | ٥–٦ أيام | ✅ **منفَّذة** — 135/135 |
-| 4 | طبقة API والمزامنة | Sanctum، Resources، `sync/pull` و`sync/push`، `change_log`، حلّ التعارضات | ٥–٦ أيام | ⬜ التالية |
-| 5 | **تطبيق الأستاذ** | Flutter أوف-لاين كامل + `mousqe_core` + `mousqe_ui` | ٨–١٠ أيام | ⬜ |
+| 4 | طبقة API والمزامنة | Sanctum، Resources، `sync/pull` و`sync/push`، `change_log`، حلّ التعارضات | ٥–٦ أيام | ✅ **منفَّذة** — 156/156 |
+| 5 | **تطبيق الأستاذ** | Flutter أوف-لاين كامل + `mousqe_core` + `mousqe_ui` | ٨–١٠ أيام | ⬜ التالية |
 | 6 | **تطبيق الديسكتوب** | Windows، إعادة استخدام ≈٧٠٪ من كود الأستاذ + شاشات الإدارة والطباعة | ٦–٨ أيام | ⬜ |
 | 7 | **تطبيق الأهل** | مع إشعارات FCM وطلبات الإذن | ٥–٦ أيام | ⬜ |
 | 8 | **تطبيق الطالب** | عرض للقراءة + تحفيز (ترتيب، شارات) | ٣–٤ أيام | ⬜ |
@@ -458,12 +466,20 @@ composer run dev                          # serve + queue + vite
   والنقل والانسحاب، رفض تجاوز الطاقة، إسناد أستاذ وإنهاؤه، توليد مفتاح الواصفة، الصفات الخاصة
   بالمعهد، إدارة المناهج، وعدّادات الداشبورد.
 
+**اختبارات منفَّذة ✅ (المرحلة 4):**
+
+- `Api/AuthTest` — دخول صحيح بتوكن، رفض كلمة مرور خاطئة، `/me` وإبطال التوكن بالخروج، رفض طلب بلا توكن.
+- `Api/SyncPushPullTest` — فتح جلسة ثم تفقّد يُنشئ صفَّي `change_log`، إعادة إرسال نفس `op_uuid` تُتجاهل،
+  `since` يعيد التغييرات الصحيحة فقط ويحدّث مؤشّر الجهاز، لا تسرّب بين المعاهد.
+- `Api/SyncConflictTest` — كتابة أقدم تصل متأخرة تُرفض وتُسجَّل في `sync_conflicts`، كتابة أحدث تستبدل
+  القديمة بلا تعارض.
+- `Api/ScopeTest` — الأستاذ يرى حلقاته فقط ومعزول عن معهد آخر، ولي الأمر يرى أبناءه فقط.
+- `Api/DeviceRegistrationTest`, `Api/BootstrapTest`, `Api/StudentSelfTest` — تفصيلها في
+  [CHECKPOINT-PHASE-4.MD](CHECKPOINT-PHASE-4.MD) §9.
+
 **اختبارات مطلوبة في مراحلها:**
 
-- `CircleStatsTest` (م.3) — صحة نسبة الحضور والتصنيف اليومي والكلي.
-- `SyncPushPullTest` (م.4) — إعادة إرسال نفس `op_uuid` لا تكرّر البيانات؛ `since` يعيد التغييرات الصحيحة فقط.
-- `SyncConflictTest` (م.4) — جهازان يعدّلان نفس صفّ الحضور ⇒ الأحدث يفوز والقديم يُسجَّل في `sync_conflicts`.
-- `ScopeTest` (م.4) — الأستاذ لا يسحب بيانات حلقة ليست له؛ ولي الأمر يرى أبناءه فقط.
+- (لا شيء معلّق من هذه القائمة بعد المرحلة 4)
 
 **فلاتر** (`cd mousqe`)
 
@@ -514,3 +530,6 @@ flutter run -d android      (apps/teacher)
 | 2026-09-01 | نقل الطالب بقائمة إجراءات ونافذة تأكيد بدل سحب-وإفلات — يعمل على الجوال ومع قارئ الشاشة |
 | 2026-09-01 | إضافة `Weekday` enum (19) لأسماء أيام الأسبوع العربية بترقيم `Carbon::dayOfWeek` |
 | 2026-09-01 | الكتابة في `guardian_student` و`student_trait` تمرّ بنموذج الربط لا بـ `attach/sync` — العمودان يحملان `uuid` إلزامياً للمزامنة |
+| 2026-09-01 | تنفيذ المرحلة 4 — انظر [CHECKPOINT-PHASE-4.MD](CHECKPOINT-PHASE-4.MD) |
+| 2026-09-01 | إصلاح خلل: `TakeAttendance` كان يستبدل `recorded_at` دائماً بوقت وصول الطلب للخادم، ما يُبطل معنى "الأحدث يفوز" في حلّ التعارض — صار يقبل `recorded_at` اختيارياً من الصفّ |
+| 2026-09-01 | `App\Support\ApiScope` لا يسقط افتراضياً إلى "أول معهد نشط" كما تفعل `InteractsWithInstitute` في اللوحة — توكن API بلا معهد مرتبط يُرفض صراحةً بدل تخمين معهد خطأ |
