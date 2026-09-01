@@ -1,0 +1,65 @@
+{
+  "$schema": "https://design-tokens.org/schema.json",
+  "meta": {
+    "name": "Mousqe Design Tokens",
+    "version": "0.1.0",
+    "note": "مصدر واحد للهوية البصرية. يُستهلك من Tailwind 4 (@theme) ومن mousqe_ui (ThemeData). لوحة مؤقتة إلى حين وصول شعار العميل."
+  },
+  "color": {
+    "brand": {
+      "50":  "#E8F2ED",
+      "100": "#C6E0D4",
+      "200": "#9CCAB6",
+      "300": "#6DB295",
+      "400": "#419A7A",
+      "500": "#177F5C",
+      "600": "#0F5132",
+      "700": "#0C4128",
+      "800": "#08301E",
+      "900": "#052014"
+    },
+    "gold": {
+      "300": "#E4CE7F",
+      "400": "#D6BA53",
+      "500": "#C9A227",
+      "600": "#A5841F",
+      "700": "#7C6317"
+    },
+    "sand": {
+      "50":  "#FDFBF6",
+      "100": "#F7F3EA",
+      "200": "#EDE5D4",
+      "300": "#DED2B8"
+    },
+    "ink": {
+      "500": "#4A4844",
+      "700": "#2E2C29",
+      "900": "#1C1B19"
+    },
+    "status": {
+      "present": "#177F5C",
+      "absent":  "#B42318",
+      "late":    "#C9A227",
+      "excused": "#2563EB"
+    },
+    "semantic": {
+      "success": "#177F5C",
+      "warning": "#C9A227",
+      "danger":  "#B42318",
+      "info":    "#2563EB"
+    }
+  },
+  "font": {
+    "display": ["Reem Kufi", "Noto Kufi Arabic", "sans-serif"],
+    "body": ["IBM Plex Sans Arabic", "Tajawal", "system-ui", "sans-serif"],
+    "mono": ["JetBrains Mono", "monospace"]
+  },
+  "radius": { "sm": "6px", "md": "10px", "lg": "16px", "xl": "24px", "full": "9999px" },
+  "spacing": { "xs": "4px", "sm": "8px", "md": "16px", "lg": "24px", "xl": "40px" },
+  "shadow": {
+    "card": "0 1px 3px rgba(28,27,25,.08), 0 1px 2px rgba(28,27,25,.06)",
+    "float": "0 10px 30px rgba(28,27,25,.12)"
+  },
+  "direction": "rtl",
+  "locale": "ar"
+}
