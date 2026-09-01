@@ -8,8 +8,44 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/**
+ * توكنات الهوية البصرية — مولَّدة يدوياً من design/design-tokens.json.
+ * أي تعديل على اللوحة يبدأ من ذلك الملف ثم يُنسخ إلى هنا وإلى mousqe_ui.
+ */
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'IBM Plex Sans Arabic', 'Tajawal', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
+    --font-display: 'Reem Kufi', 'Noto Kufi Arabic', 'IBM Plex Sans Arabic', sans-serif;
+
+    --color-brand-50: #e8f2ed;
+    --color-brand-100: #c6e0d4;
+    --color-brand-200: #9ccab6;
+    --color-brand-300: #6db295;
+    --color-brand-400: #419a7a;
+    --color-brand-500: #177f5c;
+    --color-brand-600: #0f5132;
+    --color-brand-700: #0c4128;
+    --color-brand-800: #08301e;
+    --color-brand-900: #052014;
+
+    --color-gold-300: #e4ce7f;
+    --color-gold-400: #d6ba53;
+    --color-gold-500: #c9a227;
+    --color-gold-600: #a5841f;
+    --color-gold-700: #7c6317;
+
+    --color-sand-50: #fdfbf6;
+    --color-sand-100: #f7f3ea;
+    --color-sand-200: #ede5d4;
+    --color-sand-300: #ded2b8;
+
+    --color-ink-500: #4a4844;
+    --color-ink-700: #2e2c29;
+    --color-ink-900: #1c1b19;
+
+    --color-present: #177f5c;
+    --color-absent: #b42318;
+    --color-late: #c9a227;
+    --color-excused: #2563eb;
 
     --color-zinc-50: #fafafa;
     --color-zinc-100: #f5f5f5;
@@ -23,16 +59,18 @@
     --color-zinc-900: #171717;
     --color-zinc-950: #0a0a0a;
 
-    --color-accent: var(--color-neutral-800);
-    --color-accent-content: var(--color-neutral-800);
+    --color-accent: var(--color-brand-600);
+    --color-accent-content: var(--color-brand-700);
     --color-accent-foreground: var(--color-white);
+
+    --radius-card: 16px;
 }
 
 @layer theme {
     .dark {
-        --color-accent: var(--color-white);
-        --color-accent-content: var(--color-white);
-        --color-accent-foreground: var(--color-neutral-800);
+        --color-accent: var(--color-brand-300);
+        --color-accent-content: var(--color-brand-200);
+        --color-accent-foreground: var(--color-brand-900);
     }
 }
 
@@ -45,6 +83,17 @@
     ::file-selector-button {
         border-color: var(--color-gray-200, currentColor);
     }
+
+    h1, h2, h3,
+    [data-flux-heading] {
+        font-family: var(--font-display);
+    }
+}
+
+/** الأرقام في الواجهة العربية تبقى لاتينية حتى تتطابق مع التقارير والتصدير. */
+@utility latin-numerals {
+    font-variant-numeric: lining-nums tabular-nums;
+    font-feature-settings: 'tnum';
 }
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {
@@ -60,7 +109,3 @@ textarea:focus[data-flux-control],
 select:focus[data-flux-control] {
     @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
 }
-
-/* \[:where(&)\]:size-4 {
-    @apply size-4;
-} */

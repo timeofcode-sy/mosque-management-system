@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\HasUuid;
+use App\Enums\Weekday;
 use Database\Factories\ShiftFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -51,5 +52,15 @@ class Shift extends Model
     public function weekdays(): array
     {
         return $this->days->pluck('weekday')->sort()->values()->all();
+    }
+
+    /**
+     * أسماء أيام الدوام بالعربية، مرتّبة من الأحد.
+     *
+     * @return array<int, string>
+     */
+    public function weekdayLabels(): array
+    {
+        return array_map(fn (int $weekday): string => Weekday::from($weekday)->label(), $this->weekdays());
     }
 }

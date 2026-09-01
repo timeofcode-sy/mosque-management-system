@@ -1,39 +1,68 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="rtl">
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white dark:bg-zinc-800">
-        <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+    <body class="min-h-screen bg-sand-50 dark:bg-zinc-800">
+        <flux:sidebar sticky collapsible="mobile" class="border-e border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
             <flux:sidebar.nav>
-                <flux:sidebar.group :heading="__('Platform')" class="grid">
+                <flux:sidebar.group heading="المتابعة" class="grid">
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        {{ __('Dashboard') }}
+                        لوحة المعلومات
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
+
+                <flux:sidebar.group heading="التنظيم" class="grid">
+                    <flux:sidebar.item icon="calendar-days" :href="route('courses.index')" :current="request()->routeIs('courses.*')" wire:navigate>
+                        الدورات
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="clock" :href="route('shifts.index')" :current="request()->routeIs('shifts.*')" wire:navigate>
+                        الدوامات
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="squares-2x2" :href="route('circles.index')" :current="request()->routeIs('circles.*')" wire:navigate>
+                        الحلقات
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
+
+                <flux:sidebar.group heading="الأشخاص" class="grid">
+                    <flux:sidebar.item icon="users" :href="route('students.index')" :current="request()->routeIs('students.*')" wire:navigate>
+                        الطلاب
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="academic-cap" :href="route('teachers.index')" :current="request()->routeIs('teachers.*')" wire:navigate>
+                        الأساتذة
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
+
+                <flux:sidebar.group heading="المحتوى" class="grid">
+                    <flux:sidebar.item icon="book-open-text" :href="route('curricula.index')" :current="request()->routeIs('curricula.*')" wire:navigate>
+                        المناهج
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
+
+                <flux:sidebar.group heading="الإعدادات" class="grid">
+                    <flux:sidebar.item icon="building-library" :href="route('institute.edit')" :current="request()->routeIs('institute.*')" wire:navigate>
+                        بيانات المعهد
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="adjustments-horizontal" :href="route('custom-fields.index')" :current="request()->routeIs('custom-fields.*')" wire:navigate>
+                        الواصفات المخصّصة
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="sparkles" :href="route('traits.index')" :current="request()->routeIs('traits.*')" wire:navigate>
+                        الصفات
                     </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 
             <flux:spacer />
 
-            <flux:sidebar.nav>
-                <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit" target="_blank">
-                    {{ __('Repository') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire" target="_blank">
-                    {{ __('Documentation') }}
-                </flux:sidebar.item>
-            </flux:sidebar.nav>
-
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>
 
-        <!-- Mobile User Menu -->
+        <!-- قائمة المستخدم على الجوال -->
         <flux:header class="lg:hidden">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
@@ -66,7 +95,7 @@
 
                     <flux:menu.radio.group>
                         <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
-                            {{ __('Settings') }}
+                            الإعدادات الشخصية
                         </flux:menu.item>
                     </flux:menu.radio.group>
 
@@ -81,7 +110,7 @@
                             class="w-full cursor-pointer"
                             data-test="logout-button"
                         >
-                            {{ __('Log out') }}
+                            تسجيل الخروج
                         </flux:menu.item>
                     </form>
                 </flux:menu>
