@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
 use App\Enums\CourseStatus;
 use Database\Factories\CourseFactory;
@@ -25,8 +26,8 @@ class Course extends Model
     protected function casts(): array
     {
         return [
-            'starts_on' => 'date',
-            'ends_on' => 'date',
+            'starts_on' => DateOnly::class,
+            'ends_on' => DateOnly::class,
             'status' => CourseStatus::class,
             'is_current' => 'boolean',
         ];

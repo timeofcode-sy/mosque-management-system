@@ -1,0 +1,170 @@
+<?php
+
+namespace App\Support;
+
+/**
+ * جدول السور: الرقم، والاسم، وعدد الآيات — مرجعٌ ثابت لخريطة تقدّم الحفظ.
+ *
+ * عدد الآيات هو ما يجعل التغطية الجزئية داخل السورة قابلة للحساب من مدى
+ * (from_surah, from_ayah) إلى (to_surah, to_ayah) المسجَّل في memorization_logs.
+ */
+class Quran
+{
+    public const TOTAL_AYAHS = 6236;
+
+    /**
+     * الاسم وعدد الآيات لكل سورة، مفهرسة برقم السورة.
+     *
+     * @var array<int, array{name: string, ayahs: int}>
+     */
+    public const SURAHS = [
+        1 => ['name' => 'الفاتحة', 'ayahs' => 7],
+        2 => ['name' => 'البقرة', 'ayahs' => 286],
+        3 => ['name' => 'آل عمران', 'ayahs' => 200],
+        4 => ['name' => 'النساء', 'ayahs' => 176],
+        5 => ['name' => 'المائدة', 'ayahs' => 120],
+        6 => ['name' => 'الأنعام', 'ayahs' => 165],
+        7 => ['name' => 'الأعراف', 'ayahs' => 206],
+        8 => ['name' => 'الأنفال', 'ayahs' => 75],
+        9 => ['name' => 'التوبة', 'ayahs' => 129],
+        10 => ['name' => 'يونس', 'ayahs' => 109],
+        11 => ['name' => 'هود', 'ayahs' => 123],
+        12 => ['name' => 'يوسف', 'ayahs' => 111],
+        13 => ['name' => 'الرعد', 'ayahs' => 43],
+        14 => ['name' => 'إبراهيم', 'ayahs' => 52],
+        15 => ['name' => 'الحجر', 'ayahs' => 99],
+        16 => ['name' => 'النحل', 'ayahs' => 128],
+        17 => ['name' => 'الإسراء', 'ayahs' => 111],
+        18 => ['name' => 'الكهف', 'ayahs' => 110],
+        19 => ['name' => 'مريم', 'ayahs' => 98],
+        20 => ['name' => 'طه', 'ayahs' => 135],
+        21 => ['name' => 'الأنبياء', 'ayahs' => 112],
+        22 => ['name' => 'الحج', 'ayahs' => 78],
+        23 => ['name' => 'المؤمنون', 'ayahs' => 118],
+        24 => ['name' => 'النور', 'ayahs' => 64],
+        25 => ['name' => 'الفرقان', 'ayahs' => 77],
+        26 => ['name' => 'الشعراء', 'ayahs' => 227],
+        27 => ['name' => 'النمل', 'ayahs' => 93],
+        28 => ['name' => 'القصص', 'ayahs' => 88],
+        29 => ['name' => 'العنكبوت', 'ayahs' => 69],
+        30 => ['name' => 'الروم', 'ayahs' => 60],
+        31 => ['name' => 'لقمان', 'ayahs' => 34],
+        32 => ['name' => 'السجدة', 'ayahs' => 30],
+        33 => ['name' => 'الأحزاب', 'ayahs' => 73],
+        34 => ['name' => 'سبأ', 'ayahs' => 54],
+        35 => ['name' => 'فاطر', 'ayahs' => 45],
+        36 => ['name' => 'يس', 'ayahs' => 83],
+        37 => ['name' => 'الصافات', 'ayahs' => 182],
+        38 => ['name' => 'ص', 'ayahs' => 88],
+        39 => ['name' => 'الزمر', 'ayahs' => 75],
+        40 => ['name' => 'غافر', 'ayahs' => 85],
+        41 => ['name' => 'فصلت', 'ayahs' => 54],
+        42 => ['name' => 'الشورى', 'ayahs' => 53],
+        43 => ['name' => 'الزخرف', 'ayahs' => 89],
+        44 => ['name' => 'الدخان', 'ayahs' => 59],
+        45 => ['name' => 'الجاثية', 'ayahs' => 37],
+        46 => ['name' => 'الأحقاف', 'ayahs' => 35],
+        47 => ['name' => 'محمد', 'ayahs' => 38],
+        48 => ['name' => 'الفتح', 'ayahs' => 29],
+        49 => ['name' => 'الحجرات', 'ayahs' => 18],
+        50 => ['name' => 'ق', 'ayahs' => 45],
+        51 => ['name' => 'الذاريات', 'ayahs' => 60],
+        52 => ['name' => 'الطور', 'ayahs' => 49],
+        53 => ['name' => 'النجم', 'ayahs' => 62],
+        54 => ['name' => 'القمر', 'ayahs' => 55],
+        55 => ['name' => 'الرحمن', 'ayahs' => 78],
+        56 => ['name' => 'الواقعة', 'ayahs' => 96],
+        57 => ['name' => 'الحديد', 'ayahs' => 29],
+        58 => ['name' => 'المجادلة', 'ayahs' => 22],
+        59 => ['name' => 'الحشر', 'ayahs' => 24],
+        60 => ['name' => 'الممتحنة', 'ayahs' => 13],
+        61 => ['name' => 'الصف', 'ayahs' => 14],
+        62 => ['name' => 'الجمعة', 'ayahs' => 11],
+        63 => ['name' => 'المنافقون', 'ayahs' => 11],
+        64 => ['name' => 'التغابن', 'ayahs' => 18],
+        65 => ['name' => 'الطلاق', 'ayahs' => 12],
+        66 => ['name' => 'التحريم', 'ayahs' => 12],
+        67 => ['name' => 'الملك', 'ayahs' => 30],
+        68 => ['name' => 'القلم', 'ayahs' => 52],
+        69 => ['name' => 'الحاقة', 'ayahs' => 52],
+        70 => ['name' => 'المعارج', 'ayahs' => 44],
+        71 => ['name' => 'نوح', 'ayahs' => 28],
+        72 => ['name' => 'الجن', 'ayahs' => 28],
+        73 => ['name' => 'المزمل', 'ayahs' => 20],
+        74 => ['name' => 'المدثر', 'ayahs' => 56],
+        75 => ['name' => 'القيامة', 'ayahs' => 40],
+        76 => ['name' => 'الإنسان', 'ayahs' => 31],
+        77 => ['name' => 'المرسلات', 'ayahs' => 50],
+        78 => ['name' => 'النبأ', 'ayahs' => 40],
+        79 => ['name' => 'النازعات', 'ayahs' => 46],
+        80 => ['name' => 'عبس', 'ayahs' => 42],
+        81 => ['name' => 'التكوير', 'ayahs' => 29],
+        82 => ['name' => 'الانفطار', 'ayahs' => 19],
+        83 => ['name' => 'المطففين', 'ayahs' => 36],
+        84 => ['name' => 'الانشقاق', 'ayahs' => 25],
+        85 => ['name' => 'البروج', 'ayahs' => 22],
+        86 => ['name' => 'الطارق', 'ayahs' => 17],
+        87 => ['name' => 'الأعلى', 'ayahs' => 19],
+        88 => ['name' => 'الغاشية', 'ayahs' => 26],
+        89 => ['name' => 'الفجر', 'ayahs' => 30],
+        90 => ['name' => 'البلد', 'ayahs' => 20],
+        91 => ['name' => 'الشمس', 'ayahs' => 15],
+        92 => ['name' => 'الليل', 'ayahs' => 21],
+        93 => ['name' => 'الضحى', 'ayahs' => 11],
+        94 => ['name' => 'الشرح', 'ayahs' => 8],
+        95 => ['name' => 'التين', 'ayahs' => 8],
+        96 => ['name' => 'العلق', 'ayahs' => 19],
+        97 => ['name' => 'القدر', 'ayahs' => 5],
+        98 => ['name' => 'البينة', 'ayahs' => 8],
+        99 => ['name' => 'الزلزلة', 'ayahs' => 8],
+        100 => ['name' => 'العاديات', 'ayahs' => 11],
+        101 => ['name' => 'القارعة', 'ayahs' => 11],
+        102 => ['name' => 'التكاثر', 'ayahs' => 8],
+        103 => ['name' => 'العصر', 'ayahs' => 3],
+        104 => ['name' => 'الهمزة', 'ayahs' => 9],
+        105 => ['name' => 'الفيل', 'ayahs' => 5],
+        106 => ['name' => 'قريش', 'ayahs' => 4],
+        107 => ['name' => 'الماعون', 'ayahs' => 7],
+        108 => ['name' => 'الكوثر', 'ayahs' => 3],
+        109 => ['name' => 'الكافرون', 'ayahs' => 6],
+        110 => ['name' => 'النصر', 'ayahs' => 3],
+        111 => ['name' => 'المسد', 'ayahs' => 5],
+        112 => ['name' => 'الإخلاص', 'ayahs' => 4],
+        113 => ['name' => 'الفلق', 'ayahs' => 5],
+        114 => ['name' => 'الناس', 'ayahs' => 6],
+    ];
+
+    public static function name(int $surah): string
+    {
+        return self::SURAHS[$surah]['name'] ?? (string) $surah;
+    }
+
+    public static function ayahs(int $surah): int
+    {
+        return self::SURAHS[$surah]['ayahs'] ?? 0;
+    }
+
+    /**
+     * عدد آيات كل سورة مغطّاة بمدى واحد من (from) إلى (to) — المدى قد يعبر عدّة سور.
+     *
+     * @return array<int, int> عدد الآيات المغطّاة، مفهرس برقم السورة
+     */
+    public static function coverage(int $fromSurah, ?int $fromAyah, int $toSurah, ?int $toAyah): array
+    {
+        if ($fromSurah > $toSurah) {
+            [$fromSurah, $toSurah, $fromAyah, $toAyah] = [$toSurah, $fromSurah, $toAyah, $fromAyah];
+        }
+
+        $covered = [];
+
+        for ($surah = max(1, $fromSurah); $surah <= min(114, $toSurah); $surah++) {
+            $total = self::ayahs($surah);
+            $start = $surah === $fromSurah ? max(1, $fromAyah ?? 1) : 1;
+            $end = $surah === $toSurah ? min($total, $toAyah ?? $total) : $total;
+
+            $covered[$surah] = max(0, $end - $start + 1);
+        }
+
+        return $covered;
+    }
+}

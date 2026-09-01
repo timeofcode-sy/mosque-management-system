@@ -5,6 +5,7 @@ use App\Actions\CloneCourseCircles;
 use App\Concerns\InteractsWithInstitute;
 use App\Enums\CourseStatus;
 use App\Models\Course;
+use App\Queries\InstituteCatalogQuery;
 use Flux\Flux;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
@@ -42,11 +43,7 @@ new #[Title('الدورات')] class extends Component {
     #[Computed]
     public function courses(): Collection
     {
-        return $this->institute->courses()
-            ->withCount('courseCircles')
-            ->orderByDesc('is_current')
-            ->orderByDesc('starts_on')
-            ->get();
+        return app(InstituteCatalogQuery::class)->courses($this->institute);
     }
 
     public function create(): void
@@ -182,15 +179,15 @@ new #[Title('الدورات')] class extends Component {
                                     <flux:button icon="ellipsis-horizontal" size="sm" variant="subtle" />
 
                                     <flux:menu>
-                                        <flux:menu.item wire:click="edit({{ $course->id }})" icon="pencil">تعديل</flux:menu.item>
-                                        <flux:menu.item wire:click="startClone({{ $course->id }})" icon="document-duplicate">استنساخ بنية دورة سابقة</flux:menu.item>
+                                        <flux:menu.item wire:click="edit('{{ $course->uuid }}')" icon="pencil">تعديل</flux:menu.item>
+                                        <flux:menu.item wire:click="startClone('{{ $course->uuid }}')" icon="document-duplicate">استنساخ بنية دورة سابقة</flux:menu.item>
 
                                         @unless ($course->is_current)
-                                            <flux:menu.item wire:click="activate({{ $course->id }})" icon="check-circle">اجعلها الدورة الجارية</flux:menu.item>
+                                            <flux:menu.item wire:click="activate('{{ $course->uuid }}')" icon="check-circle">اجعلها الدورة الجارية</flux:menu.item>
                                         @endunless
 
                                         <flux:menu.separator />
-                                        <flux:menu.item wire:click="archive({{ $course->id }})" icon="archive-box" variant="danger">أرشفة</flux:menu.item>
+                                        <flux:menu.item wire:click="archive('{{ $course->uuid }}')" icon="archive-box" variant="danger">أرشفة</flux:menu.item>
                                     </flux:menu>
                                 </flux:dropdown>
                             </flux:table.cell>

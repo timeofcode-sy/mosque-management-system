@@ -3,6 +3,7 @@
 use App\Concerns\InteractsWithInstitute;
 use App\Models\Circle;
 use App\Models\CourseCircle;
+use App\Queries\CircleQuery;
 use Flux\Flux;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
@@ -37,19 +38,18 @@ new #[Title('الحلقات')] class extends Component {
         $this->requireInstitute();
     }
 
+    private function query(): CircleQuery
+    {
+        return app(CircleQuery::class);
+    }
+
     /**
      * @return Collection<int, Circle>
      */
     #[Computed]
     public function circles(): Collection
     {
-        $courseId = $this->currentCourse?->id;
-
-        return $this->institute->circles()
-            ->with(['courseCircles' => fn ($query) => $query->where('course_id', $courseId)->with('shift', 'teachers')])
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        return $this->query()->circles($this->institute, $this->currentCourse);
     }
 
     /**
@@ -58,7 +58,7 @@ new #[Title('الحلقات')] class extends Component {
     #[Computed]
     public function shifts(): Collection
     {
-        return $this->currentCourse?->shifts()->orderBy('sort_order')->get() ?? new Collection;
+        return $this->query()->shifts($this->currentCourse);
     }
 
     public function create(): void
@@ -193,12 +193,12 @@ new #[Title('الحلقات')] class extends Component {
                                 <flux:dropdown position="bottom" align="end">
                                     <flux:button icon="ellipsis-horizontal" size="sm" variant="subtle" />
                                     <flux:menu>
-                                        <flux:menu.item wire:click="edit({{ $circle->id }})" icon="pencil">تعديل</flux:menu.item>
+                                        <flux:menu.item wire:click="edit('{{ $circle->uuid }}')" icon="pencil">تعديل</flux:menu.item>
 
                                         @if ($running)
                                             <flux:menu.item :href="route('circles.show', $running)" wire:navigate icon="users">الطلاب والأساتذة</flux:menu.item>
                                         @elseif ($this->currentCourse && $this->shifts->isNotEmpty())
-                                            <flux:menu.item wire:click="startRunning({{ $circle->id }})" icon="play">شغّلها في الدورة الجارية</flux:menu.item>
+                                            <flux:menu.item wire:click="startRunning('{{ $circle->uuid }}')" icon="play">شغّلها في الدورة الجارية</flux:menu.item>
                                         @endif
                                     </flux:menu>
                                 </flux:dropdown>

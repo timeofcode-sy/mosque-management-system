@@ -3,6 +3,7 @@
 use App\Concerns\InteractsWithInstitute;
 use App\Enums\TeacherStatus;
 use App\Models\Teacher;
+use App\Queries\InstituteCatalogQuery;
 use Flux\Flux;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
@@ -56,19 +57,7 @@ new #[Title('الأساتذة')] class extends Component {
     #[Computed]
     public function teachers(): LengthAwarePaginator
     {
-        $courseId = $this->currentCourse?->id;
-
-        return Teacher::query()
-            ->where('institute_id', $this->institute->id)
-            ->when($this->search !== '', fn ($query) => $query->where(fn ($inner) => $inner
-                ->where('display_name', 'like', "%{$this->search}%")
-                ->orWhere('phone', 'like', "%{$this->search}%")
-                ->orWhere('specialization', 'like', "%{$this->search}%")))
-            ->withCount(['courseCircles as current_circles_count' => fn ($query) => $query
-                ->where('course_id', $courseId)
-                ->whereNull('course_circle_teachers.left_on')])
-            ->orderBy('display_name')
-            ->paginate(20);
+        return app(InstituteCatalogQuery::class)->teachers($this->institute, $this->currentCourse, $this->search);
     }
 
     public function create(): void
@@ -169,9 +158,9 @@ new #[Title('الأساتذة')] class extends Component {
                                 <flux:dropdown position="bottom" align="end">
                                     <flux:button icon="ellipsis-horizontal" size="sm" variant="subtle" />
                                     <flux:menu>
-                                        <flux:menu.item wire:click="edit({{ $teacher->id }})" icon="pencil">تعديل</flux:menu.item>
+                                        <flux:menu.item wire:click="edit('{{ $teacher->uuid }}')" icon="pencil">تعديل</flux:menu.item>
                                         <flux:menu.separator />
-                                        <flux:menu.item wire:click="delete({{ $teacher->id }})" icon="trash" variant="danger">حذف</flux:menu.item>
+                                        <flux:menu.item wire:click="delete('{{ $teacher->uuid }}')" icon="trash" variant="danger">حذف</flux:menu.item>
                                     </flux:menu>
                                 </flux:dropdown>
                             </flux:table.cell>

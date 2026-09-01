@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,7 +19,7 @@ class CircleCumulativeStat extends Model
     protected function casts(): array
     {
         return [
-            'as_of_date' => 'date',
+            'as_of_date' => DateOnly::class,
             'sessions_count' => 'integer',
             'present' => 'integer',
             'absent' => 'integer',

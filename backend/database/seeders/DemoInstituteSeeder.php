@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Actions\RecalculateCircleStats;
 use App\Enums\AttendanceStatus;
 use App\Enums\CourseStatus;
 use App\Enums\GuardianRelation;
@@ -113,6 +114,9 @@ class DemoInstituteSeeder extends Seeder
         }
 
         $this->recordAttendance($courseCircles, $admin);
+
+        // الإحصاء يُحسب عادةً لحظة إغلاق كل جلسة؛ البذور تكتب الجلسات مباشرةً فتحتاج تشغيله مرّة.
+        app(RecalculateCircleStats::class)->forCourse($course->id);
     }
 
     /**

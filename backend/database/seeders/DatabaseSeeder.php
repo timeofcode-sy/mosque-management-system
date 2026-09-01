@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             PersonalTraitSeeder::class,
             CurriculumSeeder::class,
             DemoInstituteSeeder::class,
+            ReportTemplateSeeder::class,
         ]);
     }
 }

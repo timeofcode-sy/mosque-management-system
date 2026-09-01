@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
 use App\Enums\MemorizationType;
 use Database\Factories\MemorizationLogFactory;
@@ -30,7 +31,7 @@ class MemorizationLog extends Model
     protected function casts(): array
     {
         return [
-            'date' => 'date',
+            'date' => DateOnly::class,
             'type' => MemorizationType::class,
             'from_surah' => 'integer',
             'from_ayah' => 'integer',

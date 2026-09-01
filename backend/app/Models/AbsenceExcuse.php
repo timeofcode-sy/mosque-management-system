@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
 use App\Enums\ExcuseStatus;
 use Database\Factories\AbsenceExcuseFactory;
@@ -30,8 +31,8 @@ class AbsenceExcuse extends Model
     protected function casts(): array
     {
         return [
-            'from_date' => 'date',
-            'to_date' => 'date',
+            'from_date' => DateOnly::class,
+            'to_date' => DateOnly::class,
             'status' => ExcuseStatus::class,
             'reviewed_at' => 'datetime',
         ];

@@ -19,7 +19,7 @@ use Spatie\Permission\PermissionRegistrar;
  */
 trait InteractsWithInstitute
 {
-    #[Computed(persist: true)]
+    #[Computed]
     public function institute(): ?Institute
     {
         $institute = $this->resolveInstitute();

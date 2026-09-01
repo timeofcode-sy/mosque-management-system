@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
 use App\Enums\ProgressStatus;
 use Database\Factories\StudentCurriculumProgressFactory;
@@ -34,8 +35,8 @@ class StudentCurriculumProgress extends Model
             'status' => ProgressStatus::class,
             'percent' => 'integer',
             'score' => 'integer',
-            'started_on' => 'date',
-            'completed_on' => 'date',
+            'started_on' => DateOnly::class,
+            'completed_on' => DateOnly::class,
         ];
     }
 

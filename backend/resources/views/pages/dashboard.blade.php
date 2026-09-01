@@ -1,10 +1,8 @@
 <?php
 
 use App\Concerns\InteractsWithInstitute;
-use App\Enums\EnrollmentStatus;
-use App\Models\Enrollment;
-use App\Models\Student;
-use App\Models\Teacher;
+use App\Queries\DashboardOverviewQuery;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -14,53 +12,54 @@ new #[Title('لوحة المعلومات')] class extends Component {
     use InteractsWithInstitute;
 
     /**
-     * حلقات الدورة الجارية مرتّبة بالدوام، مع عدد المسجَّلين في كل حلقة.
-     *
+     * طبقة القراءة تُحلّ من الحاوية لا بالحقن في المُنشئ — فمكوّن Livewire يُعاد
+     * بناؤه مع كل طلب، والمُنشئ ليس موضع اعتماد.
+     */
+    private function overview(): DashboardOverviewQuery
+    {
+        return app(DashboardOverviewQuery::class);
+    }
+
+    /**
+     * @return array{students: int, enrolled: int, circles: int, teachers: int}
+     */
+    #[Computed]
+    public function counters(): array
+    {
+        return $this->overview()->counters($this->institute, $this->currentCourse);
+    }
+
+    /**
      * @return Collection<int, \App\Models\CourseCircle>
      */
     #[Computed]
     public function courseCircles(): Collection
     {
-        if ($this->currentCourse === null) {
-            return new Collection;
-        }
+        return $this->overview()->circles($this->currentCourse);
+    }
 
-        return $this->currentCourse->courseCircles()
-            ->with(['circle', 'shift.days', 'teachers'])
-            ->withCount(['enrollments as active_enrollments_count' => fn ($query) => $query->where('status', EnrollmentStatus::Active)])
-            ->get()
-            ->sortBy(fn ($courseCircle) => [$courseCircle->shift->sort_order, $courseCircle->circle->sort_order])
-            ->values();
+    /**
+     * @return Collection<int, array{date: string, rate: float, sessions: int}>
+     */
+    #[Computed]
+    public function trend(): Collection
+    {
+        return $this->overview()->trend($this->currentCourse);
     }
 
     #[Computed]
-    public function studentsCount(): int
+    public function todayRate(): ?float
     {
-        return Student::query()->where('institute_id', $this->institute?->id)->count();
-    }
-
-    #[Computed]
-    public function teachersCount(): int
-    {
-        return Teacher::query()->where('institute_id', $this->institute?->id)->count();
-    }
-
-    #[Computed]
-    public function enrolledCount(): int
-    {
-        if ($this->currentCourse === null) {
-            return 0;
-        }
-
-        return Enrollment::query()
-            ->where('status', EnrollmentStatus::Active)
-            ->whereHas('courseCircle', fn ($query) => $query->where('course_id', $this->currentCourse->id))
-            ->count();
+        return $this->overview()->rateOn($this->currentCourse, Carbon::today()->toDateString());
     }
 }; ?>
 
 <div class="flex w-full flex-col gap-6">
-    <x-page-header heading="لوحة المعلومات" :subheading="$this->institute?->name" />
+    <x-page-header heading="لوحة المعلومات" :subheading="$this->institute?->name">
+        <x-slot name="actions">
+            <flux:button :href="route('attendance.index')" wire:navigate variant="primary" icon="clipboard-document-check">تفقّد اليوم</flux:button>
+        </x-slot>
+    </x-page-header>
 
     @if ($this->institute === null)
         <x-no-institute />
@@ -76,11 +75,18 @@ new #[Title('لوحة المعلومات')] class extends Component {
         @endif
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <x-stat-card label="الطلاب في المعهد" :value="$this->studentsCount" />
-            <x-stat-card label="المسجَّلون في الدورة الجارية" :value="$this->enrolledCount" tone="gold" />
-            <x-stat-card label="الحلقات العاملة" :value="$this->courseCircles->count()" />
-            <x-stat-card label="الأساتذة" :value="$this->teachersCount" tone="ink" />
+            <x-stat-card label="الطلاب في المعهد" :value="$this->counters['students']" />
+            <x-stat-card label="المسجَّلون في الدورة الجارية" :value="$this->counters['enrolled']" tone="gold" />
+            <x-stat-card label="الحلقات العاملة" :value="$this->counters['circles']" />
+            <x-stat-card
+                label="نسبة حضور اليوم"
+                :value="$this->todayRate !== null ? $this->todayRate.'%' : '—'"
+                :hint="$this->todayRate === null ? 'لم تُغلق جلسات اليوم بعد' : null"
+                tone="ink"
+            />
         </div>
+
+        <x-attendance-trend :points="$this->trend" />
 
         <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
             <div class="border-b border-sand-200 p-4 dark:border-zinc-700">
@@ -97,6 +103,8 @@ new #[Title('لوحة المعلومات')] class extends Component {
                         <flux:table.column>الأيام</flux:table.column>
                         <flux:table.column>الأستاذ</flux:table.column>
                         <flux:table.column>الطلاب</flux:table.column>
+                        <flux:table.column>النسبة التراكمية</flux:table.column>
+                        <flux:table.column>الترتيب في الدوام</flux:table.column>
                     </flux:table.columns>
 
                     <flux:table.rows>
@@ -111,6 +119,18 @@ new #[Title('لوحة المعلومات')] class extends Component {
                                 <flux:table.cell>{{ implode(' · ', $courseCircle->shift->weekdayLabels()) }}</flux:table.cell>
                                 <flux:table.cell>{{ $courseCircle->teachers->pluck('display_name')->join('، ') ?: '—' }}</flux:table.cell>
                                 <flux:table.cell class="latin-numerals">{{ $courseCircle->active_enrollments_count }}</flux:table.cell>
+                                <flux:table.cell class="latin-numerals">
+                                    <x-attendance-rate :rate="$courseCircle->standing?->attendance_rate" />
+                                </flux:table.cell>
+                                <flux:table.cell class="latin-numerals">
+                                    @if ($courseCircle->standing?->overall_rank_in_shift)
+                                        <flux:badge size="sm" :color="$courseCircle->standing->overall_rank_in_shift === 1 ? 'amber' : 'zinc'">
+                                            {{ $courseCircle->standing->overall_rank_in_shift }}
+                                        </flux:badge>
+                                    @else
+                                        —
+                                    @endif
+                                </flux:table.cell>
                             </flux:table.row>
                         @endforeach
                     </flux:table.rows>

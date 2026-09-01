@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
 use App\Enums\EnrollmentStatus;
 use App\Enums\Gender;
@@ -38,8 +39,8 @@ class Student extends Model
     protected function casts(): array
     {
         return [
-            'registration_date' => 'date',
-            'birth_date' => 'date',
+            'registration_date' => DateOnly::class,
+            'birth_date' => DateOnly::class,
             'gender' => Gender::class,
             'status' => StudentStatus::class,
             'family_members_count' => 'integer',

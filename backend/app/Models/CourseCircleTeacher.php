@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
 use App\Enums\TeacherRole;
 use Database\Factories\CourseCircleTeacherFactory;
@@ -23,8 +24,8 @@ class CourseCircleTeacher extends Model
     {
         return [
             'role' => TeacherRole::class,
-            'joined_on' => 'date',
-            'left_on' => 'date',
+            'joined_on' => DateOnly::class,
+            'left_on' => DateOnly::class,
         ];
     }
 

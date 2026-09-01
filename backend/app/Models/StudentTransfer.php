@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
 use Database\Factories\StudentTransferFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -24,7 +25,7 @@ class StudentTransfer extends Model
     protected function casts(): array
     {
         return [
-            'transferred_on' => 'date',
+            'transferred_on' => DateOnly::class,
         ];
     }
 

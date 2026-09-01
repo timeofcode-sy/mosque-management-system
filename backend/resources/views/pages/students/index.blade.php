@@ -1,10 +1,10 @@
 <?php
 
 use App\Concerns\InteractsWithInstitute;
-use App\Enums\EnrollmentStatus;
 use App\Enums\StudentStatus;
 use App\Models\CourseCircle;
 use App\Models\Student;
+use App\Queries\StudentListQuery;
 use Flux\Flux;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -38,30 +38,23 @@ new #[Title('الطلاب')] class extends Component {
         }
     }
 
+    private function query(): StudentListQuery
+    {
+        return app(StudentListQuery::class);
+    }
+
     /**
      * @return LengthAwarePaginator<int, Student>
      */
     #[Computed]
     public function students(): LengthAwarePaginator
     {
-        return Student::query()
-            ->where('institute_id', $this->institute->id)
-            ->when($this->search !== '', fn ($query) => $query->where(fn ($inner) => $inner
-                ->where('first_name', 'like', "%{$this->search}%")
-                ->orWhere('father_name', 'like', "%{$this->search}%")
-                ->orWhere('family_name', 'like', "%{$this->search}%")
-                ->orWhere('registration_no', 'like', "%{$this->search}%")
-                ->orWhere('phone', 'like', "%{$this->search}%")))
-            ->when($this->status !== '', fn ($query) => $query->where('status', $this->status))
-            ->when($this->courseCircleId !== '', fn ($query) => $query->whereHas('enrollments', fn ($inner) => $inner
-                ->where('status', EnrollmentStatus::Active)
-                ->where('course_circle_id', $this->courseCircleId)))
-            ->with(['enrollments' => fn ($query) => $query
-                ->where('status', EnrollmentStatus::Active)
-                ->with('courseCircle.circle')])
-            ->orderBy('family_name')
-            ->orderBy('first_name')
-            ->paginate(20);
+        return $this->query()->paginate(
+            $this->institute,
+            $this->search,
+            $this->status,
+            $this->courseCircleId,
+        );
     }
 
     /**
@@ -70,7 +63,7 @@ new #[Title('الطلاب')] class extends Component {
     #[Computed]
     public function courseCircles(): Collection
     {
-        return $this->currentCourse?->courseCircles()->with('circle')->get() ?? new Collection;
+        return $this->query()->filterableCircles($this->currentCourse);
     }
 
     public function delete(Student $student): void
@@ -142,7 +135,7 @@ new #[Title('الطلاب')] class extends Component {
                                         <flux:menu.item :href="route('students.show', $student)" wire:navigate icon="identification">الملف</flux:menu.item>
                                         <flux:menu.item :href="route('students.edit', $student)" wire:navigate icon="pencil">تعديل</flux:menu.item>
                                         <flux:menu.separator />
-                                        <flux:menu.item wire:click="delete({{ $student->id }})" icon="trash" variant="danger">حذف</flux:menu.item>
+                                        <flux:menu.item wire:click="delete('{{ $student->uuid }}')" icon="trash" variant="danger">حذف</flux:menu.item>
                                     </flux:menu>
                                 </flux:dropdown>
                             </flux:table.cell>

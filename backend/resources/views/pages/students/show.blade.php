@@ -1,7 +1,9 @@
 <?php
 
+use App\Actions\BuildStudentProgressMap;
 use App\Enums\ProgressStatus;
 use App\Models\Student;
+use App\Queries\StudentProfileQuery;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -15,18 +17,18 @@ new #[Title('ملف الطالب')] class extends Component {
         $this->student = $student->load('guardians', 'personalTraits', 'institute');
     }
 
+    private function profile(): StudentProfileQuery
+    {
+        return app(StudentProfileQuery::class);
+    }
+
     /**
-     * كل تسجيلات الطالب عبر الدورات — الحالية والسابقة والمنقول عنها.
-     *
      * @return Collection<int, \App\Models\Enrollment>
      */
     #[Computed]
     public function enrollments(): Collection
     {
-        return $this->student->enrollments()
-            ->with('courseCircle.circle', 'courseCircle.course', 'courseCircle.shift')
-            ->orderByDesc('enrolled_on')
-            ->get();
+        return $this->profile()->enrollments($this->student);
     }
 
     /**
@@ -35,25 +37,16 @@ new #[Title('ملف الطالب')] class extends Component {
     #[Computed]
     public function transfers(): Collection
     {
-        return $this->student->transfers()
-            ->with('fromCourseCircle.circle', 'toCourseCircle.circle', 'performedBy')
-            ->orderByDesc('transferred_on')
-            ->get();
+        return $this->profile()->transfers($this->student);
     }
 
     /**
-     * المحفوظات مجمَّعة بالمنهج.
-     *
      * @return Collection<string, Collection<int, \App\Models\StudentCurriculumProgress>>
      */
     #[Computed]
     public function progressByCurriculum(): Collection
     {
-        return $this->student->curriculumProgress()
-            ->with('curriculumItem.curriculum')
-            ->whereIn('status', [ProgressStatus::InProgress, ProgressStatus::Memorized, ProgressStatus::Mastered])
-            ->get()
-            ->groupBy(fn ($progress) => $progress->curriculumItem->curriculum->name);
+        return $this->profile()->progressByCurriculum($this->student);
     }
 
     /**
@@ -62,11 +55,34 @@ new #[Title('ملف الطالب')] class extends Component {
     #[Computed]
     public function recentAttendances(): Collection
     {
-        return $this->student->attendances()
-            ->with('attendanceSession.courseCircle.circle')
-            ->latest('recorded_at')
-            ->limit(20)
-            ->get();
+        return $this->profile()->recentAttendances($this->student);
+    }
+
+    /**
+     * @return array{present: int, absent: int, late: int, excused: int, total: int, rate: float|null}
+     */
+    #[Computed]
+    public function summary(): array
+    {
+        return $this->profile()->attendanceSummary($this->student);
+    }
+
+    /**
+     * @return Collection<int, array{date: string, rate: float, sessions: int}>
+     */
+    #[Computed]
+    public function trend(): Collection
+    {
+        return $this->profile()->attendanceTrend($this->student);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    #[Computed]
+    public function progressMap(): array
+    {
+        return app(BuildStudentProgressMap::class)->handle($this->student);
     }
 }; ?>
 
@@ -74,9 +90,25 @@ new #[Title('ملف الطالب')] class extends Component {
     <x-page-header :heading="$student->full_name" :subheading="$student->institute->name">
         <x-slot name="actions">
             <flux:button :href="route('students.index')" wire:navigate variant="ghost" icon="arrow-right">الطلاب</flux:button>
+            <flux:button :href="route('reports.print.student', $student)" target="_blank" variant="ghost" icon="printer" data-test="print-student-report">تقرير</flux:button>
             <flux:button :href="route('students.edit', $student)" wire:navigate variant="primary" icon="pencil">تعديل</flux:button>
         </x-slot>
     </x-page-header>
+
+    <div class="grid gap-4 sm:grid-cols-3 xl:grid-cols-5">
+        <x-stat-card label="حاضر" :value="$this->summary['present']" />
+        <x-stat-card label="غائب" :value="$this->summary['absent']" tone="danger" />
+        <x-stat-card label="متأخّر" :value="$this->summary['late']" tone="gold" />
+        <x-stat-card label="مأذون" :value="$this->summary['excused']" tone="ink" />
+        <x-stat-card
+            label="نسبة الحضور"
+            :value="$this->summary['rate'] !== null ? $this->summary['rate'].'%' : '—'"
+            :hint="$this->summary['total'] > 0 ? $this->summary['total'].' جلسة' : null"
+            tone="gold"
+        />
+    </div>
+
+    <x-attendance-trend :points="$this->trend" heading="منحنى حضور الطالب — آخر ٣٠ يوماً" />
 
     <div class="grid gap-6 lg:grid-cols-3">
         <div class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
@@ -217,6 +249,24 @@ new #[Title('ملف الطالب')] class extends Component {
             </flux:table>
         </div>
     @endif
+
+    <div class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+        <div class="flex flex-wrap items-baseline justify-between gap-3">
+            <flux:heading size="lg">خريطة تقدّم الحفظ في المصحف</flux:heading>
+
+            <flux:text size="sm" class="latin-numerals text-ink-500 dark:text-zinc-400">
+                {{ $this->progressMap['memorized_ayahs'] }} / {{ App\Support\Quran::TOTAL_AYAHS }} آية ·
+                {{ $this->progressMap['completed_surahs'] }} سورة مكتملة ·
+                {{ round($this->progressMap['overall_ratio'] * 100, 1) }}%
+            </flux:text>
+        </div>
+
+        @if ($this->progressMap['memorized_ayahs'] === 0)
+            <flux:text class="mt-4">لم تُسجَّل مدَيات حفظ بعد — الخريطة تُبنى من سجلّات الحفظ (from_surah إلى to_surah).</flux:text>
+        @endif
+
+        <x-surah-map :surahs="$this->progressMap['surahs']" class="mt-4" />
+    </div>
 
     <div class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:heading size="lg">المحفوظات</flux:heading>

@@ -254,12 +254,25 @@ institute (معهد)
 - ✅ `app/Models/` — 37 نموذجاً مع العلاقات و`HasUuid`
 - ✅ `app/Enums/` — 18 enum بتسميات عربية (`label()`) وخريطة خيارات (`options()`)
 - ✅ `app/Concerns/HasUuid.php`
-- ✅ `app/Actions/` — `EnrollStudent`, `TransferStudent`, `CloneCourseCircles`, `ActivateCourse`, `SaveStudentRegistration`
-- ⬜ `app/Actions/` — `TakeAttendance`, `CompleteAttendanceSession`, `RecalculateCircleStats` (المرحلة 3)
+**قاعدة فصل الطبقات (اعتُمدت في المرحلة 3، وأُعيد عليها كلُّ ما سبق):**
+**كل كتابة تمرّ بـ `app/Actions/`، وكل قراءة تمرّ بـ `app/Queries/`.**
+ملف الشاشة لا يحمل استعلاماً ولا قاعدة عمل — يحمل حالة الواجهة وربطها فقط.
+
+- ✅ `app/Actions/` — 18 إجراء كتابة: التسجيل والنقل والاستنساخ والتفعيل والاستمارة (م.2)،
+  والتفقّد ودورة حياة الجلسة والإحصاء والأذونات (م.3)
+- ✅ `app/Queries/` — 11 صنف قراءة: `DashboardOverviewQuery`, `AttendanceBoardQuery`,
+  `AttendanceSessionQuery`, `CircleRankingQuery`, `StudentProfileQuery`, `StudentListQuery`,
+  `StudentFormQuery`, `CircleQuery`, `InstituteCatalogQuery`, `AbsenceExcuseQuery`, `ReportTemplateQuery`
+- ✅ `app/Casts/DateOnly.php` — أعمدة التاريخ بلا وقت تُكتب دائماً `Y-m-d`
+- ✅ `app/Support/` — `Quran` (جدول السور)، `HijriDate` (أم القرى عبر intl)
+- ✅ `app/Http/Controllers/ReportPrintController.php` — المتحكّم الوحيد: صفحات الطباعة/PDF
+  استجاباتُ HTTP ساكنة بلا حالة، فلا معنى لجعلها مكوّنات Livewire
 - ⬜ `app/Services/Sync/` — `SyncPuller`, `SyncPusher`, `ConflictResolver` (المرحلة 4)
 - ⬜ `app/Http/Resources/V1/` — Eloquent API Resources (المرحلة 4)
-- ✅ `resources/views/pages/` — 14 مكوّن Livewire 4 أحادي الملف (SFC) للوحة التحكم
+- ✅ `resources/views/pages/` — 19 مكوّن Livewire 4 أحادي الملف (SFC) للوحة التحكم
   🔄 لا مجلد `app/Livewire/`: هذا المشروع على Livewire 4 حيث المكوّن ملف Blade واحد تحت `pages::`
+  🔄 أُزيلت سابقة ⚡ من أسماء الملفات: اختيارية في Livewire 4 (`Finder` يجرّبها ثم يسقط إلى الاسم
+  المجرّد)، وكانت تُعقّد أوامر الطرفية والبحث بلا مقابل
 - ✅ `app/Concerns/InteractsWithInstitute.php` — المعهد العامل والدورة الجارية لكل شاشة
 
 **نقاط الـ API (`routes/api.php`, prefix `/api/v1`) — المرحلة 4:**
@@ -362,8 +375,8 @@ RTL كامل (`dir="rtl"`, `lang="ar"`)، خصائص Tailwind المنطقية (
 | 0 | التهيئة | نقل الباك إند، `git init`، melos، `design-tokens.json` | يوم | ✅ **منفَّذة** |
 | 1 | نواة الباك إند | 38 migration، 37 نموذجاً، 18 enum، 25 factory، 4 بذور، الأدوار والصلاحيات، 25 اختباراً | ٤–٥ أيام | ✅ **منفَّذة** — 58/58 اختباراً |
 | 2 | لوحة التحكم — الإدارة | 14 شاشة Livewire، 5 إجراءات دومين، هوية بصرية RTL، 35 اختباراً | ٦–٨ أيام | ✅ **منفَّذة** — 93/93 اختباراً |
-| 3 | التفقّد والتقارير | شاشة التفقّد، حساب الإحصاءات والترتيب، الداشبورد، تصدير PDF | ٥–٦ أيام | ⬜ التالية |
-| 4 | طبقة API والمزامنة | Sanctum، Resources، `sync/pull` و`sync/push`، `change_log`، حلّ التعارضات | ٥–٦ أيام | ⬜ |
+| 3 | التفقّد والتقارير | شاشة التفقّد، الإحصاء والترتيب، الداشبورد، التقارير والطباعة، طبقة `app/Queries/` | ٥–٦ أيام | ✅ **منفَّذة** — 135/135 |
+| 4 | طبقة API والمزامنة | Sanctum، Resources، `sync/pull` و`sync/push`، `change_log`، حلّ التعارضات | ٥–٦ أيام | ⬜ التالية |
 | 5 | **تطبيق الأستاذ** | Flutter أوف-لاين كامل + `mousqe_core` + `mousqe_ui` | ٨–١٠ أيام | ⬜ |
 | 6 | **تطبيق الديسكتوب** | Windows، إعادة استخدام ≈٧٠٪ من كود الأستاذ + شاشات الإدارة والطباعة | ٦–٨ أيام | ⬜ |
 | 7 | **تطبيق الأهل** | مع إشعارات FCM وطلبات الإذن | ٥–٦ أيام | ⬜ |

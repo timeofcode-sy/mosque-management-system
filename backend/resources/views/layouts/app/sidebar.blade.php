@@ -15,6 +15,15 @@
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         لوحة المعلومات
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="clipboard-document-check" :href="route('attendance.index')" :current="request()->routeIs('attendance.*')" wire:navigate>
+                        التفقّد
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="envelope-open" :href="route('excuses.index')" :current="request()->routeIs('excuses.*')" wire:navigate>
+                        أذونات الغياب
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="document-chart-bar" :href="route('reports.index')" :current="request()->routeIs('reports.*')" wire:navigate>
+                        التقارير
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
 
                 <flux:sidebar.group heading="التنظيم" class="grid">
@@ -53,6 +62,9 @@
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="sparkles" :href="route('traits.index')" :current="request()->routeIs('traits.*')" wire:navigate>
                         الصفات
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="document-text" :href="route('report-templates.index')" :current="request()->routeIs('report-templates.*')" wire:navigate>
+                        قوالب التقارير
                     </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>

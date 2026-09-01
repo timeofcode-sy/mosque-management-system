@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
 use App\Enums\EvaluationPeriod;
 use Database\Factories\EvaluationFactory;
@@ -27,8 +28,8 @@ class Evaluation extends Model
     {
         return [
             'period' => EvaluationPeriod::class,
-            'period_start' => 'date',
-            'period_end' => 'date',
+            'period_start' => DateOnly::class,
+            'period_end' => DateOnly::class,
             'behavior' => 'integer',
             'commitment' => 'integer',
             'memorization' => 'integer',

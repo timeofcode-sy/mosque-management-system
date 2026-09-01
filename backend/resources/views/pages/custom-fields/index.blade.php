@@ -3,6 +3,7 @@
 use App\Concerns\InteractsWithInstitute;
 use App\Enums\CustomFieldType;
 use App\Models\CustomField;
+use App\Queries\InstituteCatalogQuery;
 use Flux\Flux;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -54,11 +55,7 @@ new #[Title('الواصفات المخصّصة')] class extends Component {
     #[Computed]
     public function fields(): Collection
     {
-        return CustomField::query()
-            ->where('institute_id', $this->institute->id)
-            ->orderBy('entity')
-            ->orderBy('sort_order')
-            ->get();
+        return app(InstituteCatalogQuery::class)->customFields($this->institute);
     }
 
     public function create(): void
@@ -174,9 +171,9 @@ new #[Title('الواصفات المخصّصة')] class extends Component {
                                 <flux:dropdown position="bottom" align="end">
                                     <flux:button icon="ellipsis-horizontal" size="sm" variant="subtle" />
                                     <flux:menu>
-                                        <flux:menu.item wire:click="edit({{ $field->id }})" icon="pencil">تعديل</flux:menu.item>
+                                        <flux:menu.item wire:click="edit('{{ $field->uuid }}')" icon="pencil">تعديل</flux:menu.item>
                                         <flux:menu.separator />
-                                        <flux:menu.item wire:click="delete({{ $field->id }})" icon="trash" variant="danger">حذف</flux:menu.item>
+                                        <flux:menu.item wire:click="delete('{{ $field->uuid }}')" icon="trash" variant="danger">حذف</flux:menu.item>
                                     </flux:menu>
                                 </flux:dropdown>
                             </flux:table.cell>

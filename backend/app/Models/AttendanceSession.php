@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
 use App\Enums\SessionStatus;
 use Database\Factories\AttendanceSessionFactory;
@@ -24,7 +25,7 @@ class AttendanceSession extends Model
     protected function casts(): array
     {
         return [
-            'session_date' => 'date',
+            'session_date' => DateOnly::class,
             'status' => SessionStatus::class,
             'completed_at' => 'datetime',
         ];

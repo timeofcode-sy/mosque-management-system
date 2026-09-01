@@ -12,6 +12,7 @@ use App\Models\Curriculum;
 use App\Models\CustomField;
 use App\Models\PersonalTrait;
 use App\Models\Student;
+use App\Queries\StudentFormQuery;
 use Flux\Flux;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
@@ -156,17 +157,18 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
         $this->courseCircleId = $student->activeEnrollment()?->course_circle_id;
     }
 
+    private function query(): StudentFormQuery
+    {
+        return app(StudentFormQuery::class);
+    }
+
     /**
      * @return Collection<int, PersonalTrait>
      */
     #[Computed]
     public function personalTraits(): Collection
     {
-        return PersonalTrait::query()
-            ->where('is_active', true)
-            ->where(fn ($query) => $query->whereNull('institute_id')->orWhere('institute_id', $this->institute->id))
-            ->orderBy('sort_order')
-            ->get();
+        return $this->query()->personalTraits($this->institute);
     }
 
     /**
@@ -175,12 +177,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
     #[Computed]
     public function curricula(): Collection
     {
-        return Curriculum::query()
-            ->where('is_active', true)
-            ->where(fn ($query) => $query->whereNull('institute_id')->orWhere('institute_id', $this->institute->id))
-            ->with('items')
-            ->orderBy('sort_order')
-            ->get();
+        return $this->query()->curricula($this->institute);
     }
 
     /**
@@ -189,12 +186,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
     #[Computed]
     public function customFieldDefinitions(): Collection
     {
-        return CustomField::query()
-            ->where('institute_id', $this->institute->id)
-            ->where('entity', 'student')
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get();
+        return $this->query()->customFieldDefinitions($this->institute);
     }
 
     /**
@@ -203,7 +195,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
     #[Computed]
     public function courseCircles(): Collection
     {
-        return $this->currentCourse?->courseCircles()->with('circle', 'shift')->get() ?? new Collection;
+        return $this->query()->courseCircles($this->currentCourse);
     }
 
     public function save(SaveStudentRegistration $saveStudentRegistration): void

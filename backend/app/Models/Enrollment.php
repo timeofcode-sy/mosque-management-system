@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
 use App\Enums\EnrollmentStatus;
 use Database\Factories\EnrollmentFactory;
@@ -26,8 +27,8 @@ class Enrollment extends Model
     {
         return [
             'status' => EnrollmentStatus::class,
-            'enrolled_on' => 'date',
-            'left_on' => 'date',
+            'enrolled_on' => DateOnly::class,
+            'left_on' => DateOnly::class,
         ];
     }
 

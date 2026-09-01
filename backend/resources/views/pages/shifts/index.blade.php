@@ -3,6 +3,7 @@
 use App\Concerns\InteractsWithInstitute;
 use App\Enums\Weekday;
 use App\Models\Shift;
+use App\Queries\InstituteCatalogQuery;
 use App\Models\ShiftDay;
 use Flux\Flux;
 use Illuminate\Support\Collection;
@@ -44,15 +45,7 @@ new #[Title('الدوامات')] class extends Component {
     #[Computed]
     public function shifts(): Collection
     {
-        if ($this->currentCourse === null) {
-            return new Collection;
-        }
-
-        return $this->currentCourse->shifts()
-            ->with('days')
-            ->withCount('courseCircles')
-            ->orderBy('sort_order')
-            ->get();
+        return app(InstituteCatalogQuery::class)->shifts($this->currentCourse);
     }
 
     public function create(): void
@@ -156,8 +149,8 @@ new #[Title('الدوامات')] class extends Component {
                         <flux:dropdown position="bottom" align="end">
                             <flux:button icon="ellipsis-horizontal" size="sm" variant="subtle" />
                             <flux:menu>
-                                <flux:menu.item wire:click="edit({{ $shift->id }})" icon="pencil">تعديل</flux:menu.item>
-                                <flux:menu.item wire:click="delete({{ $shift->id }})" icon="trash" variant="danger">حذف</flux:menu.item>
+                                <flux:menu.item wire:click="edit('{{ $shift->uuid }}')" icon="pencil">تعديل</flux:menu.item>
+                                <flux:menu.item wire:click="delete('{{ $shift->uuid }}')" icon="trash" variant="danger">حذف</flux:menu.item>
                             </flux:menu>
                         </flux:dropdown>
                     </div>

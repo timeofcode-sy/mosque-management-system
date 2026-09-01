@@ -9,6 +9,7 @@ use App\Models\CourseCircle;
 use App\Models\CourseCircleTeacher;
 use App\Models\Enrollment;
 use App\Models\Student;
+use App\Queries\CircleQuery;
 use Flux\Flux;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -39,18 +40,18 @@ new #[Title('الحلقة')] class extends Component {
         $this->courseCircle = $courseCircle->load('circle', 'shift.days', 'course');
     }
 
+    private function query(): CircleQuery
+    {
+        return app(CircleQuery::class);
+    }
+
     /**
      * @return Collection<int, Enrollment>
      */
     #[Computed]
     public function enrollments(): Collection
     {
-        return $this->courseCircle->enrollments()
-            ->with('student')
-            ->where('status', EnrollmentStatus::Active)
-            ->get()
-            ->sortBy(fn (Enrollment $enrollment) => $enrollment->student->full_name)
-            ->values();
+        return $this->query()->activeEnrollments($this->courseCircle);
     }
 
     /**
@@ -61,13 +62,7 @@ new #[Title('الحلقة')] class extends Component {
     #[Computed]
     public function enrollableStudents(): Collection
     {
-        return Student::query()
-            ->where('institute_id', $this->courseCircle->course->institute_id)
-            ->whereDoesntHave('enrollments', fn ($query) => $query
-                ->where('status', EnrollmentStatus::Active)
-                ->whereHas('courseCircle', fn ($inner) => $inner->where('course_id', $this->courseCircle->course_id)))
-            ->orderBy('first_name')
-            ->get();
+        return $this->query()->enrollableStudents($this->courseCircle);
     }
 
     /**
@@ -76,11 +71,7 @@ new #[Title('الحلقة')] class extends Component {
     #[Computed]
     public function siblingCircles(): Collection
     {
-        return CourseCircle::query()
-            ->with('circle', 'shift')
-            ->where('course_id', $this->courseCircle->course_id)
-            ->whereKeyNot($this->courseCircle->id)
-            ->get();
+        return $this->query()->transferTargets($this->courseCircle);
     }
 
     /**
@@ -89,10 +80,7 @@ new #[Title('الحلقة')] class extends Component {
     #[Computed]
     public function assignableTeachers(): Collection
     {
-        return \App\Models\Teacher::query()
-            ->where('institute_id', $this->courseCircle->course->institute_id)
-            ->orderBy('display_name')
-            ->get();
+        return $this->query()->assignableTeachers($this->courseCircle->course->institute);
     }
 
     /**
@@ -101,7 +89,7 @@ new #[Title('الحلقة')] class extends Component {
     #[Computed]
     public function assignments(): Collection
     {
-        return $this->courseCircle->courseCircleTeachers()->with('teacher')->whereNull('left_on')->get();
+        return $this->query()->assignments($this->courseCircle);
     }
 
     public function enroll(EnrollStudent $enrollStudent): void
@@ -229,7 +217,7 @@ new #[Title('الحلقة')] class extends Component {
             @forelse ($this->assignments as $assignment)
                 <flux:badge wire:key="assignment-{{ $assignment->id }}" color="zinc">
                     {{ $assignment->teacher->display_name }} · {{ $assignment->role->label() }}
-                    <flux:badge.close wire:click="unassignTeacher({{ $assignment->id }})" />
+                    <flux:badge.close wire:click="unassignTeacher('{{ $assignment->uuid }}')" />
                 </flux:badge>
             @empty
                 <flux:text>لا يوجد أستاذ مسنَد بعد.</flux:text>
@@ -269,8 +257,8 @@ new #[Title('الحلقة')] class extends Component {
                                 <flux:dropdown position="bottom" align="end">
                                     <flux:button icon="ellipsis-horizontal" size="sm" variant="subtle" />
                                     <flux:menu>
-                                        <flux:menu.item wire:click="startTransfer({{ $enrollment->student_id }})" icon="arrows-right-left">نقل إلى حلقة أخرى</flux:menu.item>
-                                        <flux:menu.item wire:click="withdraw({{ $enrollment->id }})" icon="user-minus" variant="danger">تسجيل انسحاب</flux:menu.item>
+                                        <flux:menu.item wire:click="startTransfer('{{ $enrollment->student->uuid }}')" icon="arrows-right-left">نقل إلى حلقة أخرى</flux:menu.item>
+                                        <flux:menu.item wire:click="withdraw('{{ $enrollment->uuid }}')" icon="user-minus" variant="danger">تسجيل انسحاب</flux:menu.item>
                                     </flux:menu>
                                 </flux:dropdown>
                             </flux:table.cell>

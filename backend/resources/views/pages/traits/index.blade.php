@@ -3,6 +3,7 @@
 use App\Concerns\InteractsWithInstitute;
 use App\Enums\TraitPolarity;
 use App\Models\PersonalTrait;
+use App\Queries\InstituteCatalogQuery;
 use Flux\Flux;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -39,11 +40,7 @@ new #[Title('الصفات')] class extends Component {
     #[Computed]
     public function personalTraits(): Collection
     {
-        return PersonalTrait::query()
-            ->where(fn ($query) => $query->whereNull('institute_id')->orWhere('institute_id', $this->institute->id))
-            ->withCount('students')
-            ->orderBy('sort_order')
-            ->get();
+        return app(InstituteCatalogQuery::class)->personalTraits($this->institute);
     }
 
     public function create(): void
@@ -150,9 +147,9 @@ new #[Title('الصفات')] class extends Component {
                                 <flux:dropdown position="bottom" align="end">
                                     <flux:button icon="ellipsis-horizontal" size="sm" variant="subtle" />
                                     <flux:menu>
-                                        <flux:menu.item wire:click="edit({{ $personalTrait->id }})" icon="pencil">تعديل</flux:menu.item>
+                                        <flux:menu.item wire:click="edit('{{ $personalTrait->uuid }}')" icon="pencil">تعديل</flux:menu.item>
                                         <flux:menu.separator />
-                                        <flux:menu.item wire:click="delete({{ $personalTrait->id }})" icon="trash" variant="danger">حذف</flux:menu.item>
+                                        <flux:menu.item wire:click="delete('{{ $personalTrait->uuid }}')" icon="trash" variant="danger">حذف</flux:menu.item>
                                     </flux:menu>
                                 </flux:dropdown>
                             @endif

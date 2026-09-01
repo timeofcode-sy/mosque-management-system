@@ -1,8 +1,10 @@
 <?php
 
+use App\Actions\SaveCurriculumItem;
 use App\Concerns\InteractsWithInstitute;
 use App\Enums\CurriculumType;
 use App\Models\Curriculum;
+use App\Queries\InstituteCatalogQuery;
 use App\Models\CurriculumItem;
 use Flux\Flux;
 use Illuminate\Support\Collection;
@@ -50,12 +52,7 @@ new #[Title('المناهج')] class extends Component {
     #[Computed]
     public function curricula(): Collection
     {
-        return Curriculum::query()
-            ->where(fn ($query) => $query->whereNull('institute_id')->orWhere('institute_id', $this->institute->id))
-            ->with('items')
-            ->withCount('items')
-            ->orderBy('sort_order')
-            ->get();
+        return app(InstituteCatalogQuery::class)->curricula($this->institute);
     }
 
     public function create(): void
@@ -141,39 +138,19 @@ new #[Title('المناهج')] class extends Component {
             'itemSortOrder' => ['integer', 'min:0'],
         ], attributes: ['itemName' => 'اسم البند', 'itemCode' => 'الرمز']);
 
-        CurriculumItem::updateOrCreate(
-            ['id' => $this->editingItemId],
+        app(SaveCurriculumItem::class)->handle(
+            Curriculum::findOrFail($this->itemCurriculumId),
             [
-                'curriculum_id' => $this->itemCurriculumId,
                 'name' => $validated['itemName'],
-                'code' => $validated['itemCode'] ?: $this->generateItemCode(),
+                'code' => $validated['itemCode'],
                 'sort_order' => $validated['itemSortOrder'],
             ],
+            $this->editingItemId,
         );
 
         unset($this->curricula);
         Flux::modal('item-form')->close();
         Flux::toast(variant: 'success', text: 'حُفظ البند.');
-    }
-
-    /**
-     * الرمز فريد داخل المنهج وإلزامي في المخطط — يُشتقّ من الترتيب حين يتركه المشرف فارغاً.
-     */
-    private function generateItemCode(): string
-    {
-        $base = 'item-'.($this->itemSortOrder + 1);
-        $code = $base;
-        $suffix = 1;
-
-        while (CurriculumItem::query()
-            ->where('curriculum_id', $this->itemCurriculumId)
-            ->where('code', $code)
-            ->whereKeyNot($this->editingItemId ?? 0)
-            ->exists()) {
-            $code = $base.'-'.(++$suffix);
-        }
-
-        return $code;
     }
 
     public function deleteItem(CurriculumItem $item): void
@@ -216,16 +193,16 @@ new #[Title('المناهج')] class extends Component {
                     </div>
 
                     <div class="flex gap-2">
-                        <flux:button wire:click="createItem({{ $curriculum->id }})" size="sm" icon="plus">بند</flux:button>
-                        <flux:button wire:click="edit({{ $curriculum->id }})" size="sm" variant="subtle" icon="pencil">تعديل</flux:button>
+                        <flux:button wire:click="createItem('{{ $curriculum->uuid }}')" size="sm" icon="plus">بند</flux:button>
+                        <flux:button wire:click="edit('{{ $curriculum->uuid }}')" size="sm" variant="subtle" icon="pencil">تعديل</flux:button>
                     </div>
                 </div>
 
                 <div class="flex flex-wrap gap-2 p-4">
                     @forelse ($curriculum->items as $item)
                         <flux:badge wire:key="item-{{ $item->id }}" color="zinc">
-                            <button type="button" wire:click="editItem({{ $item->id }})" class="cursor-pointer">{{ $item->name }}</button>
-                            <flux:badge.close wire:click="deleteItem({{ $item->id }})" />
+                            <button type="button" wire:click="editItem('{{ $item->uuid }}')" class="cursor-pointer">{{ $item->name }}</button>
+                            <flux:badge.close wire:click="deleteItem('{{ $item->uuid }}')" />
                         </flux:badge>
                     @empty
                         <flux:text>لا توجد بنود في هذا المنهج.</flux:text>

@@ -370,8 +370,10 @@ class AdminPanelTest extends TestCase
             ->assertSet('institute.id', $this->institute->id)
             ->assertSee($courseCircle->circle->name);
 
-        $this->assertSame(1, Livewire::test('pages::dashboard')->instance()->enrolledCount());
-        $this->assertSame(2, Livewire::test('pages::dashboard')->instance()->studentsCount());
+        $counters = Livewire::test('pages::dashboard')->instance()->counters();
+
+        $this->assertSame(1, $counters['enrolled']);
+        $this->assertSame(2, $counters['students']);
     }
 
     public function test_users_without_an_institute_see_the_setup_prompt(): void

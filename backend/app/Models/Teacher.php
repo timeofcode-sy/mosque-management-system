@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
 use App\Enums\TeacherStatus;
 use Database\Factories\TeacherFactory;
@@ -29,8 +30,8 @@ class Teacher extends Model
     protected function casts(): array
     {
         return [
-            'birth_date' => 'date',
-            'hired_on' => 'date',
+            'birth_date' => DateOnly::class,
+            'hired_on' => DateOnly::class,
             'status' => TeacherStatus::class,
         ];
     }
