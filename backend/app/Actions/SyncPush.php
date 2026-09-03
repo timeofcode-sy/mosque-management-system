@@ -6,6 +6,7 @@ use App\Enums\SyncOperation;
 use App\Models\AttendanceSession;
 use App\Models\ChangeLog;
 use App\Models\CourseCircle;
+use App\Models\MemorizationLog;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
@@ -28,6 +29,9 @@ class SyncPush
         private readonly TakeTeacherAttendance $takeTeacherAttendance,
         private readonly CompleteAttendanceSession $completeSession,
         private readonly SubmitAbsenceExcuse $submitExcuse,
+        private readonly SaveRecitation $saveRecitation,
+        private readonly DeleteRecitation $deleteRecitation,
+        private readonly AwardStudentPoints $awardPoints,
         private readonly RecordChange $recordChange,
         private readonly ResolveAttendanceConflicts $resolveConflicts,
     ) {}
@@ -75,6 +79,9 @@ class SyncPush
             'attendance.teacher.take' => $this->applyTakeTeacherAttendance($op, $user, $scopeKey, $deviceUuid, $opUuid),
             'attendance.session.complete' => $this->applyCompleteSession($op, $user, $scopeKey, $deviceUuid, $opUuid),
             'excuse.submit' => $this->applySubmitExcuse($op, $user, $instituteId, $scopeKey, $deviceUuid, $opUuid),
+            'recitation.save' => $this->applySaveRecitation($op, $user, $instituteId, $scopeKey, $deviceUuid, $opUuid),
+            'recitation.delete' => $this->applyDeleteRecitation($op, $user, $scopeKey, $deviceUuid, $opUuid),
+            'points.award' => $this->applyAwardPoints($op, $user, $instituteId, $scopeKey, $deviceUuid, $opUuid),
             default => throw new RuntimeException("نوع عملية غير معروف: {$op['type']}"),
         };
     }
@@ -177,6 +184,57 @@ class SyncPush
         ], $user);
 
         $this->recordChange->handle($excuse, SyncOperation::Create, $scopeKey, $user, $deviceUuid, $opUuid);
+    }
+
+    /**
+     * @param  array<string, mixed>  $op
+     */
+    private function applySaveRecitation(array $op, User $user, int $instituteId, string $scopeKey, ?string $deviceUuid, string $opUuid): void
+    {
+        $session = $this->attendanceSession($op['session_uuid'], $instituteId);
+        $student = $this->student($op['student_uuid'], $instituteId);
+
+        $log = $this->saveRecitation->handle($session, $student, $op['recitation'] ?? [], $user, $op['recorded_at'] ?? null);
+
+        $this->recordChange->handle($log, SyncOperation::Create, $scopeKey, $user, $deviceUuid, $opUuid);
+    }
+
+    /**
+     * @param  array<string, mixed>  $op
+     */
+    private function applyDeleteRecitation(array $op, User $user, string $scopeKey, ?string $deviceUuid, string $opUuid): void
+    {
+        $log = MemorizationLog::where('uuid', $op['recitation_uuid'])->firstOrFail();
+
+        $this->deleteRecitation->handle($log);
+
+        $this->recordChange->handle($log, SyncOperation::Delete, $scopeKey, $user, $deviceUuid, $opUuid);
+    }
+
+    /**
+     * @param  array<string, mixed>  $op
+     */
+    private function applyAwardPoints(array $op, User $user, int $instituteId, string $scopeKey, ?string $deviceUuid, string $opUuid): void
+    {
+        $student = $this->student($op['student_uuid'], $instituteId);
+
+        $session = blank($op['session_uuid'] ?? null)
+            ? null
+            : $this->attendanceSession($op['session_uuid'], $instituteId);
+
+        $award = $this->awardPoints->handle($student, [
+            'points' => $op['points'],
+            'reason' => $op['reason'],
+            'note' => $op['note'] ?? null,
+            'awarded_on' => $op['awarded_on'] ?? null,
+        ], $user, $session);
+
+        $this->recordChange->handle($award, SyncOperation::Create, $scopeKey, $user, $deviceUuid, $opUuid);
+    }
+
+    private function student(string $uuid, int $instituteId): Student
+    {
+        return Student::where('uuid', $uuid)->where('institute_id', $instituteId)->firstOrFail();
     }
 
     private function courseCircle(string $uuid, int $instituteId): CourseCircle

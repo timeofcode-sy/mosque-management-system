@@ -11,6 +11,7 @@ use App\Models\Enrollment;
 use App\Models\Institute;
 use App\Models\Student;
 use App\Models\Teacher;
+use App\Support\AttendanceRate;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -160,21 +161,18 @@ class DashboardOverviewQuery
     }
 
     /**
-     * النسبة المجمّعة لمجموعة إحصاءات — بنفس معادلة RecalculateCircleStats
-     * حتى لا يختلف رقم اللوحة عن رقم التقرير.
+     * النسبة المجمّعة لمجموعة إحصاءات — عبر AttendanceRate حتى لا يختلف رقم اللوحة
+     * عن رقم التقرير.
      *
      * @param  Collection<int, CircleDailyStat>  $stats
      */
     private function rateOf(Collection $stats): float
     {
-        $countable = (int) $stats->sum(fn (CircleDailyStat $stat) => $stat->total - $stat->excused);
-
-        if ($countable <= 0) {
-            return 0.0;
-        }
-
-        $attended = (int) $stats->sum(fn (CircleDailyStat $stat) => $stat->present + $stat->late);
-
-        return round($attended / $countable * 100, 1);
+        return AttendanceRate::percent(
+            (int) $stats->sum('present'),
+            (int) $stats->sum('late'),
+            (int) $stats->sum('excused'),
+            (int) $stats->sum('total'),
+        );
     }
 }

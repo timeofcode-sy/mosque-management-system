@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 #[Fillable([
     'student_id', 'curriculum_item_id', 'course_circle_id', 'status', 'percent',
-    'score', 'started_on', 'completed_on', 'teacher_id', 'notes',
+    'score', 'points', 'started_on', 'completed_on', 'achieved_on', 'teacher_id', 'notes',
 ])]
 class StudentCurriculumProgress extends Model
 {
@@ -35,8 +35,10 @@ class StudentCurriculumProgress extends Model
             'status' => ProgressStatus::class,
             'percent' => 'integer',
             'score' => 'integer',
+            'points' => 'decimal:2',
             'started_on' => DateOnly::class,
             'completed_on' => DateOnly::class,
+            'achieved_on' => DateOnly::class,
         ];
     }
 

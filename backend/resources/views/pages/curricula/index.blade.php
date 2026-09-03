@@ -40,6 +40,9 @@ new #[Title('المناهج')] class extends Component
 
     public int $itemSortOrder = 0;
 
+    /** عدّاد البند: عدد الأحاديث لبنود الحديث، وعدد الأبيات لبنود المتون. */
+    public ?int $itemCount = null;
+
     public function mount(): void
     {
         $this->requireInstitute();
@@ -54,6 +57,17 @@ new #[Title('المناهج')] class extends Component
     public function curricula(): Collection
     {
         return app(InstituteCatalogQuery::class)->curricula($this->institute);
+    }
+
+    /**
+     * المنهج الأب للبند المفتوح في المودال — منه يُعرف نوع العدّاد ويُحرَس القرآن.
+     */
+    #[Computed]
+    public function itemCurriculum(): ?Curriculum
+    {
+        return $this->itemCurriculumId === null
+            ? null
+            : $this->curricula->firstWhere('id', $this->itemCurriculumId);
     }
 
     public function create(): void
@@ -106,10 +120,15 @@ new #[Title('المناهج')] class extends Component
 
     public function createItem(Curriculum $curriculum): void
     {
+        if ($this->rejectFixedQuran($curriculum)) {
+            return;
+        }
+
         $this->itemCurriculumId = $curriculum->id;
-        $this->reset('editingItemId', 'itemName', 'itemCode');
+        $this->reset('editingItemId', 'itemName', 'itemCode', 'itemCount');
         $this->itemSortOrder = $curriculum->items()->count();
         $this->resetValidation();
+        unset($this->itemCurriculum);
 
         Flux::modal('item-form')->show();
     }
@@ -121,13 +140,22 @@ new #[Title('المناهج')] class extends Component
         $this->itemName = $item->name;
         $this->itemCode = (string) $item->code;
         $this->itemSortOrder = $item->sort_order;
+        $this->itemCount = $this->countOf($item);
         $this->resetValidation();
+        unset($this->itemCurriculum);
 
         Flux::modal('item-form')->show();
     }
 
     public function saveItem(): void
     {
+        $curriculum = Curriculum::findOrFail($this->itemCurriculumId);
+
+        // بندٌ جديد في القرآن مرفوض؛ وتعديل اسم جزء قائم مسموح.
+        if ($this->editingItemId === null && $this->rejectFixedQuran($curriculum)) {
+            return;
+        }
+
         $validated = $this->validate([
             'itemName' => ['required', 'string', 'max:255'],
             'itemCode' => [
@@ -137,25 +165,31 @@ new #[Title('المناهج')] class extends Component
                     ->ignore($this->editingItemId),
             ],
             'itemSortOrder' => ['integer', 'min:0'],
-        ], attributes: ['itemName' => 'اسم البند', 'itemCode' => 'الرمز']);
+            'itemCount' => ['nullable', 'integer', 'min:0', 'max:10000'],
+        ], attributes: ['itemName' => 'اسم البند', 'itemCode' => 'الرمز', 'itemCount' => 'العدّاد']);
 
         app(SaveCurriculumItem::class)->handle(
-            Curriculum::findOrFail($this->itemCurriculumId),
+            $curriculum,
             [
                 'name' => $validated['itemName'],
                 'code' => $validated['itemCode'],
                 'sort_order' => $validated['itemSortOrder'],
+                'meta' => $this->metaFor($curriculum, $validated['itemCount']),
             ],
             $this->editingItemId,
         );
 
-        unset($this->curricula);
+        unset($this->curricula, $this->itemCurriculum);
         Flux::modal('item-form')->close();
         Flux::toast(variant: 'success', text: 'حُفظ البند.');
     }
 
     public function deleteItem(CurriculumItem $item): void
     {
+        if ($this->rejectFixedQuran($item->curriculum)) {
+            return;
+        }
+
         if ($item->progress()->exists()) {
             Flux::toast(variant: 'danger', text: 'لا يمكن حذف بند مرتبط بسجل محفوظات.');
 
@@ -166,6 +200,48 @@ new #[Title('المناهج')] class extends Component
 
         unset($this->curricula);
         Flux::toast(variant: 'success', text: 'حُذف البند.');
+    }
+
+    /**
+     * أجزاء القرآن ثلاثون ثابتاً — إخفاء الأزرار وحده ليس حماية، فالحراسة هنا على الخادم.
+     */
+    private function rejectFixedQuran(Curriculum $curriculum): bool
+    {
+        if ($curriculum->type !== CurriculumType::Quran) {
+            return false;
+        }
+
+        Flux::toast(variant: 'danger', text: 'أجزاء القرآن ثابتة ولا تُضاف ولا تُحذف.');
+
+        return true;
+    }
+
+    /**
+     * مفتاح العدّاد يتبع نوع المنهج: الأحاديث للحديث، والأبيات للمتون، ولا عدّاد لسواهما.
+     *
+     * @return array<string, mixed>
+     */
+    private function metaFor(Curriculum $curriculum, ?int $count): array
+    {
+        $key = self::countKey($curriculum->type);
+
+        return $key === null ? [] : [$key => $count];
+    }
+
+    private function countOf(CurriculumItem $item): ?int
+    {
+        $key = self::countKey($item->curriculum->type);
+
+        return $key === null ? null : ($item->meta[$key] ?? null);
+    }
+
+    private static function countKey(?CurriculumType $type): ?string
+    {
+        return match ($type) {
+            CurriculumType::Hadith => 'hadiths',
+            CurriculumType::Mutun => 'abyat',
+            default => null,
+        };
     }
 
     public function delete(Curriculum $curriculum): void
@@ -208,7 +284,9 @@ new #[Title('المناهج')] class extends Component
                     </div>
 
                     <div class="flex gap-2">
-                        <flux:button wire:click="createItem('{{ $curriculum->uuid }}')" size="sm" icon="plus">بند</flux:button>
+                        @if ($curriculum->type !== CurriculumType::Quran)
+                            <flux:button wire:click="createItem('{{ $curriculum->uuid }}')" size="sm" icon="plus">بند</flux:button>
+                        @endif
                         <flux:button wire:click="edit('{{ $curriculum->uuid }}')" size="sm" variant="subtle" icon="pencil">تعديل</flux:button>
                         @if ($curriculum->institute_id !== null)
                             <flux:button
@@ -225,9 +303,22 @@ new #[Title('المناهج')] class extends Component
 
                 <div class="flex flex-wrap gap-2 p-4">
                     @forelse ($curriculum->items as $item)
+                        @php
+                            $count = match ($curriculum->type) {
+                                CurriculumType::Hadith => $item->meta['hadiths'] ?? null,
+                                CurriculumType::Mutun => $item->meta['abyat'] ?? null,
+                                default => null,
+                            };
+                            $countLabel = $count === null ? null : $count.($curriculum->type === CurriculumType::Hadith ? ' حديثاً' : ' بيتاً');
+                        @endphp
+
                         <flux:badge wire:key="item-{{ $item->id }}" color="zinc">
-                            <button type="button" wire:click="editItem('{{ $item->uuid }}')" class="cursor-pointer">{{ $item->name }}</button>
-                            <flux:badge.close wire:click="deleteItem('{{ $item->uuid }}')" />
+                            <button type="button" wire:click="editItem('{{ $item->uuid }}')" class="cursor-pointer">
+                                {{ $item->name }}@if ($countLabel)<span class="latin-numerals text-ink-500 dark:text-zinc-400"> · {{ $countLabel }}</span>@endif
+                            </button>
+                            @if ($curriculum->type !== CurriculumType::Quran)
+                                <flux:badge.close wire:click="deleteItem('{{ $item->uuid }}')" />
+                            @endif
                         </flux:badge>
                     @empty
                         <flux:text>لا توجد بنود في هذا المنهج.</flux:text>
@@ -266,6 +357,25 @@ new #[Title('المناهج')] class extends Component
 
             <flux:input wire:model="itemName" label="اسم البند" required />
             <flux:input wire:model="itemCode" label="الرمز" />
+
+            @php($countLabel = match ($this->itemCurriculum?->type) {
+                CurriculumType::Hadith => 'عدد الأحاديث',
+                CurriculumType::Mutun => 'عدد الأبيات',
+                default => null,
+            })
+
+            @if ($countLabel)
+                <flux:input
+                    wire:model="itemCount"
+                    type="number"
+                    min="0"
+                    :label="$countLabel"
+                    class="latin-numerals"
+                    description="يُضرب في معامل النقاط عند احتساب إنجاز البند"
+                    data-test="curriculum-item-count"
+                />
+            @endif
+
             <flux:input wire:model="itemSortOrder" type="number" label="ترتيب العرض" min="0" />
 
             <div class="flex gap-2">

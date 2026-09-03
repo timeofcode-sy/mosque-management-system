@@ -10,7 +10,6 @@ use App\Models\AbsenceExcuse;
 use App\Models\CourseCircle;
 use App\Models\CourseCircleTeacher;
 use App\Models\Enrollment;
-use App\Models\ReportTemplate;
 use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -42,7 +41,8 @@ class AttendancePanelTest extends TestCase
             route('attendance.take', $this->courseCircle),
             route('excuses.index'),
             route('reports.index'),
-            route('report-templates.index'),
+            route('stats.index'),
+            route('reports.print.points', $this->courseCircle),
             route('reports.print.circle', $this->courseCircle),
             route('reports.print.shift', $this->shift),
             route('reports.print.student', $student),
@@ -196,7 +196,7 @@ class AttendancePanelTest extends TestCase
             ->assertHasErrors('to_date');
     }
 
-    public function test_a_report_template_renders_with_the_day_numbers(): void
+    public function test_the_circle_report_carries_the_day_numbers(): void
     {
         $students = $this->enroll(2);
 
@@ -206,46 +206,36 @@ class AttendancePanelTest extends TestCase
             ->call('setStatus', $students[1]->id, 'absent')
             ->call('complete');
 
-        $template = ReportTemplate::create([
-            'institute_id' => $this->institute->id,
-            'key' => 'daily',
-            'name' => 'اليومي',
-            'scope' => 'circle',
-            'body' => '{{circle_name}} — حاضر {{present}} غائب {{absent}} نسبة {{rate}}',
-            'is_active' => true,
-        ]);
-
-        $rendered = Livewire::test('pages::reports.index')
+        $variables = Livewire::test('pages::reports.index')
             ->set('date', '2026-09-01')
             ->set('courseCircleId', (string) $this->courseCircle->id)
-            ->set('templateId', (string) $template->id)
             ->instance()
-            ->renderedTemplate();
+            ->circleReport()['variables'];
 
-        $this->assertSame('حلقة الفاروق — حاضر 1 غائب 1 نسبة 50%', $rendered);
+        $this->assertSame('حلقة الفاروق', $variables['circle_name']);
+        $this->assertSame('1', $variables['present']);
+        $this->assertSame('1', $variables['absent']);
+        $this->assertSame('50%', $variables['rate']);
     }
 
-    public function test_the_template_screen_saves_and_previews_a_template(): void
+    public function test_the_ranking_row_carries_a_trail_of_recent_rates(): void
     {
-        Livewire::test('pages::report-templates.index')
-            ->call('create')
-            ->set('name', 'إشعار الغياب')
-            ->set('body', 'حلقة {{circle_name}} بتاريخ {{date}}')
-            ->call('save')
-            ->assertHasNoErrors();
+        $students = $this->enroll(2);
+        $today = Carbon::today()->toDateString();
 
-        $template = ReportTemplate::query()->where('name', 'إشعار الغياب')->sole();
+        Livewire::test('pages::attendance.take', ['courseCircle' => $this->courseCircle])
+            ->set('date', $today)
+            ->call('setStatus', $students[0]->id, 'present')
+            ->call('setStatus', $students[1]->id, 'absent')
+            ->call('complete');
 
-        $this->assertSame('circle', $template->scope->value);
-        $this->assertNotEmpty($template->key);
-
-        // المعاينة تملأ المتغيّرات بقيم مثال، فيرى المشرف شكل الرسالة قبل الحفظ.
-        $preview = Livewire::test('pages::report-templates.index')
-            ->set('body', 'النسبة {{rate}} والترتيب {{daily_rank}}')
+        $row = Livewire::test('pages::reports.index')
+            ->set('date', $today)
             ->instance()
-            ->preview();
+            ->ranking()
+            ->firstWhere('id', $this->courseCircle->id);
 
-        $this->assertSame('النسبة 90.5% والترتيب 2', $preview);
+        $this->assertSame([50.0], $row->recent_rates);
     }
 
     public function test_the_dashboard_shows_the_attendance_rate_after_a_session_closes(): void

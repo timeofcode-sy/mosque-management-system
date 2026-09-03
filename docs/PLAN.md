@@ -1,10 +1,11 @@
 # خطة نظام إدارة معهد تحفيظ القرآن (مساجد/حلقات)
 
-> **حالة الخطة:** محدّثة بعد تنفيذ المراحل 0 إلى 4.
+> **حالة الخطة:** محدّثة بعد تنفيذ المراحل 0 إلى 4.5.
 > ما نُفِّذ موسوم بـ ✅، وما تغيّر عن الخطة الأصلية موسوم بـ 🔄 مع سبب التغيير.
 > التوثيق التفصيلي للمخطط في [ERD.md](ERD.md)، ونقاط التفتيش في
 > [CHECKPOINT-PHASE-1.MD](CHECKPOINT-PHASE-1.MD)، [CHECKPOINT-PHASE-2.MD](CHECKPOINT-PHASE-2.MD)،
-> [CHECKPOINT-PHASE-3.MD](CHECKPOINT-PHASE-3.MD)، و[CHECKPOINT-PHASE-4.MD](CHECKPOINT-PHASE-4.MD).
+> [CHECKPOINT-PHASE-3.MD](CHECKPOINT-PHASE-3.MD)، [CHECKPOINT-PHASE-4.MD](CHECKPOINT-PHASE-4.MD)،
+> و[CHECKPOINT-PHASE-4.5.MD](CHECKPOINT-PHASE-4.5.MD).
 
 ## 1. السياق — لماذا هذا العمل؟
 
@@ -56,7 +57,7 @@ d:\Development\Laravel\mousqe\
 ├─ design/
 │  ├─ logo/                    ملف الشعار الأصلي (⚠️ ما زال مطلوباً من العميل)
 │  └─ design-tokens.json       ✅ مصدر واحد للألوان يُستهلك من Tailwind ومن Flutter
-├─ docs/                       ✅ PLAN · ERD · CHECKPOINT-PHASE-1
+├─ docs/                       ✅ PLAN · ERD · CHECKPOINT-PHASE-1…4.5
 ├─ melos.yaml                  ✅
 └─ README.md                   ✅
 ```
@@ -69,6 +70,9 @@ d:\Development\Laravel\mousqe\
 
 38 migration جديدة، 53 جدولاً، 37 نموذج دومين، 18 enum. حُذف مجلد migrations الدومين القديم
 وأُبقيت `users`, `cache`, `jobs`, `passkeys`, `two_factor`, `permission_tables`.
+
+🔄 **بعد المرحلة 4.5:** 50 migration · 38 نموذجاً · 21 enum — أُضيف `student_points`، وحُذف
+`report_templates`.
 
 كل جدول دومين يحمل `uuid` (يولّده `App\Concerns\HasUuid` بـ `Str::uuid7`)، و`timestamps(3)` بدقّة
 ميلي-ثانية، و`softDeletes` — شرط أساسي للمزامنة.
@@ -85,7 +89,7 @@ institute (معهد)
 
 | الجدول | الحقول الأساسية |
 |---|---|
-| `institutes` | name, short_name, logo_path, phone, email, address, timezone, settings(json), is_active |
+| `institutes` | name, short_name, logo_path, phone, email, address, settings(json), is_active — 🔄 حُذف `timezone` في م.4.5، والمنطقة الزمنية صارت واحدة للتطبيق في `config/app.php` |
 | `courses` | institute_id, name, starts_on, ends_on, status, is_current — **الدورة = نطاق تصفير الإحصاءات** |
 | `shifts` | course_id, name, starts_at, ends_at, sort_order, is_active |
 | `shift_days` | shift_id, weekday(0-6) — `unique(shift_id, weekday)` |
@@ -155,8 +159,12 @@ institute (معهد)
 | الجدول | الحقول |
 |---|---|
 | `curricula` | institute_id, name, slug, type(quran/hadith/mutun/custom), description, sort_order, is_active |
-| `curriculum_items` | curriculum_id, name, code, sort_order, meta(json), is_active |
-| `student_curriculum_progress` | student_id, curriculum_item_id, course_circle_id, status, percent, score, started_on, completed_on, teacher_id, notes — `unique(student_id, curriculum_item_id)` |
+| `curriculum_items` | curriculum_id, name, code, sort_order, meta(json), is_active — 🔄 `meta.hadiths` / `meta.abyat` عدّادان يملؤهما المشرف (م.4.5) |
+| `student_curriculum_progress` | student_id, curriculum_item_id, course_circle_id, status, percent, score, **points**, started_on, completed_on, **achieved_on**, teacher_id, notes — `unique(student_id, curriculum_item_id)` |
+
+🔄 **م.4.5:** `points` تُشتقّ من `النسبة × عدّاد البند × معامل النوع` وتُجمَّد؛ و`achieved_on` تاريخ آخر
+تحديث — بدونه لا يمكن تصفية نقاط البند بمدى زمني، لأن صفّ التقدّم حالةٌ لا حدث.
+**أجزاء القرآن الثلاثون ثابتة:** لا تُضاف ولا تُحذف، بحراسة على الخادم لا بإخفاء الزر فقط.
 
 المناهج المزروعة (41 بنداً):
 
@@ -184,7 +192,7 @@ institute (معهد)
 | الجدول | الحقول |
 |---|---|
 | `attendance_sessions` | course_circle_id, session_date, status(draft/completed/locked), opened_by, taken_by, completed_at — `unique(course_circle_id, session_date)` |
-| `attendances` | attendance_session_id, student_id, enrollment_id, status(present/absent/late/excused), late_minutes, note, recorded_by, recorded_at — `unique(session_id, student_id)` |
+| `attendances` | attendance_session_id, student_id, enrollment_id, status(present/absent/late/excused), late_minutes, note, **note_polarity**(positive/negative), recorded_by, recorded_at — `unique(session_id, student_id)` |
 | `teacher_attendances` | attendance_session_id, teacher_id, status, late_minutes, note, recorded_by, recorded_at |
 | `absence_excuses` | student_id, from_date, to_date, reason, attachment_path, submitted_by, status(pending/approved/rejected), reviewed_by, reviewed_at |
 
@@ -194,12 +202,25 @@ institute (معهد)
 `absence_excuses` يحقّق "إبلاغنا بالغياب مسبقاً" — ولي الأمر يقدّمه من تطبيق الأهل فيُقترح تلقائياً
 حالة `excused` على شاشة تفقّد الأستاذ.
 
+🔄 **م.4.5:** `note_polarity` يميّز الملاحظة الإيجابية من السلبية — عليه يقوم مقياس «الأدب» في شاشة
+الإحصائيات، وبه تتلوّن أيقونة الملاحظة في صفّ الطالب.
+
 ### 4.6 المتابعة القرآنية والتقييم ✅ (الجداول جاهزة، الواجهات لاحقاً)
 
 | الجدول | الحقول |
 |---|---|
-| `memorization_logs` | student_id, course_circle_id, attendance_session_id, curriculum_item_id, date, type(hifz/murajaa/tilawah), from_surah, from_ayah, to_surah, to_ayah, pages, memorization_score, tajweed_score, mistakes_count, teacher_id, notes |
+| `memorization_logs` | student_id, course_circle_id, attendance_session_id, curriculum_item_id, date, type(hifz/murajaa/tilawah), **grade**, from_surah, from_ayah, to_surah, to_ayah, pages, **lines**, **new_lines**, **points**, **juz**, memorization_score, tajweed_score, mistakes_count, teacher_id, notes |
+| `student_points` | 🔄 **جديد (م.4.5)** — student_id, course_circle_id, attendance_session_id, points(**يقبل السالب**), reason, note, awarded_by, awarded_on |
 | `evaluations` | student_id, course_circle_id, period(weekly/monthly/term), period_start, period_end, behavior, commitment, memorization, tajweed, total, teacher_id, notes |
+
+🔄 **م.4.5 — الجدول صار يُكتب فيه فعلاً.** التسميع يُسجَّل من شاشة الجلسة، و`new_lines` هي الأسطر
+الجديدة دون المكرّر (تُحسب بطرح تقاطع المدى مع ما سبق عبر `BuildStudentCoverageMap`)، و`points`
+تُجمَّد وقت التسجيل: `new_lines ÷ 15 × quran_per_15_lines × معامل التقدير`.
+تجميدها شرطٌ لأن تغيير إعدادات النقاط لاحقاً يجب ألّا يعيد كتابة تاريخ الطلاب.
+
+**إعدادات النقاط** تُخزَّن في `institutes.settings['points']` — لا جدول جديد، والغلاف
+`App\Support\PointsSettings` يقرؤها بقيم افتراضية. **نقاط الحضور لا تُخزَّن** بل تُشتقّ من
+`attendances.status`، لأن صفوف الحضور تتغيّر بالتعديل فتخزين نقاطها يخلق مصدرَي حقيقة.
 
 ### 4.7 الإحصاء والتقارير ✅ (الجداول جاهزة، الحساب في المرحلة 3)
 
@@ -207,12 +228,16 @@ institute (معهد)
 |---|---|
 | `circle_daily_stats` | course_circle_id, date, present, absent, late, excused, total, attendance_rate, **daily_rank_in_shift** |
 | `circle_cumulative_stats` | course_circle_id, as_of_date, sessions_count, present, absent, late, excused, total, attendance_rate, **overall_rank_in_shift** |
-| `report_templates` | institute_id, key, name, scope(circle/shift/course/institute), body (نص بمتغيرات `{{circle_name}}`, `{{date}}`, `{{present_list}}`, `{{absent_list}}`, `{{rate}}`, `{{daily_rank}}`, `{{overall_rank}}`) |
+| ~~`report_templates`~~ | 🔄 **حُذف في م.4.5** — قوالب «نص جاهز للإرسال» بلا أي قناة إرسال في النظام (لا `Notification::` ولا `Mail::` ولا واتساب). يُعاد بناؤه عند بناء `MessageDriver` فعلياً |
 | `report_exports` | institute_id, type, params(json), file_path, status, generated_by, generated_at |
 
 **التصنيف اليومي** = ترتيب الحلقة بين حلقات نفس الدوام حسب نسبة حضور اليوم.
 **التصنيف الكلي** = الترتيب حسب معدّل النسبة منذ بداية الدورة.
 تُحدَّث عبر `RecalculateCircleStats` job يُطلق عند إغلاق أي جلسة تفقّد (المرحلة 3).
+
+🔄 **م.4.5:** صيغة النسبة `(present + late) ÷ (total − excused)` كانت مكرّرة عمداً في موضعين كي لا
+يختلف رقم اللوحة عن رقم التقرير؛ ومع `StatsQuery` صارت ثلاثة، فاستُخرجت إلى `App\Support\AttendanceRate`
+ويستدعيها الثلاثة.
 
 ### 4.8 المزامنة والنظام ✅ (الجداول جاهزة، المنطق في المرحلة 4)
 
@@ -252,26 +277,38 @@ institute (معهد)
 
 **البنية:** نلتزم بـ `backend/AGENTS.md` (PHP 8.4، `php artisan make:*`، Pint، PHPUnit، اختبار لكل تغيير).
 
-- ✅ `app/Models/` — 37 نموذجاً مع العلاقات و`HasUuid`
-- ✅ `app/Enums/` — 18 enum بتسميات عربية (`label()`) وخريطة خيارات (`options()`)
+- ✅ `app/Models/` — 38 نموذجاً مع العلاقات و`HasUuid`
+- ✅ `app/Enums/` — 21 enum بتسميات عربية (`label()`) وخريطة خيارات (`options()`)
+  🔄 م.4.5: +`RecitationGrade` · `PointReason` · `NotePolarity`، −`ReportScope`
 - ✅ `app/Concerns/HasUuid.php`
 **قاعدة فصل الطبقات (اعتُمدت في المرحلة 3، وأُعيد عليها كلُّ ما سبق):**
 **كل كتابة تمرّ بـ `app/Actions/`، وكل قراءة تمرّ بـ `app/Queries/`.**
 ملف الشاشة لا يحمل استعلاماً ولا قاعدة عمل — يحمل حالة الواجهة وربطها فقط.
 
-- ✅ `app/Actions/` — 18 إجراء كتابة: التسجيل والنقل والاستنساخ والتفعيل والاستمارة (م.2)،
-  والتفقّد ودورة حياة الجلسة والإحصاء والأذونات (م.3)
-- ✅ `app/Queries/` — 11 صنف قراءة: `DashboardOverviewQuery`, `AttendanceBoardQuery`,
+- ✅ `app/Actions/` — 31 إجراء كتابة: التسجيل والنقل والاستنساخ والتفعيل والاستمارة (م.2)،
+  والتفقّد ودورة حياة الجلسة والإحصاء والأذونات (م.3)، والمزامنة (م.4)
+  🔄 م.4.5: `SaveRecitation` · `DeleteRecitation` · `AwardStudentPoints` · `CalculateStudentPoints` ·
+  `BuildStudentCoverageMap` · `BuildCirclePointsReport` · `SaveStudentCurriculumProgress`
+  (−`RenderReportTemplate`)
+- ✅ `app/Queries/` — 14 صنف قراءة: `DashboardOverviewQuery`, `AttendanceBoardQuery`,
   `AttendanceSessionQuery`, `CircleRankingQuery`, `StudentProfileQuery`, `StudentListQuery`,
-  `StudentFormQuery`, `CircleQuery`, `InstituteCatalogQuery`, `AbsenceExcuseQuery`, `ReportTemplateQuery`
+  `StudentFormQuery`, `CircleQuery`, `InstituteCatalogQuery`, `AbsenceExcuseQuery`,
+  `TeacherCircleQuery`, `GuardianChildrenQuery`, و🔄 م.4.5 `StudentPointsQuery` · `StatsQuery`
+  (−`ReportTemplateQuery`)
 - ✅ `app/Casts/DateOnly.php` — أعمدة التاريخ بلا وقت تُكتب دائماً `Y-m-d`
-- ✅ `app/Support/` — `Quran` (جدول السور)، `HijriDate` (أم القرى عبر intl)
+- ✅ `app/Support/` — `Quran` (السور + 🔄 م.4.5 الأسطر وسور كل جزء)، `HijriDate` (أم القرى عبر intl)،
+  `ApiScope` (م.4)، و🔄 م.4.5 `PointsSettings` · `AttendanceRate` · `DateRange`
 - ✅ `app/Http/Controllers/ReportPrintController.php` — المتحكّم الوحيد: صفحات الطباعة/PDF
   استجاباتُ HTTP ساكنة بلا حالة، فلا معنى لجعلها مكوّنات Livewire
 - ✅ `app/Actions/SyncPush.php` + `SyncPull.php` + `RecordChange.php` + `ResolveAttendanceConflicts.php` —
   تُعيد استخدام أفعال اللوحة نفسها بدل إعادة كتابة منطقها (م.4)
 - ✅ `app/Http/Resources/V1/` — Eloquent API Resources (م.4)
 - ✅ `app/Support/ApiScope.php` — نظير `InteractsWithInstitute` لمستخدم Sanctum بلا جلسة (م.4)
+- ✅ `resources/views/livewire/` — 🔄 م.4.5: مكوّنات Livewire **متداخلة** (`session-student-recitations`).
+  وُضعت هنا لا في `views/components/` لأن ذلك المجلد مليء بمكوّنات Blade المجهولة، فيصير المكوّن
+  قابلاً للاستدعاء بـ`<x-…>` أيضاً — و`views/livewire/` مسجَّل أصلاً في `component_locations`
+- ✅ `resources/views/components/charts/` — 🔄 م.4.5: `bar` · `donut` · `line` · `sparkline`،
+  SVG + أنميشن CSS خالص بلا مكتبة JS (الأعمدة HTML/CSS لأن نصّ SVG لا يلتفّ ولا يرث RTL)
 - ✅ `resources/views/pages/` — 19 مكوّن Livewire 4 أحادي الملف (SFC) للوحة التحكم
   🔄 لا مجلد `app/Livewire/`: هذا المشروع على Livewire 4 حيث المكوّن ملف Blade واحد تحت `pages::`
   🔄 أُزيلت سابقة ⚡ من أسماء الملفات: اختيارية في Livewire 4 (`Finder` يجرّبها ثم يسقط إلى الاسم
@@ -301,6 +338,9 @@ GET    /student/me/attendance   /student/me/progress
 1. كل صف يحمل `uuid` يولّده العميل ⇒ الإنشاء أوف-لاين لا يحتاج الخادم. ✅ جاهز
 2. **الدفع:** العميل يرسل عمليات مرتّبة، كل عملية بـ `op_uuid` فريد. الخادم يتجاهل ما نُفّذ سابقاً
    (idempotency) ويكتب في `change_log`. ✅ `SyncPush`
+   الأنواع المدعومة: `attendance.session.open` · `attendance.take` · `attendance.teacher.take` ·
+   `attendance.session.complete` · `excuse.submit` · 🔄 م.4.5: `recitation.save` · `recitation.delete` ·
+   `points.award` — كلها تستدعي أفعال اللوحة نفسها.
 3. **السحب:** `since=last_pulled_seq` يعيد كل تغييرات `change_log` ضمن `scope_key` المسموح للمستخدم.
    ✅ `SyncPull` — 🔄 النطاق الآن معهدٌ كامل لكل الأدوار، لا حلقات الأستاذ وحدها؛ التضييق مؤجَّل لِما
    بعد قياس أداء حقيقي (م.5).
@@ -336,11 +376,22 @@ RTL كامل (`dir="rtl"`, `lang="ar"`)، خصائص Tailwind المنطقية (
   ⬜ الرسم البياني للحضور وخريطة تقدّم الحفظ في المصحف — **المرحلة 3**.
 - ✅ **الأساتذة** — CRUD وبحث، وعدد حلقات الدورة الجارية المسنَدة.
   ⬜ حضور الأستاذ — **المرحلة 3** (مع شاشة التفقّد).
-- ⬜ **التفقّد** — **المرحلة 3**.
-- ✅ **المناهج** — إدارة المناهج وبنودها؛ إسناد تقدّم الطالب يتم من استمارة الطالب.
-- ⬜ **التقارير** — **المرحلة 3**.
-- ✅ **الإعدادات** — بيانات المعهد والشعار، الواصفات المخصّصة، الصفات.
-  ⬜ قوالب التقارير والمستخدمون والصلاحيات — **المرحلتان 3 و4**.
+- ✅ **التفقّد** — شاشة الجلسة: التفقّد السريع، وحضور الأساتذة، والملاحظة بقطبيتها في مودال،
+  و🔄 م.4.5 **تسجيل التسميع** (جزء ← سورة ← مدى ← تقدير مع عرض حيّ للنقاط) و**النقاط التقديرية**،
+  و**القفل/إعادة الفتح للمشرف وحده** بصلاحية `attendance.lock` محروسة على الخادم.
+- ✅ **المناهج** — إدارة المناهج وبنودها؛ 🔄 م.4.5: القرآن ثابت (لا إضافة ولا حذف)، وعدّادات
+  الأحاديث/الأبيات تُحرَّر وتظهر في الشريحة.
+- ✅ **التقارير** — تقرير الحلقة اليومي، وترتيب حلقات الدوام (مع خط مصغّر لمسار أسبوعين)،
+  و🔄 م.4.5 **تقرير نقاط الحلقة** بفلتر مدى (أسبوع/شهر/دورة/مخصّص) ومراكز مبرَزة — كلها بصفحات طباعة A4.
+  🔄 م.4.5: حُذف قسم «نص جاهز للإرسال» بالكامل.
+- ✅ **الإحصائيات** — 🔄 **شاشة جديدة (م.4.5)**: كيان (حلقات/طلاب) × مقياس (حضوراً/تسميعاً/نقاطاً/أدباً)
+  × مدى، بلوحَي «الأكثر» و«الأقل» متجاورين، ومنحنى ودونات متحرّكة.
+- ✅ **ملف الطالب** — 🔄 م.4.5: قسم **تقدّم المناهج** صار قابلاً للتحرير (حالة البند ونسبته)، ومنه
+  تُشتقّ نقاط الحديث والمتون.
+- ✅ **الإعدادات** — بيانات المعهد والشعار (🔄 م.4.5: +إعدادات النقاط، −المنطقة الزمنية)،
+  الواصفات المخصّصة، الصفات.
+  ⬜ المستخدمون والصلاحيات — **المرحلة 6**.
+  🔄 **قوالب التقارير: حُذفت** ولن تعود إلا مع قناة إرسال حقيقية.
 
 ---
 
@@ -385,6 +436,7 @@ RTL كامل (`dir="rtl"`, `lang="ar"`)، خصائص Tailwind المنطقية (
 | 2 | لوحة التحكم — الإدارة | 14 شاشة Livewire، 5 إجراءات دومين، هوية بصرية RTL، 35 اختباراً | ٦–٨ أيام | ✅ **منفَّذة** — 93/93 اختباراً |
 | 3 | التفقّد والتقارير | شاشة التفقّد، الإحصاء والترتيب، الداشبورد، التقارير والطباعة، طبقة `app/Queries/` | ٥–٦ أيام | ✅ **منفَّذة** — 135/135 |
 | 4 | طبقة API والمزامنة | Sanctum، Resources، `sync/pull` و`sync/push`، `change_log`، حلّ التعارضات | ٥–٦ أيام | ✅ **منفَّذة** — 156/156 |
+| 4.5 | النقاط والتسميعات والإحصائيات | نظام نقاط كامل، تسجيل التسميع في الجلسة، شاشة إحصائيات ورسوم، القفل بصلاحية، تنظيف الحمولة الميتة | ٤–٥ أيام | ✅ **منفَّذة** — 201/201 |
 | 5 | **تطبيق الأستاذ** | Flutter أوف-لاين كامل + `mousqe_core` + `mousqe_ui` | ٨–١٠ أيام | ⬜ التالية |
 | 6 | **تطبيق الديسكتوب** | Windows، إعادة استخدام ≈٧٠٪ من كود الأستاذ + شاشات الإدارة والطباعة | ٦–٨ أيام | ⬜ |
 | 7 | **تطبيق الأهل** | مع إشعارات FCM وطلبات الإذن | ٥–٦ أيام | ⬜ |
@@ -408,7 +460,9 @@ RTL كامل (`dir="rtl"`, `lang="ar"`)، خصائص Tailwind المنطقية (
 6. ✅ **سجلّ الحفظ والمراجعة والمناهج** — `curricula` + `curriculum_items` + `student_curriculum_progress`
    + `memorization_logs` **منفَّذة في المرحلة 1**؛ يبقى بناء الواجهات وخريطة تقدّم الطالب في المصحف.
 7. **الشهادات وكشوف الدرجات** — توليد PDF بالهوية البصرية عند نهاية كل دورة (`evaluations` جاهز).
-8. **لوحة المسابقات** — ترتيب الطلاب والحلقات، شارات إنجاز، جدار شرف شهري.
+8. ✅ **لوحة المسابقات** — منفَّذة في الباك إند (م.4.5): نظام نقاط كامل (قرآن + حديث + متون + حضور +
+   تقديرية)، وترتيب الطلاب في تقرير نقاط الحلقة، وشاشة إحصائيات بلوحَي الأكثر والأقل.
+   يبقى: الشارات وجدار الشرف في تطبيق الطالب (م.8).
 9. **الرسوم والاشتراكات** — إن كان المعهد يتقاضى رسوماً: أقساط، إيصالات، تقارير مالية.
 10. **حضور الأساتذة والرواتب/المكافآت** — ✅ `teacher_attendances` جاهز، يبقى بناء التقارير.
 
@@ -416,7 +470,11 @@ RTL كامل (`dir="rtl"`, `lang="ar"`)، خصائص Tailwind المنطقية (
 
 11. ✅ **تعدّد المعاهد (SaaS)** — جاهز بنيوياً: `institute_id` في كل جدول + وضع الفرق في Spatie مفعّل؛
     يحتاج فقط شاشة إدارة مركزية.
-12. **واتساب** — عند رغبتك: قالب رسالة (`report_templates` جاهز) + `wa.me` أو Cloud API خلف واجهة Driver.
+12. **واتساب** — عند رغبتك: `wa.me` أو Cloud API خلف واجهة Driver.
+    ⚠️ 🔄 **تصحيح (م.4.5): `report_templates` لم يعد جاهزاً — حُذف الجدول وكل كوده.** كان قوالب بلا قناة
+    إرسال، أي حمولة ميتة تُصان بلا مقابل. يُعاد بناء طبقة القوالب **مع** `MessageDriver` لا قبله،
+    فتُصمَّم على حاجة القناة الفعلية. مصفوفة `variables` في `BuildCircleDailyReport` باقية وهي
+    نصف العمل.
 13. **تقارير ذكية** — ملخّص شهري تلقائي بالعربية يحلّل اتجاه الحضور ويقترح تدخّلات.
 14. **مواقيت الصلاة والتقويم الهجري** داخل الداشبورد وربطها بجدولة الدوامات
     (`students.registration_date_hijri` بداية).
@@ -425,8 +483,10 @@ RTL كامل (`dir="rtl"`, `lang="ar"`)، خصائص Tailwind المنطقية (
 
 ## 11. خارج نطاق هذه الخطة
 
-- **إرسال رسائل الواتساب** — مؤجَّل بطلبك. المعمارية تحفظ مكانه: `report_templates` (متغيّرات القالب)
-  و`report_exports` جاهزان، وسيُضاف لاحقاً `MessageDriver` (wa.me / Cloud API) دون إعادة كتابة.
+- **إرسال رسائل الواتساب** — مؤجَّل بطلبك. المعمارية تحفظ مكانه: `report_exports` جاهز، ومصفوفة
+  `variables` في `BuildCircleDailyReport` تعطي كل أرقام التقرير جاهزةً للقالب. سيُضاف لاحقاً
+  `MessageDriver` (wa.me / Cloud API) **ومعه** جدول القوالب — 🔄 حُذف `report_templates` في م.4.5 لأنه
+  كان حمولة ميتة تُصان بلا قناة إرسال.
 
 ---
 
@@ -436,7 +496,7 @@ RTL كامل (`dir="rtl"`, `lang="ar"`)، خصائص Tailwind المنطقية (
 
 ```bash
 php artisan migrate:fresh --seed          # معهد + دورة + دوامان + 6 حلقات + 78 طالباً + 30 جلسة تفقّد
-php artisan test --compact                # 93/93 حالياً
+php artisan test --compact                # 201/201 حالياً
 vendor/bin/pint --dirty --format agent    # التنسيق قبل أي إنهاء
 composer run dev                          # serve + queue + vite
 ```
@@ -477,9 +537,25 @@ composer run dev                          # serve + queue + vite
 - `Api/DeviceRegistrationTest`, `Api/BootstrapTest`, `Api/StudentSelfTest` — تفصيلها في
   [CHECKPOINT-PHASE-4.MD](CHECKPOINT-PHASE-4.MD) §9.
 
+**اختبارات منفَّذة ✅ (المرحلة 4.5):**
+
+- `Support/QuranLinesTest` — 114 مدخلاً في جدول الأسطر، المجموع ≈9060، المدى الجزئي والعابر لسورتين،
+  الأجزاء الثلاثون تغطّي كل السور.
+- `Actions/StudentPointsTest` — رفض الجلسة المقفلة والآية خارج السورة والمدى المقلوب، المكرّر لا يُحتسب،
+  معامل التقدير، النقاط السالبة بجلسة وبدونها، جمع المصادر الخمسة ضمن مدى.
+- `Livewire/SessionRecitationTest` — افتراضات نموذج التسميع (آخر جزء + أوّل فجوة غير مغطّاة)،
+  تجميد الأسطر والنقاط، الملاحظة بقطبيتها، **الأستاذ لا يرى زر القفل ويُرفض على الخادم** والمشرف يقفل.
+- `Queries/StatsQueryTest` — الأكثر/الأقل لكل مقياس، وحساب «الأدب».
+- `Reports/CirclePointsReportTest` — الترتيب تنازلي، التعادل يتشارك الرتبة، المدى الزمني، صفحة الطباعة.
+- `Livewire/CurriculumItemsTest` + `CurriculumProgressTest` — ثبات أجزاء القرآن، العدّادات، اشتقاق نقاط
+  الحديث والمتون ووصولها إلى مجموع الطالب.
+- `Livewire/StatsScreenTest` — 24 تركيبة فلتر تُصيَّر بلا خطأ.
+
+التفصيل في [CHECKPOINT-PHASE-4.5.MD](CHECKPOINT-PHASE-4.5.MD) §14.
+
 **اختبارات مطلوبة في مراحلها:**
 
-- (لا شيء معلّق من هذه القائمة بعد المرحلة 4)
+- (لا شيء معلّق من هذه القائمة بعد المرحلة 4.5)
 
 **فلاتر** (`cd mousqe`)
 
@@ -511,6 +587,8 @@ flutter run -d android      (apps/teacher)
 | **iOS** | يتطلب حساب Apple Developer (٩٩$/سنة) وجهاز macOS للبناء — نبدأ بأندرويد فقط ما لم تُطلب iOS |
 | **PDF العربي** | `spatie/laravel-pdf` يتطلب Chromium على الخادم — يُثبَّت في المرحلة ٣ |
 | **قاعدة بيانات الإنتاج** | التطوير على SQLite؛ الانتقال إلى MySQL/MariaDB يُحسم قبل المرحلة ٩ |
+| **المنطقة الزمنية للبيانات القائمة** | 🔴 التطبيق كان يعمل على UTC حتى م.4.5 («اليوم» ينقلب ٣:٠٠ فجراً بتوقيت دمشق)؛ صار `APP_TIMEZONE=Asia/Damascus`. **بيانات كُتبت قبل ذلك تحتاج ترحيلاً زمنياً** — في التطوير `migrate:fresh --seed` يكفي |
+| **دقّة جدول أسطر السور** | جدول `Quran::LINES` تقديريّ مشتقّ حسابياً لا منقول عن مصدر رسمي (انحراف 0.12%)؛ استبداله تعديلُ ثابتٍ واحد ولا يمسّ التاريخ لأن الأسطر والنقاط مجمّدة في السجل |
 | **حجم البيانات** | ≤٢٠ حلقة × ≤٢٠ طالباً ⇒ SQLite محلي ومزامنة كاملة كافيان بلا قلق أداء |
 
 ---
@@ -533,3 +611,12 @@ flutter run -d android      (apps/teacher)
 | 2026-09-01 | تنفيذ المرحلة 4 — انظر [CHECKPOINT-PHASE-4.MD](CHECKPOINT-PHASE-4.MD) |
 | 2026-09-01 | إصلاح خلل: `TakeAttendance` كان يستبدل `recorded_at` دائماً بوقت وصول الطلب للخادم، ما يُبطل معنى "الأحدث يفوز" في حلّ التعارض — صار يقبل `recorded_at` اختيارياً من الصفّ |
 | 2026-09-01 | `App\Support\ApiScope` لا يسقط افتراضياً إلى "أول معهد نشط" كما تفعل `InteractsWithInstitute` في اللوحة — توكن API بلا معهد مرتبط يُرفض صراحةً بدل تخمين معهد خطأ |
+| 2026-09-03 | تنفيذ المرحلة 4.5 — انظر [CHECKPOINT-PHASE-4.5.MD](CHECKPOINT-PHASE-4.5.MD) |
+| 2026-09-03 | **حذف `report_templates`** وكل كوده: قوالب بلا قناة إرسال = حمولة ميتة. §10 البند 12 صُحِّح تبعاً لذلك |
+| 2026-09-03 | **حذف `institutes.timezone`** وضبط `APP_TIMEZONE=Asia/Damascus` — الحقل كان يُكتب ولا يُقرأ، والتطبيق كان يعمل فعلياً على UTC فينقلب «اليوم» ٣:٠٠ فجراً |
+| 2026-09-03 | نقاط القرآن تُحتسب **للأسطر الجديدة دون المكرّر**، و`lines`/`new_lines`/`points` تُجمَّد في `memorization_logs` وقت التسجيل حتى لا يعيد تغييرُ الإعدادات كتابةَ تاريخ الطلاب |
+| 2026-09-03 | إصلاح خلل: `can()` كانت تعود `false` في كل استدعاء بعد `mount()` لأن مفتاح فريق Spatie لا يُضبط إلا مرّة — أُضيف `bootedInteractsWithInstitute()` فيُحسم المعهد في كل دورة طلب |
+| 2026-09-03 | استخراج صيغة نسبة الحضور إلى `App\Support\AttendanceRate` — كان تكرارها متعمَّداً في موضعين، وصار ثلاثة مع `StatsQuery` |
+| 2026-09-03 | استعلامات التجميع تنتهي بـ `->toBase()`: تركيب نماذج Eloquent يحوّل `status` إلى enum فيكسر `(string)`، والأخطر أن مقارنة `note_polarity` تفشل **بصمت** فيُحسب مقياس الأدب بالمقلوب |
+| 2026-09-03 | مكوّنات Livewire المتداخلة في `resources/views/livewire/` لا في `views/components/` — الأخير مليء بمكوّنات Blade المجهولة فيتعارض الاستدعاء |
+| 2026-09-03 | `student_curriculum_progress` أُضيف إليه `points` و`achieved_on` — صفّ التقدّم حالةٌ لا حدث، فبلا تاريخٍ صريح لا تُصفّى نقاطه بمدى زمني |

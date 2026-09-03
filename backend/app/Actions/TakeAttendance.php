@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\NotePolarity;
 use App\Enums\SessionStatus;
 use App\Models\Attendance;
 use App\Models\AttendanceSession;
@@ -19,7 +20,7 @@ use RuntimeException;
 class TakeAttendance
 {
     /**
-     * @param  array<int, array{status?: string, late_minutes?: int|string|null, note?: string|null, recorded_at?: string|null}>  $rows  مفهرسة بمعرّف الطالب؛ recorded_at اختياري يستعمله الدفع أوف-لاين ليبقى زمن الحدث الحقيقي كما وقع على الجهاز، لا وقت وصوله للخادم
+     * @param  array<int, array{status?: string, late_minutes?: int|string|null, note?: string|null, note_polarity?: string|null, recorded_at?: string|null}>  $rows  مفهرسة بمعرّف الطالب؛ recorded_at اختياري يستعمله الدفع أوف-لاين ليبقى زمن الحدث الحقيقي كما وقع على الجهاز، لا وقت وصوله للخادم
      */
     public function handle(AttendanceSession $session, array $rows, ?User $recordedBy = null, bool $amend = false): AttendanceSession
     {
@@ -42,6 +43,9 @@ class TakeAttendance
                         'status' => $status,
                         'late_minutes' => $status === AttendanceStatus::Late ? (int) ($row['late_minutes'] ?? 0) : null,
                         'note' => blank($row['note'] ?? null) ? null : $row['note'],
+                        'note_polarity' => blank($row['note'] ?? null)
+                            ? null
+                            : NotePolarity::tryFrom((string) ($row['note_polarity'] ?? '')),
                         'recorded_by' => $recordedBy?->id,
                         'recorded_at' => blank($row['recorded_at'] ?? null) ? now() : $row['recorded_at'],
                     ],

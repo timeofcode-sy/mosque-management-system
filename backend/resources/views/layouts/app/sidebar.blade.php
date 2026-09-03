@@ -24,6 +24,9 @@
                     <flux:sidebar.item icon="document-chart-bar" :href="route('reports.index')" :current="request()->routeIs('reports.*')" wire:navigate>
                         التقارير
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="chart-bar" :href="route('stats.index')" :current="request()->routeIs('stats.*')" wire:navigate>
+                        الإحصائيات
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
 
                 <flux:sidebar.group heading="التنظيم" class="grid">
@@ -62,9 +65,6 @@
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="sparkles" :href="route('traits.index')" :current="request()->routeIs('traits.*')" wire:navigate>
                         الصفات
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="document-text" :href="route('report-templates.index')" :current="request()->routeIs('report-templates.*')" wire:navigate>
-                        قوالب التقارير
                     </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>

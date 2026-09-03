@@ -8,7 +8,9 @@ use App\Models\ChangeLog;
 use App\Models\CourseCircle;
 use App\Models\CourseCircleTeacher;
 use App\Models\Enrollment;
+use App\Models\MemorizationLog;
 use App\Models\Student;
+use App\Models\StudentPoint;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -129,6 +131,71 @@ class SyncPushPullTest extends TestCase
 
         $this->assertCount(1, $changes);
         $this->assertGreaterThan($firstSeq, $response->json('server_seq'));
+    }
+
+    public function test_push_records_a_recitation_and_discretionary_points(): void
+    {
+        $student = Student::factory()->create(['institute_id' => $this->institute->id]);
+        Enrollment::factory()->create(['course_circle_id' => $this->courseCircle->id, 'student_id' => $student->id]);
+
+        $teacher = $this->actingAsTeacher($this->institute);
+        CourseCircleTeacher::create(['course_circle_id' => $this->courseCircle->id, 'teacher_id' => $teacher->id, 'role' => TeacherRole::Main]);
+
+        $this->postJson('/api/v1/sync/push', [
+            'operations' => [[
+                'op_uuid' => (string) Str::uuid7(),
+                'type' => 'attendance.session.open',
+                'course_circle_uuid' => $this->courseCircle->uuid,
+                'session_date' => '2026-09-06',
+            ]],
+        ])->assertOk();
+
+        $sessionUuid = $this->courseCircle->attendanceSessions()->first()->uuid;
+
+        $this->postJson('/api/v1/sync/push', [
+            'operations' => [
+                [
+                    'op_uuid' => (string) Str::uuid7(),
+                    'type' => 'recitation.save',
+                    'session_uuid' => $sessionUuid,
+                    'student_uuid' => $student->uuid,
+                    'recitation' => [
+                        'from_surah' => 67, 'from_ayah' => 1,
+                        'to_surah' => 67, 'to_ayah' => 30,
+                        'grade' => 'excellent', 'juz' => 29,
+                    ],
+                ],
+                [
+                    'op_uuid' => (string) Str::uuid7(),
+                    'type' => 'points.award',
+                    'session_uuid' => $sessionUuid,
+                    'student_uuid' => $student->uuid,
+                    'points' => -2,
+                    'reason' => 'behavior',
+                ],
+            ],
+        ])->assertOk();
+
+        $log = MemorizationLog::query()->where('student_id', $student->id)->sole();
+        $award = StudentPoint::query()->where('student_id', $student->id)->sole();
+
+        $this->assertEqualsWithDelta(31.0, (float) $log->new_lines, 0.01);
+        $this->assertEqualsWithDelta(-2.0, (float) $award->points, 0.01);
+
+        $this->assertSame(1, ChangeLog::query()->where('table_name', 'memorization_logs')->count());
+        $this->assertSame(1, ChangeLog::query()->where('table_name', 'student_points')->count());
+
+        // الحذف يُسجَّل بدوره في السجل حتى يعرف العميل أن الصفّ زال.
+        $this->postJson('/api/v1/sync/push', [
+            'operations' => [[
+                'op_uuid' => (string) Str::uuid7(),
+                'type' => 'recitation.delete',
+                'recitation_uuid' => $log->uuid,
+            ]],
+        ])->assertOk();
+
+        $this->assertSoftDeleted($log);
+        $this->assertSame(1, ChangeLog::query()->where('table_name', 'memorization_logs')->where('operation', 'delete')->count());
     }
 
     public function test_pull_never_returns_changes_from_another_institute(): void

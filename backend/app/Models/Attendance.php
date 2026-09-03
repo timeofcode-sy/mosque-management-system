@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\HasUuid;
 use App\Enums\AttendanceStatus;
+use App\Enums\NotePolarity;
 use Database\Factories\AttendanceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
     'attendance_session_id', 'student_id', 'enrollment_id', 'status',
-    'late_minutes', 'note', 'recorded_by', 'recorded_at',
+    'late_minutes', 'note', 'note_polarity', 'recorded_by', 'recorded_at',
 ])]
 class Attendance extends Model
 {
@@ -27,6 +28,7 @@ class Attendance extends Model
     {
         return [
             'status' => AttendanceStatus::class,
+            'note_polarity' => NotePolarity::class,
             'late_minutes' => 'integer',
             'recorded_at' => 'datetime',
         ];

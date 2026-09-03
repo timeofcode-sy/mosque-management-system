@@ -15,7 +15,7 @@
 | `packages/mousqe_core/` | نماذج + drift(SQLite) + محرك المزامنة + عميل API |
 | `packages/mousqe_ui/` | نظام التصميم: ألوان، خط كوفي، ويدجتس، RTL |
 | `design/design-tokens.json` | **مصدر واحد للهوية البصرية** — يُستهلك من Tailwind ومن Flutter |
-| `docs/` | ERD · توثيق الـ API · بروتوكول المزامنة |
+| `docs/` | `PLAN.md` (الخطة وسجل تغييراتها) · `ERD.md` (نموذج البيانات) · `CHECKPOINT-PHASE-*.MD` (نقطة تفتيش لكل مرحلة منفَّذة) |
 
 ## البدء
 
@@ -39,4 +39,4 @@ php artisan test --compact
 vendor/bin/pint --dirty --format agent
 ```
 
-انظر `docs/` لتفاصيل نموذج البيانات وبروتوكول المزامنة.
+انظر `docs/PLAN.md` للخطة وحالتها، و`docs/ERD.md` لنموذج البيانات، وآخر نقطة تفتيش لتفاصيل ما نُفِّذ.

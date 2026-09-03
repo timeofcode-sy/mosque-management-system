@@ -1,13 +1,19 @@
 <?php
 
 use App\Actions\BuildStudentProgressMap;
+use App\Actions\SaveStudentCurriculumProgress;
+use App\Enums\ProgressStatus;
 use App\Models\Attendance;
+use App\Models\Curriculum;
+use App\Models\CurriculumItem;
 use App\Models\Enrollment;
 use App\Models\Student;
-use App\Models\StudentCurriculumProgress;
 use App\Models\StudentTransfer;
+use App\Queries\InstituteCatalogQuery;
 use App\Queries\StudentProfileQuery;
+use Flux\Flux;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -15,6 +21,14 @@ use Livewire\Component;
 new #[Title('ملف الطالب')] class extends Component
 {
     public Student $student;
+
+    public ?int $progressItemId = null;
+
+    public string $progressStatus = '';
+
+    public int $progressPercent = 0;
+
+    public string $progressNotes = '';
 
     public function mount(Student $student): void
     {
@@ -63,12 +77,75 @@ new #[Title('ملف الطالب')] class extends Component
     }
 
     /**
-     * @return Collection<string, Collection<int, StudentCurriculumProgress>>
+     * المناهج المتاحة للمعهد ببنودها — لوح تحرير الإنجاز.
+     *
+     * @return Collection<int, Curriculum>
      */
     #[Computed]
-    public function progressByCurriculum(): Collection
+    public function curricula(): Collection
     {
-        return $this->profile()->progressByCurriculum($this->student);
+        return app(InstituteCatalogQuery::class)->curricula($this->student->institute);
+    }
+
+    /**
+     * إنجاز الطالب مفهرساً ببند المنهج — للقراءة السريعة في الشبكة.
+     *
+     * @return Collection<int, StudentCurriculumProgress>
+     */
+    #[Computed]
+    public function progressByItem(): Collection
+    {
+        return $this->student->curriculumProgress()->get()->keyBy('curriculum_item_id');
+    }
+
+    #[Computed]
+    public function editingItem(): ?CurriculumItem
+    {
+        return $this->progressItemId === null
+            ? null
+            : $this->curricula->flatMap->items->firstWhere('id', $this->progressItemId);
+    }
+
+    public function editProgress(CurriculumItem $curriculumItem): void
+    {
+        $existing = $this->progressByItem->get($curriculumItem->id);
+
+        $this->progressItemId = $curriculumItem->id;
+        $this->progressStatus = $existing?->status->value ?? ProgressStatus::InProgress->value;
+        $this->progressPercent = $existing?->percent ?? 0;
+        $this->progressNotes = (string) $existing?->notes;
+        $this->resetValidation();
+
+        unset($this->editingItem);
+
+        Flux::modal('curriculum-progress')->show();
+    }
+
+    public function saveProgress(): void
+    {
+        $item = $this->editingItem;
+
+        if ($item === null) {
+            return;
+        }
+
+        $this->validate([
+            'progressStatus' => ['required', Rule::enum(ProgressStatus::class)],
+            'progressPercent' => ['integer', 'between:0,100'],
+            'progressNotes' => ['nullable', 'string', 'max:1000'],
+        ], attributes: ['progressStatus' => 'الحالة', 'progressPercent' => 'النسبة']);
+
+        app(SaveStudentCurriculumProgress::class)->handle(
+            $this->student,
+            $item,
+            ['status' => $this->progressStatus, 'percent' => $this->progressPercent, 'notes' => $this->progressNotes],
+            auth()->user(),
+        );
+
+        unset($this->progressByItem);
+
+        Flux::modal('curriculum-progress')->close();
+        Flux::toast(variant: 'success', text: 'حُدّث الإنجاز.');
     }
 
     /**
@@ -322,28 +399,84 @@ new #[Title('ملف الطالب')] class extends Component
     </div>
 
     <div class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
-        <flux:heading size="lg">المحفوظات</flux:heading>
+        <div class="flex flex-wrap items-baseline justify-between gap-3">
+            <flux:heading size="lg">المحفوظات وتقدّم المناهج</flux:heading>
+            <flux:text size="sm" class="text-ink-500 dark:text-zinc-400">اضغط البند لتحديث حالته ونسبته.</flux:text>
+        </div>
 
-        @if ($this->progressByCurriculum->isEmpty())
-            <flux:text class="mt-4">لم تُسجَّل محفوظات بعد.</flux:text>
-        @else
-            <div class="mt-4 flex flex-col gap-6">
-                @foreach ($this->progressByCurriculum as $curriculumName => $entries)
-                    <div wire:key="progress-{{ $loop->index }}">
-                        <flux:heading size="sm">{{ $curriculumName }}</flux:heading>
+        <div class="mt-4 flex flex-col gap-6">
+            @foreach ($this->curricula as $curriculum)
+                <div wire:key="curriculum-{{ $curriculum->id }}">
+                    <flux:heading size="sm">{{ $curriculum->name }}</flux:heading>
 
-                        <div class="mt-2 flex flex-wrap gap-2">
-                            @foreach ($entries as $progress)
-                                <flux:badge size="sm" :color="$progress->status === ProgressStatus::Mastered ? 'green' : 'zinc'">
-                                    {{ $progress->curriculumItem->name }}
-                                </flux:badge>
-                            @endforeach
-                        </div>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        @forelse ($curriculum->items as $item)
+                            @php($progress = $this->progressByItem->get($item->id))
+
+                            <flux:badge
+                                wire:key="progress-item-{{ $item->id }}"
+                                size="sm"
+                                :color="match ($progress?->status) {
+                                    ProgressStatus::Mastered => 'green',
+                                    ProgressStatus::Memorized => 'lime',
+                                    ProgressStatus::InProgress => 'amber',
+                                    default => 'zinc',
+                                }"
+                            >
+                                <button
+                                    type="button"
+                                    class="cursor-pointer"
+                                    wire:click="editProgress('{{ $item->uuid }}')"
+                                    data-test="progress-item-{{ $item->id }}"
+                                >
+                                    {{ $item->name }}
+                                    @if ($progress && $progress->percent > 0 && $progress->percent < 100)
+                                        <span class="latin-numerals"> · {{ $progress->percent }}%</span>
+                                    @endif
+                                    @if ($progress && (float) $progress->points > 0)
+                                        <span class="latin-numerals"> · {{ rtrim(rtrim(number_format((float) $progress->points, 2, '.', ''), '0'), '.') }} نقطة</span>
+                                    @endif
+                                </button>
+                            </flux:badge>
+                        @empty
+                            <flux:text size="sm">لا توجد بنود في هذا المنهج.</flux:text>
+                        @endforelse
                     </div>
-                @endforeach
-            </div>
-        @endif
+                </div>
+            @endforeach
+        </div>
     </div>
+
+    <flux:modal name="curriculum-progress" class="w-full max-w-lg">
+        @if ($this->editingItem)
+            <form wire:submit="saveProgress" class="space-y-6">
+                <flux:heading size="lg">{{ $this->editingItem->name }}</flux:heading>
+
+                <flux:select wire:model.live="progressStatus" label="الحالة" data-test="progress-status">
+                    @foreach (ProgressStatus::options() as $value => $label)
+                        <flux:select.option :value="$value">{{ $label }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+
+                @if ($progressStatus === ProgressStatus::InProgress->value)
+                    <flux:input
+                        wire:model="progressPercent"
+                        type="number" min="1" max="99"
+                        label="النسبة المنجَزة %"
+                        class="latin-numerals"
+                        data-test="progress-percent"
+                    />
+                @endif
+
+                <flux:textarea wire:model="progressNotes" label="ملاحظات" rows="2" />
+
+                <div class="flex gap-2">
+                    <flux:button type="submit" variant="primary" data-test="save-progress">حفظ</flux:button>
+                    <flux:modal.close><flux:button variant="ghost">إلغاء</flux:button></flux:modal.close>
+                </div>
+            </form>
+        @endif
+    </flux:modal>
 
     @if ($this->recentAttendances->isNotEmpty())
         <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">

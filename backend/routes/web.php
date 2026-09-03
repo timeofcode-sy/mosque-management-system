@@ -30,13 +30,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('curricula', 'pages::curricula.index')->name('curricula.index');
 
     Route::livewire('reports', 'pages::reports.index')->name('reports.index');
+    Route::livewire('stats', 'pages::stats.index')->name('stats.index');
     Route::get('reports/circle/{courseCircle}/print', [ReportPrintController::class, 'circleDaily'])->name('reports.print.circle');
+    Route::get('reports/circle/{courseCircle}/points/print', [ReportPrintController::class, 'circlePoints'])->name('reports.print.points');
     Route::get('reports/shift/{shift}/print', [ReportPrintController::class, 'shiftRanking'])->name('reports.print.shift');
     Route::get('reports/student/{student}/print', [ReportPrintController::class, 'student'])->name('reports.print.student');
 
     Route::livewire('settings/custom-fields', 'pages::custom-fields.index')->name('custom-fields.index');
     Route::livewire('settings/traits', 'pages::traits.index')->name('traits.index');
-    Route::livewire('settings/report-templates', 'pages::report-templates.index')->name('report-templates.index');
 });
 
 require __DIR__.'/settings.php';

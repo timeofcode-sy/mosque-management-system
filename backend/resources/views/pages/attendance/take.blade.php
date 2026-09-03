@@ -7,12 +7,12 @@ use App\Actions\ReopenAttendanceSession;
 use App\Actions\TakeAttendance;
 use App\Concerns\InteractsWithInstitute;
 use App\Enums\AttendanceStatus;
+use App\Enums\NotePolarity;
 use App\Enums\SessionStatus;
 use App\Enums\Weekday;
 use App\Models\AttendanceSession;
 use App\Models\CourseCircle;
 use App\Queries\AttendanceSessionQuery;
-use App\Support\HijriDate;
 use Flux\Flux;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -29,11 +29,14 @@ new #[Title('تفقّد الحلقة')] class extends Component {
     #[Url]
     public string $date = '';
 
-    /** @var array<int, array{status: string, late_minutes: int|string|null, note: string|null}> */
+    /** @var array<int, array{status: string, late_minutes: int|string|null, note: string|null, note_polarity: string|null}> */
     public array $rows = [];
 
     /** @var array<int, array{status: string, late_minutes: int|string|null, note: string|null}> */
     public array $teacherRows = [];
+
+    /** الطالب المفتوحة ملاحظتُه في المودال. */
+    public ?int $noteStudentId = null;
 
     public function mount(CourseCircle $courseCircle): void
     {
@@ -129,10 +132,32 @@ new #[Title('تفقّد الحلقة')] class extends Component {
         return round($attended / $countable * 100, 1);
     }
 
+    /**
+     * القفل وإعادة الفتح للمشرف وحده — الأستاذ لا يملك attendance.lock في البذرة.
+     */
+    #[Computed]
+    public function canLock(): bool
+    {
+        return (bool) auth()->user()?->can('attendance.lock');
+    }
+
+    /**
+     * التصحيح الرجعي فعلٌ مقصود لا سهو: الجلسة المكتملة لا تُعدَّل إلا بـ attendance.amend.
+     */
+    #[Computed]
+    public function canAmend(): bool
+    {
+        return (bool) auth()->user()?->can('attendance.amend');
+    }
+
     #[Computed]
     public function editable(): bool
     {
-        return $this->session?->status !== SessionStatus::Locked;
+        return match ($this->session?->status) {
+            SessionStatus::Locked => false,
+            SessionStatus::Completed => $this->canAmend,
+            default => true,
+        };
     }
 
     #[Computed]
@@ -182,6 +207,28 @@ new #[Title('تفقّد الحلقة')] class extends Component {
         $this->teacherRows[$teacherId]['status'] = $status;
     }
 
+    public function openNote(int $studentId): void
+    {
+        if (! isset($this->rows[$studentId])) {
+            return;
+        }
+
+        $this->noteStudentId = $studentId;
+
+        Flux::modal('student-note')->show();
+    }
+
+    /**
+     * الملاحظة تُحفظ فوراً مع بقية الصفوف حتى لا تضيع بإغلاق المودال دون «حفظ مسودّة».
+     */
+    public function saveNote(): void
+    {
+        $this->persist();
+
+        Flux::modal('student-note')->close();
+        Flux::toast(variant: 'success', text: 'حُفظت الملاحظة.');
+    }
+
     public function save(): void
     {
         $this->persist();
@@ -208,6 +255,12 @@ new #[Title('تفقّد الحلقة')] class extends Component {
 
     public function reopen(): void
     {
+        if (! $this->canLock) {
+            Flux::toast(variant: 'danger', text: 'إعادة فتح الجلسة من صلاحية المشرف.');
+
+            return;
+        }
+
         try {
             app(ReopenAttendanceSession::class)->handle($this->session);
         } catch (\RuntimeException $exception) {
@@ -223,6 +276,12 @@ new #[Title('تفقّد الحلقة')] class extends Component {
 
     public function lock(): void
     {
+        if (! $this->canLock) {
+            Flux::toast(variant: 'danger', text: 'قفل الجلسة من صلاحية المشرف.');
+
+            return;
+        }
+
         try {
             app(LockAttendanceSession::class)->handle($this->session);
         } catch (\RuntimeException $exception) {
@@ -243,7 +302,7 @@ new #[Title('تفقّد الحلقة')] class extends Component {
     {
         $session = $this->session;
 
-        if ($session === null) {
+        if ($session === null || ! $this->editable) {
             return;
         }
 
@@ -272,6 +331,7 @@ new #[Title('تفقّد الحلقة')] class extends Component {
                 'status' => $attendance->status->value,
                 'late_minutes' => $attendance->late_minutes,
                 'note' => $attendance->note,
+                'note_polarity' => $attendance->note_polarity?->value,
             ]])
             ->all();
 
@@ -295,7 +355,7 @@ new #[Title('تفقّد الحلقة')] class extends Component {
         <x-slot name="actions">
             <flux:button :href="route('attendance.index', ['date' => $this->date])" wire:navigate variant="ghost" icon="arrow-right">اللوح</flux:button>
 
-            @if ($this->session?->status === SessionStatus::Completed)
+            @if ($this->canLock && $this->session?->status === SessionStatus::Completed)
                 <flux:button wire:click="reopen" variant="ghost" icon="lock-open" data-test="reopen-session">إعادة فتح</flux:button>
                 <flux:button wire:click="lock" variant="ghost" icon="lock-closed" data-test="lock-session">قفل نهائي</flux:button>
             @endif
@@ -315,7 +375,11 @@ new #[Title('تفقّد الحلقة')] class extends Component {
 
     @if (! $this->editable)
         <flux:callout icon="lock-closed" variant="secondary">
-            <flux:callout.text>هذه الجلسة مقفلة — العرض للقراءة فقط.</flux:callout.text>
+            <flux:callout.text>
+                {{ $this->session?->status === SessionStatus::Locked
+                    ? 'هذه الجلسة مقفلة — العرض للقراءة فقط.'
+                    : 'هذه الجلسة مكتملة — تعديلها من صلاحية المشرف.' }}
+            </flux:callout.text>
         </flux:callout>
     @endif
 
@@ -376,49 +440,72 @@ new #[Title('تفقّد الحلقة')] class extends Component {
         @else
             <div class="divide-y divide-sand-200 dark:divide-zinc-700">
                 @foreach ($this->attendances as $attendance)
-                    @php($studentId = $attendance->student_id)
-                    <div wire:key="attendance-{{ $studentId }}" class="flex flex-wrap items-center gap-3 p-4">
-                        <div class="min-w-48 flex-1">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <flux:link :href="route('students.show', $attendance->student)" wire:navigate>
-                                    {{ $attendance->student->full_name }}
-                                </flux:link>
+                    @php
+                        $studentId = $attendance->student_id;
+                        $polarity = $this->rows[$studentId]['note_polarity'] ?? null;
+                        $hasNote = filled($this->rows[$studentId]['note'] ?? null);
+                    @endphp
 
-                                @if (in_array($studentId, $this->excusedToday, true))
-                                    <flux:badge size="sm" color="blue">إذن مقبول</flux:badge>
-                                @endif
+                    <div wire:key="attendance-{{ $studentId }}" class="flex flex-col gap-3 p-4">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div class="min-w-48 flex-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <flux:link :href="route('students.show', $attendance->student)" wire:navigate>
+                                        {{ $attendance->student->full_name }}
+                                    </flux:link>
+
+                                    @if (in_array($studentId, $this->excusedToday, true))
+                                        <flux:badge size="sm" color="blue">إذن مقبول</flux:badge>
+                                    @endif
+                                </div>
+                                <flux:text size="sm" class="latin-numerals text-ink-500 dark:text-zinc-400">
+                                    {{ $attendance->student->registration_no ?: '—' }}
+                                </flux:text>
                             </div>
-                            <flux:text size="sm" class="latin-numerals text-ink-500 dark:text-zinc-400">
-                                {{ $attendance->student->registration_no ?: '—' }}
-                            </flux:text>
+
+                            <x-attendance-picker
+                                :name="'rows.'.$studentId.'.status'"
+                                :selected="$this->rows[$studentId]['status'] ?? 'present'"
+                                :disabled="! $this->editable"
+                                :on-select="'setStatus('.$studentId.', %s)'"
+                                :test-id="'student-'.$studentId"
+                            />
+
+                            @if (($this->rows[$studentId]['status'] ?? null) === App\Enums\AttendanceStatus::Late->value)
+                                <flux:input
+                                    type="number"
+                                    min="0"
+                                    max="600"
+                                    wire:model="rows.{{ $studentId }}.late_minutes"
+                                    placeholder="دقائق"
+                                    class="latin-numerals w-24"
+                                    :disabled="! $this->editable"
+                                />
+                            @endif
+
+                            {{-- الملاحظة أيقونة تتلوّن بنوعها، فيُعرف من نظرة أيّ الطلاب لهم ملاحظات --}}
+                            <flux:button
+                                size="sm"
+                                variant="subtle"
+                                icon="pencil-square"
+                                wire:click="openNote({{ $studentId }})"
+                                data-test="open-note-{{ $studentId }}"
+                                @class([
+                                    'text-ink-400 dark:text-zinc-500' => ! $hasNote,
+                                    'text-present' => $hasNote && $polarity === App\Enums\NotePolarity::Positive->value,
+                                    'text-absent' => $hasNote && $polarity !== App\Enums\NotePolarity::Positive->value,
+                                ])
+                            >ملاحظة</flux:button>
                         </div>
 
-                        <x-attendance-picker
-                            :name="'rows.'.$studentId.'.status'"
-                            :selected="$this->rows[$studentId]['status'] ?? 'present'"
-                            :disabled="! $this->editable"
-                            :on-select="'setStatus('.$studentId.', %s)'"
-                            :test-id="'student-'.$studentId"
-                        />
-
-                        @if (($this->rows[$studentId]['status'] ?? null) === App\Enums\AttendanceStatus::Late->value)
-                            <flux:input
-                                type="number"
-                                min="0"
-                                max="600"
-                                wire:model="rows.{{ $studentId }}.late_minutes"
-                                placeholder="دقائق"
-                                class="latin-numerals w-24"
-                                :disabled="! $this->editable"
+                        @if ($this->session)
+                            <livewire:session-student-recitations
+                                :key="'recitations-'.$this->session->id.'-'.$studentId"
+                                :student="$attendance->student"
+                                :session="$this->session"
+                                :editable="$this->editable"
                             />
                         @endif
-
-                        <flux:input
-                            wire:model="rows.{{ $studentId }}.note"
-                            placeholder="ملاحظة"
-                            class="w-40"
-                            :disabled="! $this->editable"
-                        />
                     </div>
                 @endforeach
             </div>
@@ -458,4 +545,25 @@ new #[Title('تفقّد الحلقة')] class extends Component {
             </div>
         </div>
     @endif
+
+    <flux:modal name="student-note" class="w-full max-w-lg">
+        @if ($noteStudentId !== null)
+            <form wire:submit="saveNote" class="space-y-6">
+                <flux:heading size="lg">ملاحظة على {{ $this->attendances->firstWhere('student_id', $noteStudentId)?->student->full_name }}</flux:heading>
+
+                <flux:textarea wire:model="rows.{{ $noteStudentId }}.note" label="نص الملاحظة" rows="3" data-test="note-text" />
+
+                <flux:radio.group wire:model="rows.{{ $noteStudentId }}.note_polarity" label="نوع الملاحظة" variant="segmented">
+                    @foreach (NotePolarity::cases() as $case)
+                        <flux:radio :value="$case->value" :label="$case->label()" />
+                    @endforeach
+                </flux:radio.group>
+
+                <div class="flex gap-2">
+                    <flux:button type="submit" variant="primary" data-test="save-note">حفظ</flux:button>
+                    <flux:modal.close><flux:button variant="ghost">إلغاء</flux:button></flux:modal.close>
+                </div>
+            </form>
+        @endif
+    </flux:modal>
 </div>

@@ -1,0 +1,237 @@
+<?php
+
+namespace Tests\Feature\Livewire;
+
+use App\Enums\EnrollmentStatus;
+use App\Enums\NotePolarity;
+use App\Enums\RecitationGrade;
+use App\Models\AttendanceSession;
+use App\Models\CourseCircle;
+use App\Models\Enrollment;
+use App\Models\MemorizationLog;
+use App\Models\Student;
+use App\Models\StudentPoint;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Features\SupportTesting\Testable;
+use Livewire\Livewire;
+use Tests\Concerns\BuildsInstitute;
+use Tests\TestCase;
+
+class SessionRecitationTest extends TestCase
+{
+    use BuildsInstitute, RefreshDatabase;
+
+    private CourseCircle $courseCircle;
+
+    private Student $student;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->buildInstitute();
+        $this->courseCircle = $this->makeCourseCircle('حلقة الفاروق');
+        $this->student = $this->enroll();
+    }
+
+    public function test_the_form_defaults_to_juz_thirty_and_the_whole_surah(): void
+    {
+        $component = $this->recitations()->call('openRecitation');
+
+        $this->assertSame(30, $component->get('juz'));
+        $this->assertSame(78, $component->get('surah'));
+        $this->assertSame(1, $component->get('fromAyah'));
+        $this->assertSame(40, $component->get('toAyah'));
+    }
+
+    public function test_the_form_suggests_the_first_uncovered_stretch(): void
+    {
+        MemorizationLog::factory()->create([
+            'student_id' => $this->student->id,
+            'juz' => 29,
+            'from_surah' => 67, 'from_ayah' => 1, 'to_surah' => 67, 'to_ayah' => 12,
+        ]);
+
+        $component = $this->recitations()->call('openRecitation');
+
+        // آخر تسميع كان في الجزء 29، وأول سوره الملك — وقد سُمّع منها 1–12.
+        $this->assertSame(29, $component->get('juz'));
+        $this->assertSame(67, $component->get('surah'));
+        $this->assertSame(13, $component->get('fromAyah'));
+        $this->assertSame(30, $component->get('toAyah'));
+    }
+
+    public function test_saving_a_recitation_freezes_lines_and_points(): void
+    {
+        $this->recitations()
+            ->call('openRecitation')
+            ->set('juz', 29)
+            ->set('surah', 67)
+            ->set('fromAyah', 1)
+            ->set('toAyah', 30)
+            ->set('grade', RecitationGrade::Excellent->value)
+            ->call('saveRecitation')
+            ->assertHasNoErrors();
+
+        $log = MemorizationLog::query()->where('student_id', $this->student->id)->sole();
+
+        $this->assertSame(RecitationGrade::Excellent, $log->grade);
+        $this->assertEqualsWithDelta(31.0, (float) $log->lines, 0.01);
+        $this->assertEqualsWithDelta(31.0, (float) $log->new_lines, 0.01);
+        // 31 سطراً ÷ 15 × 10 نقاط × معامل ممتاز (100%)
+        $this->assertEqualsWithDelta(20.67, (float) $log->points, 0.01);
+    }
+
+    public function test_a_repeated_stretch_earns_nothing_new(): void
+    {
+        $save = fn (int $from, int $to) => $this->recitations()
+            ->call('openRecitation')
+            ->set('juz', 29)
+            ->set('surah', 67)
+            ->set('fromAyah', $from)
+            ->set('toAyah', $to)
+            ->set('grade', RecitationGrade::Excellent->value)
+            ->call('saveRecitation');
+
+        $save(1, 12);
+        $save(1, 30);
+
+        $second = MemorizationLog::query()->where('student_id', $this->student->id)->latest('id')->firstOrFail();
+
+        // الملك ثلاثون آية في 31 سطراً؛ الجديد 18 آية فقط.
+        $this->assertEqualsWithDelta(31.0, (float) $second->lines, 0.01);
+        $this->assertEqualsWithDelta(18.6, (float) $second->new_lines, 0.01);
+    }
+
+    public function test_the_grade_multiplier_lowers_the_points(): void
+    {
+        $this->recitations()
+            ->call('openRecitation')
+            ->set('juz', 29)
+            ->set('surah', 67)
+            ->set('fromAyah', 1)
+            ->set('toAyah', 30)
+            ->set('grade', RecitationGrade::Good->value)
+            ->call('saveRecitation');
+
+        $log = MemorizationLog::query()->where('student_id', $this->student->id)->sole();
+
+        // معامل «جيد» 60% من 20.67
+        $this->assertEqualsWithDelta(12.4, (float) $log->points, 0.01);
+    }
+
+    public function test_discretionary_points_accept_a_negative_value(): void
+    {
+        $this->recitations()
+            ->call('openPoints')
+            ->set('pointReason', 'behavior')
+            ->set('pointValue', '-2')
+            ->call('savePoints')
+            ->assertHasNoErrors();
+
+        $award = StudentPoint::query()->where('student_id', $this->student->id)->sole();
+
+        $this->assertEqualsWithDelta(-2.0, (float) $award->points, 0.01);
+        $this->assertSame($this->todaySession()->id, $award->attendance_session_id);
+    }
+
+    public function test_a_note_is_saved_with_its_polarity(): void
+    {
+        Livewire::test('pages::attendance.take', ['courseCircle' => $this->courseCircle])
+            ->set('date', '2026-09-01')
+            ->call('openNote', $this->student->id)
+            ->set("rows.{$this->student->id}.note", 'شغب في الحلقة')
+            ->set("rows.{$this->student->id}.note_polarity", NotePolarity::Negative->value)
+            ->call('saveNote')
+            ->assertHasNoErrors();
+
+        $attendance = $this->todaySession()->attendances()->where('student_id', $this->student->id)->sole();
+
+        $this->assertSame('شغب في الحلقة', $attendance->note);
+        $this->assertSame(NotePolarity::Negative, $attendance->note_polarity);
+    }
+
+    public function test_a_teacher_never_sees_the_lock_button(): void
+    {
+        $teacher = User::factory()->create();
+        $this->assignRole($teacher, 'teacher');
+        $this->actingAs($teacher);
+
+        $component = Livewire::test('pages::attendance.take', ['courseCircle' => $this->courseCircle])
+            ->set('date', '2026-09-01')
+            ->call('complete');
+
+        $this->assertFalse($component->instance()->canLock());
+        $component->assertDontSee('قفل نهائي');
+
+        // وإن استُدعيت الدالة مباشرةً رُفضت على الخادم لا في الواجهة فقط.
+        $component->call('lock');
+
+        $this->assertSame('completed', $this->todaySession()->status->value);
+    }
+
+    public function test_a_supervisor_locks_the_session(): void
+    {
+        $supervisor = User::factory()->create();
+        $this->assignRole($supervisor, 'supervisor');
+        $this->actingAs($supervisor);
+
+        Livewire::test('pages::attendance.take', ['courseCircle' => $this->courseCircle])
+            ->set('date', '2026-09-01')
+            ->call('complete')
+            ->call('lock');
+
+        $this->assertSame('locked', $this->todaySession()->status->value);
+    }
+
+    public function test_a_locked_session_refuses_a_new_recitation(): void
+    {
+        Livewire::test('pages::attendance.take', ['courseCircle' => $this->courseCircle])
+            ->set('date', '2026-09-01')
+            ->call('complete')
+            ->call('lock');
+
+        $this->recitations()
+            ->call('openRecitation')
+            ->set('juz', 29)
+            ->set('surah', 67)
+            ->set('fromAyah', 1)
+            ->set('toAyah', 30)
+            ->set('grade', RecitationGrade::Excellent->value)
+            ->call('saveRecitation');
+
+        $this->assertSame(0, MemorizationLog::query()->count());
+    }
+
+    private function recitations(): Testable
+    {
+        return Livewire::test('session-student-recitations', [
+            'student' => $this->student,
+            'session' => $this->todaySession(),
+            'editable' => true,
+        ]);
+    }
+
+    private function todaySession(): AttendanceSession
+    {
+        return $this->courseCircle->attendanceSessions()->whereDate('session_date', '2026-09-01')->sole();
+    }
+
+    private function enroll(): Student
+    {
+        $student = Student::factory()->create(['institute_id' => $this->institute->id]);
+
+        Enrollment::factory()->create([
+            'course_circle_id' => $this->courseCircle->id,
+            'student_id' => $student->id,
+            'status' => EnrollmentStatus::Active,
+            'enrolled_on' => '2026-08-01',
+        ]);
+
+        // فتح جلسة اليوم المختبَر مرّةً واحدة، فتُشارَك بين الشاشة والمكوّن المتداخل.
+        Livewire::test('pages::attendance.take', ['courseCircle' => $this->courseCircle])->set('date', '2026-09-01');
+
+        return $student;
+    }
+}

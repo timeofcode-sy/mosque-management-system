@@ -124,6 +124,11 @@ class Student extends Model
         return $this->hasMany(MemorizationLog::class);
     }
 
+    public function points(): HasMany
+    {
+        return $this->hasMany(StudentPoint::class);
+    }
+
     public function evaluations(): HasMany
     {
         return $this->hasMany(Evaluation::class);

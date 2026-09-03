@@ -8,6 +8,9 @@ use App\Models\Institute;
 use App\Models\Shift;
 use App\Models\ShiftDay;
 use App\Models\User;
+use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Support\Facades\App;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * معهد صغير جاهز لاختبار شاشات اللوحة: دورة جارية، دوام بيومين، وحلقتان.
@@ -33,8 +36,22 @@ trait BuildsInstitute
 
         $this->admin = User::factory()->create();
 
+        // اللوحة تُدار بحساب مشرف حقيقي، فالصلاحيات (attendance.lock/amend) جزء من الحالة المختبَرة.
+        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->assignRole($this->admin, 'admin');
+
         $this->actingAs($this->admin);
         $this->withSession(['institute_id' => $this->institute->id]);
+    }
+
+    /**
+     * إسناد دور ضمن نطاق المعهد — أدوار Spatie هنا مرتبطة بفريق (institute_id).
+     */
+    protected function assignRole(User $user, string $role): void
+    {
+        App::make(PermissionRegistrar::class)->setPermissionsTeamId($this->institute->id);
+
+        $user->assignRole($role);
     }
 
     protected function makeCourseCircle(?string $name = null): CourseCircle

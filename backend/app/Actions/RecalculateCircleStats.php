@@ -8,6 +8,7 @@ use App\Models\Attendance;
 use App\Models\CircleCumulativeStat;
 use App\Models\CircleDailyStat;
 use App\Models\CourseCircle;
+use App\Support\AttendanceRate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -209,16 +210,10 @@ class RecalculateCircleStats
     }
 
     /**
-     * @param  array<string, int>  $counts
+     * @param  array{present: int, late: int, excused: int, total: int}  $counts
      */
     private function rate(array $counts): float
     {
-        $countable = $counts['total'] - $counts['excused'];
-
-        if ($countable <= 0) {
-            return 0.0;
-        }
-
-        return round((($counts['present'] + $counts['late']) / $countable) * 100, 2);
+        return AttendanceRate::of($counts, precision: 2);
     }
 }

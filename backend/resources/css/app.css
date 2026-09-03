@@ -126,3 +126,62 @@ select:focus[data-flux-control] {
 [data-flux-column]:last-child {
     padding-inline-end: 0 !important;
 }
+
+/**
+ * أنميشن الرسوم البيانية — CSS خالص بلا مكتبة JS، فيبقى ما يُطبع مطابقاً لما يُرى.
+ *
+ * المنحنى ease-out-quint (0.22, 1, 0.36, 1) هو الحسّ اللطيف المقصود: انطلاقة سريعة
+ * ثم استقرار هادئ. و animation-fill-mode: forwards شرطُ صحّة الطباعة، لأن المتصفّح
+ * قد يلتقط الصفحة قبل انتهاء الحركة فتُطبع الرسوم في حالتها الابتدائية (فارغة).
+ */
+@keyframes mousqe-grow-bar {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+
+@keyframes mousqe-draw-stroke {
+    from { stroke-dashoffset: var(--dash-length, 1000); }
+    to { stroke-dashoffset: 0; }
+}
+
+@keyframes mousqe-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@utility chart-bar {
+    transform-origin: right;
+    animation: mousqe-grow-bar 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility chart-stroke {
+    stroke-dasharray: var(--dash-length, 1000);
+    animation: mousqe-draw-stroke 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility chart-fade {
+    animation: mousqe-fade-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chart-bar,
+    .chart-stroke,
+    .chart-fade {
+        animation: none !important;
+        stroke-dashoffset: 0 !important;
+        transform: none !important;
+        opacity: 1 !important;
+    }
+}
+
+@media print {
+    .chart-bar,
+    .chart-stroke,
+    .chart-fade {
+        animation: none !important;
+        animation-fill-mode: forwards !important;
+        stroke-dashoffset: 0 !important;
+        transform: none !important;
+        opacity: 1 !important;
+    }
+}

@@ -19,6 +19,17 @@ use Spatie\Permission\PermissionRegistrar;
  */
 trait InteractsWithInstitute
 {
+    /**
+     * مفتاح فريق Spatie يُضبط في كل دورة طلب لا في mount() وحده.
+     *
+     * لولا ذلك لعادت can() بـ false في أي استدعاء لاحق (زر «قفل نهائي» مثلاً)، لأن
+     * mount() لا يُستدعى إلا مرّةً واحدة عند أول تصيير.
+     */
+    public function bootedInteractsWithInstitute(): void
+    {
+        $this->institute;
+    }
+
     #[Computed]
     public function institute(): ?Institute
     {

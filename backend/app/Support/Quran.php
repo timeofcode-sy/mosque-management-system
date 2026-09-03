@@ -134,6 +134,104 @@ class Quran
         114 => ['name' => 'الناس', 'ayahs' => 6],
     ];
 
+    /**
+     * عدد أسطر كل سورة في مصحف المدينة (604 صفحة × 15 سطراً)، شاملاً البسملة دون الترويسة.
+     *
+     * الجدول مشتقّ حسابياً لا منقول عن مصدر رسمي: توزَّع أسطرُ كل صفحة على السور الواقعة
+     * فيها نسبةً إلى آياتها، انطلاقاً من صفحات بداية السور المعروفة. فهو تقدير جيّد للسور
+     * الطويلة (تشغل صفحاتها وحدها) وتقريبيّ في قصار المفصّل حيث تتقاسم السورُ الصفحةَ.
+     * ولذلك تُجمَّد الأسطر والنقاط في memorization_logs وقت التسجيل: تصحيح الجدول لاحقاً
+     * لا يُعيد كتابة تاريخ الطلاب.
+     *
+     * @var array<int, int>
+     */
+    public const LINES = [
+        1 => 8, 2 => 729, 3 => 404, 4 => 436, 5 => 327, 6 => 345, 7 => 394, 8 => 145, 9 => 318, 10 => 194,
+        11 => 211, 12 => 213, 13 => 86, 14 => 103, 15 => 76, 16 => 226, 17 => 165, 18 => 180, 19 => 103, 20 => 152,
+        21 => 151, 22 => 147, 23 => 124, 24 => 132, 25 => 117, 26 => 157, 27 => 117, 28 => 166, 29 => 120, 30 => 107,
+        31 => 58, 32 => 41, 33 => 154, 34 => 90, 35 => 87, 36 => 89, 37 => 110, 38 => 73, 39 => 134, 40 => 152,
+        41 => 88, 42 => 88, 43 => 108, 44 => 45, 45 => 43, 46 => 74, 47 => 61, 48 => 61, 49 => 40, 50 => 32,
+        51 => 47, 52 => 43, 53 => 31, 54 => 43, 55 => 46, 56 => 50, 57 => 72, 58 => 44, 59 => 63, 60 => 27,
+        61 => 31, 62 => 14, 63 => 28, 64 => 33, 65 => 29, 66 => 27, 67 => 31, 68 => 32, 69 => 31, 70 => 31,
+        71 => 28, 72 => 31, 73 => 10, 74 => 35, 75 => 15, 76 => 27, 77 => 33, 78 => 14, 79 => 31, 80 => 16,
+        81 => 11, 82 => 3, 83 => 30, 84 => 14, 85 => 13, 86 => 4, 87 => 11, 88 => 16, 89 => 17, 90 => 11,
+        91 => 4, 92 => 14, 93 => 4, 94 => 6, 95 => 3, 96 => 17, 97 => 2, 98 => 8, 99 => 4, 100 => 12,
+        101 => 6, 102 => 9, 103 => 2, 104 => 5, 105 => 7, 106 => 3, 107 => 6, 108 => 5, 109 => 5, 110 => 3,
+        111 => 8, 112 => 3, 113 => 4, 114 => 5,
+    ];
+
+    /**
+     * سور كل جزء — سورة تمتدّ على أكثر من جزء تظهر في كل جزء تمرّ به.
+     *
+     * أدقّ من الاعتماد على curriculum_items.meta.juz الذي يعطي رقم الجزء وحده دون سوره.
+     *
+     * @var array<int, array<int, int>>
+     */
+    public const JUZ_SURAHS = [
+        1 => [1, 2],
+        2 => [2],
+        3 => [2, 3],
+        4 => [3, 4],
+        5 => [4],
+        6 => [4, 5],
+        7 => [5, 6],
+        8 => [6, 7],
+        9 => [7, 8],
+        10 => [8, 9],
+        11 => [9, 10, 11],
+        12 => [11, 12],
+        13 => [12, 13, 14],
+        14 => [15, 16],
+        15 => [17, 18],
+        16 => [18, 19, 20],
+        17 => [21, 22],
+        18 => [23, 24, 25],
+        19 => [25, 26, 27],
+        20 => [27, 28, 29],
+        21 => [29, 30, 31, 32, 33],
+        22 => [33, 34, 35, 36],
+        23 => [36, 37, 38, 39],
+        24 => [39, 40, 41],
+        25 => [41, 42, 43, 44, 45],
+        26 => [46, 47, 48, 49, 50, 51],
+        27 => [51, 52, 53, 54, 55, 56, 57],
+        28 => [58, 59, 60, 61, 62, 63, 64, 65, 66],
+        29 => [67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77],
+        30 => [78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114],
+    ];
+
+    public static function lines(int $surah): int
+    {
+        return self::LINES[$surah] ?? 0;
+    }
+
+    /**
+     * أسطر السور في جزء واحد — مدخل قائمة السور في نموذج التسميع.
+     *
+     * @return array<int, int>
+     */
+    public static function surahsOfJuz(int $juz): array
+    {
+        return self::JUZ_SURAHS[$juz] ?? [];
+    }
+
+    /**
+     * أسطر مدى جزئي داخل السورة نسبةً وتناسباً: (آيات المدى ÷ آيات السورة) × أسطر السورة.
+     *
+     * تُبنى فوق coverage() فتصحّ للمدى العابر لعدّة سور، وتعود بمنزلتين عشريتين لتُجمع
+     * بدقّة قبل التقريب النهائي.
+     */
+    public static function linesForRange(int $fromSurah, ?int $fromAyah, int $toSurah, ?int $toAyah): float
+    {
+        $lines = 0.0;
+
+        foreach (self::coverage($fromSurah, $fromAyah, $toSurah, $toAyah) as $surah => $ayahs) {
+            $lines += self::linesOfAyahs($surah, $ayahs);
+        }
+
+        return round($lines, 2);
+    }
+
     public static function name(int $surah): string
     {
         return self::SURAHS[$surah]['name'] ?? (string) $surah;
@@ -145,26 +243,56 @@ class Quran
     }
 
     /**
-     * عدد آيات كل سورة مغطّاة بمدى واحد من (from) إلى (to) — المدى قد يعبر عدّة سور.
+     * المدى موزَّعاً على السور التي يمرّ بها: لكل سورة أوّلُ آية وآخرها ضمن المدى.
      *
-     * @return array<int, int> عدد الآيات المغطّاة، مفهرس برقم السورة
+     * هذه هي الصورة الكاملة للمدى؛ و coverage() تختصرها إلى عدّادات حين لا يهمّ الموضع.
+     *
+     * @return array<int, array{int, int}> [رقم السورة => [من آية، إلى آية]]
      */
-    public static function coverage(int $fromSurah, ?int $fromAyah, int $toSurah, ?int $toAyah): array
+    public static function segments(int $fromSurah, ?int $fromAyah, int $toSurah, ?int $toAyah): array
     {
         if ($fromSurah > $toSurah) {
             [$fromSurah, $toSurah, $fromAyah, $toAyah] = [$toSurah, $fromSurah, $toAyah, $fromAyah];
         }
 
-        $covered = [];
+        $segments = [];
 
         for ($surah = max(1, $fromSurah); $surah <= min(114, $toSurah); $surah++) {
             $total = self::ayahs($surah);
             $start = $surah === $fromSurah ? max(1, $fromAyah ?? 1) : 1;
             $end = $surah === $toSurah ? min($total, $toAyah ?? $total) : $total;
 
-            $covered[$surah] = max(0, $end - $start + 1);
+            if ($end >= $start) {
+                $segments[$surah] = [$start, $end];
+            }
+        }
+
+        return $segments;
+    }
+
+    /**
+     * عدد آيات كل سورة مغطّاة بمدى واحد من (from) إلى (to) — المدى قد يعبر عدّة سور.
+     *
+     * @return array<int, int> عدد الآيات المغطّاة، مفهرس برقم السورة
+     */
+    public static function coverage(int $fromSurah, ?int $fromAyah, int $toSurah, ?int $toAyah): array
+    {
+        $covered = [];
+
+        foreach (self::segments($fromSurah, $fromAyah, $toSurah, $toAyah) as $surah => [$start, $end]) {
+            $covered[$surah] = $end - $start + 1;
         }
 
         return $covered;
+    }
+
+    /**
+     * أسطر عددٍ من الآيات داخل سورة واحدة، نسبةً وتناسباً إلى أسطر السورة كلها.
+     */
+    public static function linesOfAyahs(int $surah, int $ayahs): float
+    {
+        $total = self::ayahs($surah);
+
+        return $total > 0 ? round($ayahs / $total * self::lines($surah), 2) : 0.0;
     }
 }

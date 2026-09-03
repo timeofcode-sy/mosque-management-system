@@ -28,26 +28,30 @@ class CurriculumSeeder extends Seeder
     ];
 
     /**
-     * @var array<int, array{code: string, name: string}>
+     * بنود الحديث وعدد أحاديث كلٍّ منها — العدد هو ما يضربه إعداد hadith_per_item.
+     *
+     * @var array<int, array{code: string, name: string, hadiths: int}>
      */
     private const HADITH_ITEMS = [
-        ['code' => 'arbaeen-1', 'name' => 'الأربعون النبوية (1)'],
-        ['code' => 'arbaeen-2', 'name' => 'الأربعون النبوية (2)'],
-        ['code' => 'arbaeen-3', 'name' => 'الأربعون النبوية (3)'],
-        ['code' => 'majami-anwar', 'name' => 'مجامع الأنوار'],
+        ['code' => 'arbaeen-1', 'name' => 'الأربعون النبوية (1)', 'hadiths' => 42],
+        ['code' => 'arbaeen-2', 'name' => 'الأربعون النبوية (2)', 'hadiths' => 40],
+        ['code' => 'arbaeen-3', 'name' => 'الأربعون النبوية (3)', 'hadiths' => 40],
+        ['code' => 'majami-anwar', 'name' => 'مجامع الأنوار', 'hadiths' => 60],
     ];
 
     /**
-     * @var array<int, array{code: string, name: string}>
+     * بنود المتون وعدد أبيات كلٍّ منها — العدد هو ما يضربه إعداد mutun_per_bayt.
+     *
+     * @var array<int, array{code: string, name: string, abyat: int}>
      */
     private const MUTUN_ITEMS = [
-        ['code' => 'bayquniyyah', 'name' => 'المنظومة البيقونية'],
-        ['code' => 'lamiyyah', 'name' => 'اللامية'],
-        ['code' => 'tuhfat-al-atfal', 'name' => 'تحفة الأطفال'],
-        ['code' => 'aqidat-al-awam', 'name' => 'عقيدة العوام'],
-        ['code' => 'jazariyyah', 'name' => 'المقدمة الجزرية'],
-        ['code' => 'jawharat-al-tawhid', 'name' => 'جوهرة التوحيد'],
-        ['code' => 'urjuzah-miiyyah', 'name' => 'الأرجوزة الميئية'],
+        ['code' => 'bayquniyyah', 'name' => 'المنظومة البيقونية', 'abyat' => 34],
+        ['code' => 'lamiyyah', 'name' => 'اللامية', 'abyat' => 68],
+        ['code' => 'tuhfat-al-atfal', 'name' => 'تحفة الأطفال', 'abyat' => 61],
+        ['code' => 'aqidat-al-awam', 'name' => 'عقيدة العوام', 'abyat' => 57],
+        ['code' => 'jazariyyah', 'name' => 'المقدمة الجزرية', 'abyat' => 107],
+        ['code' => 'jawharat-al-tawhid', 'name' => 'جوهرة التوحيد', 'abyat' => 144],
+        ['code' => 'urjuzah-miiyyah', 'name' => 'الأرجوزة الميئية', 'abyat' => 100],
     ];
 
     public function run(): void
@@ -63,13 +67,13 @@ class CurriculumSeeder extends Seeder
         $hadith = $this->curriculum('hadith', 'الحديث الشريف', CurriculumType::Hadith, 1);
 
         foreach (self::HADITH_ITEMS as $index => $item) {
-            $this->item($hadith, $item['code'], $item['name'], $index);
+            $this->item($hadith, $item['code'], $item['name'], $index, ['hadiths' => $item['hadiths']]);
         }
 
         $mutun = $this->curriculum('mutun', 'المتون العلمية', CurriculumType::Mutun, 2);
 
         foreach (self::MUTUN_ITEMS as $index => $item) {
-            $this->item($mutun, $item['code'], $item['name'], $index);
+            $this->item($mutun, $item['code'], $item['name'], $index, ['abyat' => $item['abyat']]);
         }
     }
 

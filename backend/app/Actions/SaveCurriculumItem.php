@@ -14,7 +14,7 @@ use App\Models\CurriculumItem;
 class SaveCurriculumItem
 {
     /**
-     * @param  array{name: string, code?: string|null, sort_order?: int}  $attributes
+     * @param  array{name: string, code?: string|null, sort_order?: int, meta?: array<string, mixed>}  $attributes
      */
     public function handle(Curriculum $curriculum, array $attributes, ?int $editingId = null): CurriculumItem
     {
@@ -29,8 +29,27 @@ class SaveCurriculumItem
                 'code' => blank($attributes['code'] ?? null)
                     ? $this->uniqueCode($curriculum, $sortOrder, $editingId)
                     : $attributes['code'],
+                'meta' => $this->mergedMeta($attributes['meta'] ?? [], $editingId),
             ],
         );
+    }
+
+    /**
+     * الواصفات تُدمج ولا تُستبدل: تحرير «عدد الأحاديث» من الواجهة يجب ألّا يمحو
+     * meta.juz الذي زرعته البذرة.
+     *
+     * @param  array<string, mixed>  $incoming
+     * @return array<string, mixed>|null
+     */
+    private function mergedMeta(array $incoming, ?int $editingId): ?array
+    {
+        $existing = $editingId === null
+            ? []
+            : (CurriculumItem::query()->whereKey($editingId)->value('meta') ?? []);
+
+        $merged = [...(array) $existing, ...$incoming];
+
+        return $merged === [] ? null : $merged;
     }
 
     private function uniqueCode(Curriculum $curriculum, int $sortOrder, ?int $editingId): string

@@ -23,7 +23,6 @@ class InstituteFactory extends Factory
             'phone' => '09'.fake()->numerify('########'),
             'email' => fake()->safeEmail(),
             'address' => fake()->randomElement(['دمشق', 'حلب', 'حمص', 'حماة', 'اللاذقية']).' - '.fake()->streetName(),
-            'timezone' => 'Asia/Damascus',
             'is_active' => true,
         ];
     }

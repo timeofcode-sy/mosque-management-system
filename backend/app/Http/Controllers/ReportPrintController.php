@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Actions\BuildCircleDailyReport;
+use App\Actions\BuildCirclePointsReport;
 use App\Actions\BuildStudentProgressMap;
 use App\Models\CourseCircle;
 use App\Models\Shift;
 use App\Models\Student;
 use App\Queries\CircleRankingQuery;
 use App\Queries\StudentProfileQuery;
+use App\Support\DateRange;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
@@ -30,6 +32,18 @@ class ReportPrintController extends Controller
             'date' => $date,
             ...$report->handle($courseCircle, $date),
         ]);
+    }
+
+    public function circlePoints(Request $request, CourseCircle $courseCircle, BuildCirclePointsReport $report): View
+    {
+        $range = DateRange::make(
+            $request->string('range')->toString() ?: DateRange::WEEK,
+            $courseCircle->course,
+            $request->string('from')->toString() ?: null,
+            $request->string('to')->toString() ?: null,
+        );
+
+        return view('reports.circle-points', $report->handle($courseCircle, $range));
     }
 
     public function shiftRanking(Request $request, Shift $shift, CircleRankingQuery $ranking): View

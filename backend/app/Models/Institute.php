@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['name', 'short_name', 'logo_path', 'phone', 'email', 'address', 'timezone', 'settings', 'is_active'])]
+#[Fillable(['name', 'short_name', 'logo_path', 'phone', 'email', 'address', 'settings', 'is_active'])]
 class Institute extends Model
 {
     /** @use HasFactory<InstituteFactory> */
@@ -75,11 +75,6 @@ class Institute extends Model
     public function announcements(): HasMany
     {
         return $this->hasMany(Announcement::class);
-    }
-
-    public function reportTemplates(): HasMany
-    {
-        return $this->hasMany(ReportTemplate::class);
     }
 
     public function currentCourse(): ?Course

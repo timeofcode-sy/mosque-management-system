@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
 use App\Enums\MemorizationType;
+use App\Enums\RecitationGrade;
 use Database\Factories\MemorizationLogFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,8 +17,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * سجل يومي لما حفظه الطالب أو راجعه أو تلاه في الجلسة.
  */
 #[Fillable([
-    'student_id', 'course_circle_id', 'attendance_session_id', 'curriculum_item_id', 'date', 'type',
-    'from_surah', 'from_ayah', 'to_surah', 'to_ayah', 'pages',
+    'student_id', 'course_circle_id', 'attendance_session_id', 'curriculum_item_id', 'date', 'type', 'grade',
+    'from_surah', 'from_ayah', 'to_surah', 'to_ayah', 'pages', 'lines', 'new_lines', 'points', 'juz',
     'memorization_score', 'tajweed_score', 'mistakes_count', 'teacher_id', 'notes',
 ])]
 class MemorizationLog extends Model
@@ -33,11 +34,16 @@ class MemorizationLog extends Model
         return [
             'date' => DateOnly::class,
             'type' => MemorizationType::class,
+            'grade' => RecitationGrade::class,
             'from_surah' => 'integer',
             'from_ayah' => 'integer',
             'to_surah' => 'integer',
             'to_ayah' => 'integer',
             'pages' => 'decimal:2',
+            'lines' => 'decimal:2',
+            'new_lines' => 'decimal:2',
+            'points' => 'decimal:2',
+            'juz' => 'integer',
             'memorization_score' => 'integer',
             'tajweed_score' => 'integer',
             'mistakes_count' => 'integer',

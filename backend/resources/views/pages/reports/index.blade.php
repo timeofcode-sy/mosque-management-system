@@ -1,15 +1,13 @@
 <?php
 
 use App\Actions\BuildCircleDailyReport;
-use App\Actions\RenderReportTemplate;
+use App\Actions\BuildCirclePointsReport;
 use App\Concerns\InteractsWithInstitute;
-use App\Enums\ReportScope;
 use App\Models\CourseCircle;
-use App\Models\ReportTemplate;
 use App\Models\Shift;
 use App\Queries\AttendanceBoardQuery;
 use App\Queries\CircleRankingQuery;
-use App\Queries\ReportTemplateQuery;
+use App\Support\DateRange;
 use App\Support\HijriDate;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -33,7 +31,15 @@ new #[Title('التقارير')] class extends Component {
     #[Url]
     public string $mode = 'daily';
 
-    public string $templateId = '';
+    /** مدى تقرير النقاط: أسبوع · شهر · الدورة كاملة · مخصّص. */
+    #[Url]
+    public string $range = DateRange::WEEK;
+
+    #[Url]
+    public string $rangeFrom = '';
+
+    #[Url]
+    public string $rangeTo = '';
 
     public function mount(): void
     {
@@ -104,6 +110,25 @@ new #[Title('التقارير')] class extends Component {
             : app(BuildCircleDailyReport::class)->handle($courseCircle, $this->date);
     }
 
+    #[Computed]
+    public function dateRange(): DateRange
+    {
+        return DateRange::make($this->range, $this->currentCourse, $this->rangeFrom ?: null, $this->rangeTo ?: null, $this->date);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    #[Computed]
+    public function pointsReport(): ?array
+    {
+        $courseCircle = $this->selectedCircle;
+
+        return $courseCircle === null
+            ? null
+            : app(BuildCirclePointsReport::class)->handle($courseCircle, $this->dateRange);
+    }
+
     /**
      * @return Collection<int, CourseCircle>
      */
@@ -121,34 +146,6 @@ new #[Title('التقارير')] class extends Component {
         return $this->mode === 'cumulative'
             ? $ranking->cumulative($shift, $this->date)
             : $ranking->daily($shift, $this->date);
-    }
-
-    /**
-     * @return Collection<int, ReportTemplate>
-     */
-    #[Computed]
-    public function templates(): Collection
-    {
-        return app(ReportTemplateQuery::class)->activeForScope($this->institute, ReportScope::Circle);
-    }
-
-    /**
-     * نص التقرير بعد ملء متغيّرات القالب المختار — جاهز للنسخ في رسالة.
-     */
-    #[Computed]
-    public function renderedTemplate(): ?string
-    {
-        $report = $this->circleReport;
-
-        if ($report === null || $this->templateId === '') {
-            return null;
-        }
-
-        $template = $this->templates->firstWhere('id', (int) $this->templateId);
-
-        return $template === null
-            ? null
-            : app(RenderReportTemplate::class)->handle($template, $report['variables']);
     }
 }; ?>
 
@@ -234,27 +231,85 @@ new #[Title('التقارير')] class extends Component {
                     @endforeach
                 </div>
             </div>
+        @endif
 
-            @if ($this->templates->isNotEmpty())
-                <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-                    <div class="flex flex-wrap items-end gap-3 border-b border-sand-200 p-4 dark:border-zinc-700">
-                        <flux:heading size="lg" class="flex-1">نص جاهز للإرسال</flux:heading>
+        @if ($this->pointsReport)
+            @php($points = $this->pointsReport)
 
-                        <flux:select wire:model.live="templateId" label="القالب" class="max-w-56" data-test="report-template">
-                            <flux:select.option value="">— اختر قالباً —</flux:select.option>
-                            @foreach ($this->templates as $template)
-                                <flux:select.option :value="$template->id">{{ $template->name }}</flux:select.option>
+            <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+                <div class="flex flex-wrap items-end justify-between gap-3 border-b border-sand-200 p-4 dark:border-zinc-700">
+                    <div class="flex flex-1 flex-wrap items-end gap-3">
+                        <flux:heading size="lg" class="w-full">
+                            نقاط {{ $points['courseCircle']->circle->name }}
+                        </flux:heading>
+
+                        <flux:select wire:model.live="range" label="المدى" class="max-w-40" data-test="points-range">
+                            @foreach (DateRange::options() as $value => $label)
+                                <flux:select.option :value="$value">{{ $label }}</flux:select.option>
                             @endforeach
                         </flux:select>
+
+                        @if ($this->range === DateRange::CUSTOM)
+                            <flux:input type="date" wire:model.live="rangeFrom" label="من" class="latin-numerals max-w-44" />
+                            <flux:input type="date" wire:model.live="rangeTo" label="إلى" class="latin-numerals max-w-44" />
+                        @else
+                            <flux:badge color="zinc" class="latin-numerals mb-2">
+                                {{ $points['range']->from }} → {{ $points['range']->to }}
+                            </flux:badge>
+                        @endif
                     </div>
 
-                    @if ($this->renderedTemplate)
-                        <div class="whitespace-pre-wrap p-4 text-sm" data-test="rendered-template">{{ $this->renderedTemplate }}</div>
-                    @else
-                        <flux:text class="p-6 text-center">اختر قالباً ليُملأ بأرقام هذا اليوم.</flux:text>
-                    @endif
+                    <flux:button
+                        size="sm"
+                        icon="printer"
+                        variant="primary"
+                        target="_blank"
+                        :href="route('reports.print.points', [
+                            'courseCircle' => $this->selectedCircle,
+                            'range' => $this->range,
+                            'from' => $this->rangeFrom,
+                            'to' => $this->rangeTo,
+                        ])"
+                        data-test="print-points-report"
+                    >
+                        طباعة / PDF
+                    </flux:button>
                 </div>
-            @endif
+
+                @if ($points['rows']->isEmpty())
+                    <flux:text class="p-6 text-center">لا يوجد طلاب مسجَّلون في هذه الحلقة.</flux:text>
+                @else
+                    <flux:table>
+                        <flux:table.columns>
+                            <flux:table.column>#</flux:table.column>
+                            <flux:table.column>الطالب</flux:table.column>
+                            <flux:table.column>القرآن</flux:table.column>
+                            <flux:table.column>الحديث</flux:table.column>
+                            <flux:table.column>المتون</flux:table.column>
+                            <flux:table.column>الحضور</flux:table.column>
+                            <flux:table.column>تقديرية</flux:table.column>
+                            <flux:table.column>المجموع</flux:table.column>
+                        </flux:table.columns>
+
+                        <flux:table.rows>
+                            @foreach ($points['rows'] as $row)
+                                <flux:table.row :key="'points-'.$row['student']->id">
+                                    <flux:table.cell class="latin-numerals">
+                                        <flux:badge size="sm" :color="match ($row['rank']) { 1 => 'amber', 2, 3 => 'green', default => 'zinc' }">
+                                            {{ $row['rank'] }}
+                                        </flux:badge>
+                                    </flux:table.cell>
+                                    <flux:table.cell>{{ $row['student']->full_name }}</flux:table.cell>
+                                    @foreach (['quran', 'hadith', 'mutun', 'attendance', 'manual'] as $source)
+                                        <flux:table.cell class="latin-numerals">{{ $row[$source] }}</flux:table.cell>
+                                    @endforeach
+                                    <flux:table.cell class="latin-numerals font-semibold">{{ $row['total'] }}</flux:table.cell>
+                                </flux:table.row>
+                            @endforeach
+                        </flux:table.rows>
+                    </flux:table>
+                @endif
+            </div>
         @endif
 
         @if ($this->selectedShift)
@@ -288,6 +343,7 @@ new #[Title('التقارير')] class extends Component {
                             <flux:table.column>متأخّر</flux:table.column>
                             <flux:table.column>مأذون</flux:table.column>
                             <flux:table.column>النسبة</flux:table.column>
+                            <flux:table.column>المسار</flux:table.column>
                         </flux:table.columns>
 
                         <flux:table.rows>
@@ -308,6 +364,9 @@ new #[Title('التقارير')] class extends Component {
                                     <flux:table.cell class="latin-numerals">{{ $row->stat?->excused ?? '—' }}</flux:table.cell>
                                     <flux:table.cell>
                                         <x-attendance-rate :rate="$row->stat?->attendance_rate" show-bar />
+                                    </flux:table.cell>
+                                    <flux:table.cell>
+                                        <x-charts.sparkline :values="$row->recent_rates" :max="100" />
                                     </flux:table.cell>
                                 </flux:table.row>
                             @endforeach
