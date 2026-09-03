@@ -109,3 +109,20 @@ textarea:focus[data-flux-control],
 select:focus[data-flux-control] {
     @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
 }
+
+/** توسعة تباعد صفوف وخلايا الجداول — القيم الافتراضية من Flux (py-3 px-3) ضيقة جداً لجداولنا. */
+[data-flux-cell],
+[data-flux-column] {
+    padding-block: 0.875rem !important;
+    padding-inline: 1.25rem !important;
+}
+
+[data-flux-cell]:first-child,
+[data-flux-column]:first-child {
+    padding-inline-start: 0 !important;
+}
+
+[data-flux-cell]:last-child,
+[data-flux-column]:last-child {
+    padding-inline-end: 0 !important;
+}

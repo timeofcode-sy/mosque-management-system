@@ -88,15 +88,12 @@ new #[Title('بيانات المعهد')] class extends Component {
         <flux:input wire:model="address" label="العنوان" />
         <flux:input wire:model="timezone" label="المنطقة الزمنية" />
 
-        <flux:field>
-            <flux:label>الشعار</flux:label>
-            <input type="file" wire:model="logo" accept="image/*" class="text-sm" />
-            <flux:error name="logo" />
-
-            @if ($this->institute?->logo_path)
-                <img src="{{ Storage::url($this->institute->logo_path) }}" alt="شعار المعهد" class="mt-2 h-16 w-16 rounded-lg object-contain" />
-            @endif
-        </flux:field>
+        <x-image-upload
+            model="logo"
+            label="الشعار"
+            :existing-url="$this->institute?->logo_path ? Storage::url($this->institute->logo_path) : null"
+            hint="PNG أو JPG، حتى 2 ميغابايت"
+        />
 
         <flux:switch wire:model="is_active" label="المعهد فعّال" />
 

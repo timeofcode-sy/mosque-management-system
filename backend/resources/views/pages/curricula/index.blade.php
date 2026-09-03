@@ -4,8 +4,8 @@ use App\Actions\SaveCurriculumItem;
 use App\Concerns\InteractsWithInstitute;
 use App\Enums\CurriculumType;
 use App\Models\Curriculum;
-use App\Queries\InstituteCatalogQuery;
 use App\Models\CurriculumItem;
+use App\Queries\InstituteCatalogQuery;
 use Flux\Flux;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -14,7 +14,8 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('المناهج')] class extends Component {
+new #[Title('المناهج')] class extends Component
+{
     use InteractsWithInstitute;
 
     public ?int $editingId = null;
@@ -166,6 +167,20 @@ new #[Title('المناهج')] class extends Component {
         unset($this->curricula);
         Flux::toast(variant: 'success', text: 'حُذف البند.');
     }
+
+    public function delete(Curriculum $curriculum): void
+    {
+        if ($curriculum->items()->whereHas('progress')->exists()) {
+            Flux::toast(variant: 'danger', text: 'لا يمكن حذف منهج له بنود مرتبطة بسجل محفوظات.');
+
+            return;
+        }
+
+        $curriculum->delete();
+
+        unset($this->curricula);
+        Flux::toast(variant: 'success', text: 'حُذف المنهج.');
+    }
 }; ?>
 
 <div class="flex w-full flex-col gap-6">
@@ -195,6 +210,16 @@ new #[Title('المناهج')] class extends Component {
                     <div class="flex gap-2">
                         <flux:button wire:click="createItem('{{ $curriculum->uuid }}')" size="sm" icon="plus">بند</flux:button>
                         <flux:button wire:click="edit('{{ $curriculum->uuid }}')" size="sm" variant="subtle" icon="pencil">تعديل</flux:button>
+                        @if ($curriculum->institute_id !== null)
+                            <flux:button
+                                wire:click="delete('{{ $curriculum->uuid }}')"
+                                wire:confirm="حذف هذا المنهج نهائياً؟"
+                                size="sm"
+                                variant="subtle"
+                                icon="trash"
+                                data-test="delete-curriculum"
+                            >حذف</flux:button>
+                        @endif
                     </div>
                 </div>
 

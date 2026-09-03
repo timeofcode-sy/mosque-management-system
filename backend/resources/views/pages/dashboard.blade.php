@@ -52,6 +52,15 @@ new #[Title('لوحة المعلومات')] class extends Component {
     {
         return $this->overview()->rateOn($this->currentCourse, Carbon::today()->toDateString());
     }
+
+    /**
+     * @return array{present: int, absent: int, late: int, excused: int}
+     */
+    #[Computed]
+    public function statusBreakdown(): array
+    {
+        return $this->overview()->statusBreakdown($this->currentCourse);
+    }
 }; ?>
 
 <div class="flex w-full flex-col gap-6">
@@ -86,7 +95,10 @@ new #[Title('لوحة المعلومات')] class extends Component {
             />
         </div>
 
-        <x-attendance-trend :points="$this->trend" />
+        <div class="grid gap-4 lg:grid-cols-3">
+            <x-attendance-trend :points="$this->trend" class="lg:col-span-2" />
+            <x-attendance-breakdown :breakdown="$this->statusBreakdown" />
+        </div>
 
         <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
             <div class="border-b border-sand-200 p-4 dark:border-zinc-700">

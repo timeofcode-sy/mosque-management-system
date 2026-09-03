@@ -98,6 +98,32 @@ class DashboardOverviewQuery
     }
 
     /**
+     * توزيع حالات الحضور (حاضر/غائب/متأخّر/مأذون) عبر آخر مدّة — لمخطط شريطي مكمّل للمنحنى.
+     *
+     * @return array{present: int, absent: int, late: int, excused: int}
+     */
+    public function statusBreakdown(?Course $course, int $days = 14): array
+    {
+        if ($course === null) {
+            return ['present' => 0, 'absent' => 0, 'late' => 0, 'excused' => 0];
+        }
+
+        $from = Carbon::today()->subDays($days - 1);
+
+        $stats = CircleDailyStat::query()
+            ->whereIn('course_circle_id', $course->courseCircles()->select('id'))
+            ->whereDate('date', '>=', $from->toDateString())
+            ->get();
+
+        return [
+            'present' => (int) $stats->sum('present'),
+            'absent' => (int) $stats->sum('absent'),
+            'late' => (int) $stats->sum('late'),
+            'excused' => (int) $stats->sum('excused'),
+        ];
+    }
+
+    /**
      * نسبة حضور اليوم عبر كل حلقات الدورة.
      */
     public function rateOn(?Course $course, string $date): ?float

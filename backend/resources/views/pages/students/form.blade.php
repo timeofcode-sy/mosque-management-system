@@ -321,15 +321,15 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
                 </flux:select>
             </div>
 
-            <flux:field class="mt-6">
-                <flux:label>الصورة الشخصية</flux:label>
-                <input type="file" wire:model="photo" accept="image/*" class="text-sm" />
-                <flux:error name="photo" />
-
-                @if ($student?->photo_path)
-                    <img src="{{ Storage::url($student->photo_path) }}" alt="صورة الطالب" class="mt-2 h-20 w-20 rounded-lg object-cover" />
-                @endif
-            </flux:field>
+            <div class="mt-6">
+                <x-image-upload
+                    model="photo"
+                    label="الصورة الشخصية"
+                    shape="circle"
+                    :existing-url="$student?->photo_path ? Storage::url($student->photo_path) : null"
+                    hint="PNG أو JPG، حتى 2 ميغابايت"
+                />
+            </div>
         </flux:fieldset>
 
         <flux:fieldset class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">

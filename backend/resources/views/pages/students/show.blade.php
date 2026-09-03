@@ -1,20 +1,24 @@
 <?php
 
 use App\Actions\BuildStudentProgressMap;
-use App\Enums\ProgressStatus;
+use App\Models\Attendance;
+use App\Models\Enrollment;
 use App\Models\Student;
+use App\Models\StudentCurriculumProgress;
+use App\Models\StudentTransfer;
 use App\Queries\StudentProfileQuery;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('ملف الطالب')] class extends Component {
+new #[Title('ملف الطالب')] class extends Component
+{
     public Student $student;
 
     public function mount(Student $student): void
     {
-        $this->student = $student->load('guardians', 'personalTraits', 'institute');
+        $this->student = $student->load('guardians', 'personalTraits', 'institute', 'customFieldValues.customField');
     }
 
     private function profile(): StudentProfileQuery
@@ -23,7 +27,25 @@ new #[Title('ملف الطالب')] class extends Component {
     }
 
     /**
-     * @return Collection<int, \App\Models\Enrollment>
+     * قيم الواصفات المخصّصة الفعّالة للطالب، جاهزة للعرض كتسمية وقيمة.
+     *
+     * @return Collection<int, array{label: string, value: string}>
+     */
+    #[Computed]
+    public function customFieldEntries(): Collection
+    {
+        return $this->student->customFieldValues
+            ->filter(fn ($entry) => $entry->customField !== null && $entry->customField->is_active)
+            ->sortBy(fn ($entry) => $entry->customField->sort_order)
+            ->map(fn ($entry) => [
+                'label' => $entry->customField->label,
+                'value' => is_array($entry->value) ? implode('، ', $entry->value) : (string) ($entry->value ?? '—'),
+            ])
+            ->values();
+    }
+
+    /**
+     * @return Collection<int, Enrollment>
      */
     #[Computed]
     public function enrollments(): Collection
@@ -32,7 +54,7 @@ new #[Title('ملف الطالب')] class extends Component {
     }
 
     /**
-     * @return Collection<int, \App\Models\StudentTransfer>
+     * @return Collection<int, StudentTransfer>
      */
     #[Computed]
     public function transfers(): Collection
@@ -41,7 +63,7 @@ new #[Title('ملف الطالب')] class extends Component {
     }
 
     /**
-     * @return Collection<string, Collection<int, \App\Models\StudentCurriculumProgress>>
+     * @return Collection<string, Collection<int, StudentCurriculumProgress>>
      */
     #[Computed]
     public function progressByCurriculum(): Collection
@@ -50,7 +72,7 @@ new #[Title('ملف الطالب')] class extends Component {
     }
 
     /**
-     * @return Collection<int, \App\Models\Attendance>
+     * @return Collection<int, Attendance>
      */
     #[Computed]
     public function recentAttendances(): Collection
@@ -139,6 +161,22 @@ new #[Title('ملف الطالب')] class extends Component {
         </div>
 
         <div class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+            <div class="flex justify-center">
+                @if ($student->photo_path)
+                    <img
+                        src="{{ Storage::url($student->photo_path) }}"
+                        alt="صورة {{ $student->full_name }}"
+                        class="h-28 w-28 rounded-full border border-sand-200 object-cover dark:border-zinc-700"
+                    />
+                @else
+                    <div class="flex h-28 w-28 items-center justify-center rounded-full border border-dashed border-sand-300 bg-sand-50 text-ink-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-500">
+                        <flux:icon name="user" class="size-10" />
+                    </div>
+                @endif
+            </div>
+
+            <flux:separator class="my-6" />
+
             <flux:heading size="lg">أولياء الأمر</flux:heading>
 
             <div class="mt-4 space-y-4">
@@ -178,6 +216,21 @@ new #[Title('ملف الطالب')] class extends Component {
                     <flux:text>لم تُسنَد صفات.</flux:text>
                 @endforelse
             </div>
+
+            @if ($this->customFieldEntries->isNotEmpty())
+                <flux:separator class="my-6" />
+
+                <flux:heading size="lg">الواصفات المخصّصة</flux:heading>
+
+                <dl class="mt-4 space-y-3 text-sm">
+                    @foreach ($this->customFieldEntries as $entry)
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-ink-500 dark:text-zinc-400">{{ $entry['label'] }}</dt>
+                            <dd class="text-end">{{ $entry['value'] ?: '—' }}</dd>
+                        </div>
+                    @endforeach
+                </dl>
+            @endif
 
             <flux:separator class="my-6" />
 
