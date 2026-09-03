@@ -26,19 +26,37 @@ class RolesAndPermissionsSeederTest extends TestCase
     public function test_it_seeds_every_role_of_the_system(): void
     {
         $this->assertEqualsCanonicalizing(
-            ['super_admin', 'admin', 'supervisor', 'teacher', 'guardian', 'student'],
+            ['developer', 'super_admin', 'admin', 'supervisor', 'teacher', 'guardian', 'student'],
             Role::query()->pluck('name')->all(),
         );
     }
 
-    public function test_an_admin_holds_every_permission(): void
+    public function test_only_the_developer_holds_every_permission(): void
     {
-        $admin = Role::findByName('admin');
-
         $this->assertSame(
             Permission::query()->count(),
-            $admin->permissions()->count(),
+            Role::findByName('developer')->permissions()->count(),
         );
+    }
+
+    /**
+     * الأدوار الثلاثة العليا كانت متطابقة حرفياً؛ ما يميّزها الآن صلاحيتان بعينهما.
+     */
+    public function test_the_three_top_roles_differ_by_exactly_two_permissions(): void
+    {
+        $developer = Role::findByName('developer');
+        $superAdmin = Role::findByName('super_admin');
+        $admin = Role::findByName('admin');
+
+        $this->assertTrue($developer->hasPermissionTo('system.debug'));
+        $this->assertFalse($superAdmin->hasPermissionTo('system.debug'));
+        $this->assertFalse($admin->hasPermissionTo('system.debug'));
+
+        $this->assertTrue($superAdmin->hasPermissionTo('institutes.manage'));
+        $this->assertFalse($admin->hasPermissionTo('institutes.manage'));
+
+        $this->assertTrue($admin->hasPermissionTo('users.invite'));
+        $this->assertTrue($admin->hasPermissionTo('settings.manage'));
     }
 
     public function test_a_teacher_can_take_attendance_but_not_amend_a_locked_session(): void

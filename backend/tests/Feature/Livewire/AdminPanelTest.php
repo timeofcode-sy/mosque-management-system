@@ -376,13 +376,24 @@ class AdminPanelTest extends TestCase
         $this->assertSame(2, $counters['students']);
     }
 
-    public function test_users_without_an_institute_see_the_setup_prompt(): void
+    public function test_managers_without_an_institute_see_the_setup_prompt(): void
     {
         Institute::query()->forceDelete();
 
-        $this->actingAs(User::factory()->create());
         $this->withSession(['institute_id' => null]);
 
         $this->get(route('dashboard'))->assertOk()->assertSee('لا يوجد معهد بعد');
+    }
+
+    /**
+     * من لا معهد مرتبطاً بحسابه لا يُدعى إلى إنشاء معهد — يُخبَر أن حسابه غير مربوط.
+     * قبل هذه المرحلة كان السقوط الافتراضي يُدخله «أوّل معهد فعّال» بلا حقّ.
+     */
+    public function test_users_without_a_linked_institute_are_told_so(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $this->withSession(['institute_id' => null]);
+
+        $this->get(route('dashboard'))->assertOk()->assertSee('حسابك غير مرتبط بمعهد');
     }
 }

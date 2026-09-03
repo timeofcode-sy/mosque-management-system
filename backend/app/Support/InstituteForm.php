@@ -1,0 +1,75 @@
+<?php
+
+namespace App\Support;
+
+use App\Models\Institute;
+use Illuminate\Http\UploadedFile;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+
+/**
+ * قواعد نموذج المعهد وتطبيقه على النموذج — تشترك فيهما شاشتا «بيانات المعهد»
+ * و«المعاهد».
+ *
+ * الحقول موحّدة في x-institute-form-fields، والقواعد والحفظ هنا: لو بقيت مكرّرة في
+ * الشاشتين لاختلفت إحداهما عن الأخرى عند أوّل تعديل، وصار للمعهد نموذجان.
+ */
+class InstituteForm
+{
+    /**
+     * @return array<string, array<int, mixed>>
+     */
+    public static function rules(): array
+    {
+        return [
+            'name' => ['required', 'string', 'max:255'],
+            'short_name' => ['nullable', 'string', 'max:100'],
+            'phone' => ['nullable', 'string', 'max:32'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['boolean'],
+            'logo' => ['nullable', 'image', 'max:2048'],
+            'points.quran_per_15_lines' => ['required', 'numeric', 'min:0', 'max:1000'],
+            'points.hadith_per_item' => ['required', 'numeric', 'min:0', 'max:1000'],
+            'points.mutun_per_bayt' => ['required', 'numeric', 'min:0', 'max:1000'],
+            'points.attendance.*' => ['required', 'numeric', 'min:-100', 'max:100'],
+            'points.grade_multiplier.*' => ['required', 'numeric', 'min:0', 'max:200'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function attributes(): array
+    {
+        return [
+            'points.quran_per_15_lines' => 'نقاط كل خمسة عشر سطراً',
+            'points.hadith_per_item' => 'نقاط الحديث الواحد',
+            'points.mutun_per_bayt' => 'نقاط البيت الواحد',
+        ];
+    }
+
+    /**
+     * الحقول جاهزةً للإسناد على النموذج، والشعارُ مخزَّناً إن رُفع.
+     *
+     * الإعدادات الأخرى في العمود تبقى كما هي — يُستبدل مفتاح points وحده.
+     *
+     * @param  array<string, mixed>  $validated
+     * @param  array<string, mixed>  $points
+     * @return array<string, mixed>
+     */
+    public static function attributesFor(?Institute $institute, array $validated, array $points, UploadedFile|TemporaryUploadedFile|null $logo = null): array
+    {
+        unset($validated['logo'], $validated['points']);
+
+        $attributes = [
+            ...$validated,
+            'settings' => [...(array) $institute?->settings, 'points' => $points],
+        ];
+
+        if ($logo !== null) {
+            $attributes['logo_path'] = $logo->store('institutes', 'public');
+        }
+
+        return $attributes;
+    }
+}

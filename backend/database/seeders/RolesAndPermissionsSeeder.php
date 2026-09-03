@@ -31,16 +31,18 @@ class RolesAndPermissionsSeeder extends Seeder
         'reports.view', 'reports.export',
         'customfields.manage', 'tags.manage',
         'announcements.view', 'announcements.manage',
-        'settings.manage', 'users.manage',
+        'settings.manage', 'users.manage', 'users.invite',
         'sync.pull', 'sync.push', 'conflicts.review',
+        'system.debug',
     ];
 
     /**
-     * الأدوار وما يملكه كل دور. الدور super_admin يمنح كل شيء.
+     * الأدوار وما يملكه كل دور. النجمة تعني كل الصلاحيات.
      *
      * @var array<string, array<int, string>>
      */
     private const ROLES = [
+        'developer' => ['*'],
         'super_admin' => ['*'],
         'admin' => ['*'],
         'supervisor' => [
@@ -66,6 +68,19 @@ class RolesAndPermissionsSeeder extends Seeder
         ],
     ];
 
+    /**
+     * ما يُنزَع من الأدوار الشاملة — وهو وحده ما يميّز الثلاثة بعضها من بعض.
+     *
+     * المبرمج يملك كل شيء. المشرف الأعلى مثله عدا أدوات النظام التقنية. ومدير المعهد
+     * مثلهما داخل معهده وحده: لا ينشئ معهداً ولا يبدّل بين المعاهد.
+     *
+     * @var array<string, array<int, string>>
+     */
+    private const WITHHELD = [
+        'super_admin' => ['system.debug'],
+        'admin' => ['system.debug', 'institutes.manage'],
+    ];
+
     public function run(): void
     {
         $registrar = App::make(PermissionRegistrar::class);
@@ -81,7 +96,20 @@ class RolesAndPermissionsSeeder extends Seeder
         foreach (self::ROLES as $roleName => $permissions) {
             $role = Role::findOrCreate($roleName, 'web');
 
-            $role->syncPermissions($permissions === ['*'] ? self::PERMISSIONS : $permissions);
+            $role->syncPermissions($this->permissionsOf($roleName, $permissions));
         }
+    }
+
+    /**
+     * @param  array<int, string>  $permissions
+     * @return array<int, string>
+     */
+    private function permissionsOf(string $roleName, array $permissions): array
+    {
+        if ($permissions !== ['*']) {
+            return $permissions;
+        }
+
+        return array_values(array_diff(self::PERMISSIONS, self::WITHHELD[$roleName] ?? []));
     }
 }

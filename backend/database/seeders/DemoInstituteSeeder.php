@@ -64,6 +64,8 @@ class DemoInstituteSeeder extends Seeder
         ]);
         $admin->assignRole('admin');
 
+        $this->seedGlobalAccounts();
+
         $course = Course::factory()->current()->create([
             'institute_id' => $institute->id,
             'name' => 'دورة '.Carbon::today()->year,
@@ -117,6 +119,25 @@ class DemoInstituteSeeder extends Seeder
 
         // الإحصاء يُحسب عادةً لحظة إغلاق كل جلسة؛ البذور تكتب الجلسات مباشرةً فتحتاج تشغيله مرّة.
         app(RecalculateCircleStats::class)->forCourse($course->id);
+    }
+
+    /**
+     * حسابان عابران للمعاهد: الأدوار تُسنَد خارج كل معهد (User::GLOBAL_TEAM_ID)
+     * لا داخل المعهد التجريبي — وإلا لصارا مديرَي معهدٍ واحد لا مشرفاً أعلى ومبرمجاً.
+     */
+    private function seedGlobalAccounts(): void
+    {
+        User::factory()->create([
+            'first_name' => 'المشرف',
+            'last_name' => 'الأعلى',
+            'email' => 'super@mousqe.test',
+        ])->assignGlobalRole('super_admin');
+
+        User::factory()->create([
+            'first_name' => 'مبرمج',
+            'last_name' => 'النظام',
+            'email' => 'dev@mousqe.test',
+        ])->assignGlobalRole('developer');
     }
 
     /**

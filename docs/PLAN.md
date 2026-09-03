@@ -259,12 +259,23 @@ institute (معهد)
 `spatie/laravel-permission` **بوضع الفرق (teams) مفعّل والمفتاح `institute_id`** — كان مضبوطاً مسبقاً
 في `config/permission.php`، وهو ما يجعل تعدّد المعاهد جاهزاً بنيوياً.
 
-الأدوار الستة: `super_admin` · `admin` · `supervisor` · `teacher` · `guardian` · `student`،
-مع 38 صلاحية مصنّفة في `RolesAndPermissionsSeeder`. الأدوار عامة (`team_id = null`) والإسناد وحده
-مرتبط بمعهد.
+الأدوار السبعة: 🔄 م.4.6 `developer` · `super_admin` · `admin` · `supervisor` · `teacher` · `guardian` ·
+`student`، مع 40 صلاحية مصنّفة في `RolesAndPermissionsSeeder`. الأدوار عامة (`team_id = null`) والإسناد
+وحده مرتبط بمعهد.
+
+🔄 **م.4.6 — الأدوار العليا الثلاثة صارت متمايزة:** المبرمج وحده يملك `system.debug`، والمشرف الأعلى
+مثله عدا ذلك، ومدير المعهد مثلهما داخل معهده بلا `institutes.manage`. وقبل ذلك كان `admin` و`super_admin`
+`['*']` حرفياً — دورين بأسمين وصلاحيات متطابقة.
+
+🔄 **م.4.6 — الأدوار العابرة للمعاهد:** `developer` و`super_admin` تُسنَد بمفتاح فريق مُصطلَح عليه
+`User::GLOBAL_TEAM_ID = 0` (لا معهد بهذا المعرّف)، لا بـ `null`: العمود `model_has_roles.institute_id`
+هو `not null` **وجزءٌ من المفتاح الأساسي** في مخطّط spatie نفسه، والفراغ مستحيل عليه أبداً على MySQL.
+`Gate::before` في `AppServiceProvider` هو ما يمنح هذين الدورين كل شيء.
 
 > ⚠️ **إلزامي قبل أي `assignRole` أو `hasRole`:**
 > `App::make(PermissionRegistrar::class)->setPermissionsTeamId($institute->id);`
+> ويقع هذا على اللوحة في `App\Http\Middleware\SetPanelInstituteScope` (م.4.6) قبل middleware الصلاحيات،
+> وفي الـ API في `SetApiInstituteScope`.
 
 ---
 
@@ -278,26 +289,28 @@ institute (معهد)
 **البنية:** نلتزم بـ `backend/AGENTS.md` (PHP 8.4، `php artisan make:*`، Pint، PHPUnit، اختبار لكل تغيير).
 
 - ✅ `app/Models/` — 38 نموذجاً مع العلاقات و`HasUuid`
-- ✅ `app/Enums/` — 21 enum بتسميات عربية (`label()`) وخريطة خيارات (`options()`)
-  🔄 م.4.5: +`RecitationGrade` · `PointReason` · `NotePolarity`، −`ReportScope`
+- ✅ `app/Enums/` — 22 enum بتسميات عربية (`label()`) وخريطة خيارات (`options()`)
+  🔄 م.4.5: +`RecitationGrade` · `PointReason` · `NotePolarity`، −`ReportScope` · 🔄 م.4.6: +`PanelRole` (هرم الأدوار)
 - ✅ `app/Concerns/HasUuid.php`
 **قاعدة فصل الطبقات (اعتُمدت في المرحلة 3، وأُعيد عليها كلُّ ما سبق):**
 **كل كتابة تمرّ بـ `app/Actions/`، وكل قراءة تمرّ بـ `app/Queries/`.**
 ملف الشاشة لا يحمل استعلاماً ولا قاعدة عمل — يحمل حالة الواجهة وربطها فقط.
 
-- ✅ `app/Actions/` — 31 إجراء كتابة: التسجيل والنقل والاستنساخ والتفعيل والاستمارة (م.2)،
+- ✅ `app/Actions/` — 35 إجراء كتابة: التسجيل والنقل والاستنساخ والتفعيل والاستمارة (م.2)،
   والتفقّد ودورة حياة الجلسة والإحصاء والأذونات (م.3)، والمزامنة (م.4)
   🔄 م.4.5: `SaveRecitation` · `DeleteRecitation` · `AwardStudentPoints` · `CalculateStudentPoints` ·
   `BuildStudentCoverageMap` · `BuildCirclePointsReport` · `SaveStudentCurriculumProgress`
   (−`RenderReportTemplate`)
-- ✅ `app/Queries/` — 14 صنف قراءة: `DashboardOverviewQuery`, `AttendanceBoardQuery`,
+  🔄 م.4.6: `CreateInstitute` · `InviteUser` · `AssignUserRole` · `RevokeUserRole`
+- ✅ `app/Queries/` — 16 صنف قراءة: `DashboardOverviewQuery`, `AttendanceBoardQuery`,
   `AttendanceSessionQuery`, `CircleRankingQuery`, `StudentProfileQuery`, `StudentListQuery`,
   `StudentFormQuery`, `CircleQuery`, `InstituteCatalogQuery`, `AbsenceExcuseQuery`,
   `TeacherCircleQuery`, `GuardianChildrenQuery`, و🔄 م.4.5 `StudentPointsQuery` · `StatsQuery`
-  (−`ReportTemplateQuery`)
+  (−`ReportTemplateQuery`) · 🔄 م.4.6 `InstituteAdminQuery` (⚠️ الوحيد الذي يتجاوز نطاق المعهد عمداً) · `UserAdminQuery`
 - ✅ `app/Casts/DateOnly.php` — أعمدة التاريخ بلا وقت تُكتب دائماً `Y-m-d`
 - ✅ `app/Support/` — `Quran` (السور + 🔄 م.4.5 الأسطر وسور كل جزء)، `HijriDate` (أم القرى عبر intl)،
-  `ApiScope` (م.4)، و🔄 م.4.5 `PointsSettings` · `AttendanceRate` · `DateRange`
+  `ApiScope` (م.4)، و🔄 م.4.5 `PointsSettings` · `AttendanceRate` · `DateRange`،
+  و🔄 م.4.6 `PanelScope` (نطاق اللوحة والتبديل بين المعاهد) · `InstituteForm`
 - ✅ `app/Http/Controllers/ReportPrintController.php` — المتحكّم الوحيد: صفحات الطباعة/PDF
   استجاباتُ HTTP ساكنة بلا حالة، فلا معنى لجعلها مكوّنات Livewire
 - ✅ `app/Actions/SyncPush.php` + `SyncPull.php` + `RecordChange.php` + `ResolveAttendanceConflicts.php` —
@@ -309,11 +322,14 @@ institute (معهد)
   قابلاً للاستدعاء بـ`<x-…>` أيضاً — و`views/livewire/` مسجَّل أصلاً في `component_locations`
 - ✅ `resources/views/components/charts/` — 🔄 م.4.5: `bar` · `donut` · `line` · `sparkline`،
   SVG + أنميشن CSS خالص بلا مكتبة JS (الأعمدة HTML/CSS لأن نصّ SVG لا يلتفّ ولا يرث RTL)
-- ✅ `resources/views/pages/` — 19 مكوّن Livewire 4 أحادي الملف (SFC) للوحة التحكم
+- ✅ `resources/views/pages/` — 26 مكوّن Livewire 4 أحادي الملف (SFC) للوحة التحكم
   🔄 لا مجلد `app/Livewire/`: هذا المشروع على Livewire 4 حيث المكوّن ملف Blade واحد تحت `pages::`
   🔄 أُزيلت سابقة ⚡ من أسماء الملفات: اختيارية في Livewire 4 (`Finder` يجرّبها ثم يسقط إلى الاسم
   المجرّد)، وكانت تُعقّد أوامر الطرفية والبحث بلا مقابل
 - ✅ `app/Concerns/InteractsWithInstitute.php` — المعهد العامل والدورة الجارية لكل شاشة
+  🔄 م.4.6: الحسم نفسه انتقل إلى `App\Support\PanelScope` ليتشاركه المكوّنُ والوسيطُ
+- ✅ `app/Http/Middleware/SetPanelInstituteScope.php` — 🔄 م.4.6: يضبط مفتاح فريق spatie على كل طلبات
+  اللوحة قبل `permission:` — بدونه يفشل كل فحص صلاحية على اللوحة
 
 **نقاط الـ API (`routes/api.php`, prefix `/api/v1`) — ✅ المرحلة 4:**
 
@@ -390,8 +406,21 @@ RTL كامل (`dir="rtl"`, `lang="ar"`)، خصائص Tailwind المنطقية (
   تُشتقّ نقاط الحديث والمتون.
 - ✅ **الإعدادات** — بيانات المعهد والشعار (🔄 م.4.5: +إعدادات النقاط، −المنطقة الزمنية)،
   الواصفات المخصّصة، الصفات.
-  ⬜ المستخدمون والصلاحيات — **المرحلة 6**.
   🔄 **قوالب التقارير: حُذفت** ولن تعود إلا مع قناة إرسال حقيقية.
+- ✅ **المعاهد** — 🔄 **شاشتان جديدتان (م.4.6)**: قائمة المعاهد (إنشاء · تعديل · تعطيل · حذف ناعم ·
+  «دخول كـ») ونموذجها المشترك مع «بيانات المعهد»؛ ومعها **مبدّل المعهد** في الشريط الجانبي وشريط
+  تنبيه حين يكون المعهد العامل ليس معهد المستخدم.
+- ✅ **لوحة المعاهد** — 🔄 **شاشة جديدة (م.4.6)**: بطاقات إجمالية وجدول مقارنة (طلاب · حلقات · أساتذة ·
+  جلسات · حضور · نقاط) ومخطّط أعمدة، بفلتر مدى — بخمسة استعلامات مجمّعة مهما بلغ عدد المعاهد.
+- ✅ **المستخدمون والصلاحيات** — 🔄 **شاشة جديدة (م.4.6)** (كانت مؤجّلة للمرحلة 6): الأدوار كشرائح
+  بمعهد كلٍّ منها، وإنشاء حساب بدور مع رابط تعيين كلمة مرور يُنسخ يدوياً (لا قناة بريد)، وربطه
+  بسجلّ الأستاذ أو ولي الأمر أو الطالب.
+- ✅ **النظام (المبرمج وحده)** — 🔄 **ثلاث شاشات جديدة (م.4.6)** خلف `system.debug`: تعارضات المزامنة
+  ومراجعتها · الأجهزة المزامِنة و`last_pulled_seq` · سجل التغييرات بحمولاته.
+
+🔒 **م.4.6 — اللوحة كلها صارت خلف `permission:`** لكل مجموعة مسارات، والقائمة الجانبية مغلَّفة بـ `@can`
+مطابقةً لها. قبل ذلك كانت خلف `['auth', 'verified']` فقط، فأيّ حساب موثَّق — ولو كان طالباً — يفتح
+`/institute` و`/settings/*` وقوائم الطلاب.
 
 ---
 
@@ -437,6 +466,7 @@ RTL كامل (`dir="rtl"`, `lang="ar"`)، خصائص Tailwind المنطقية (
 | 3 | التفقّد والتقارير | شاشة التفقّد، الإحصاء والترتيب، الداشبورد، التقارير والطباعة، طبقة `app/Queries/` | ٥–٦ أيام | ✅ **منفَّذة** — 135/135 |
 | 4 | طبقة API والمزامنة | Sanctum، Resources، `sync/pull` و`sync/push`، `change_log`، حلّ التعارضات | ٥–٦ أيام | ✅ **منفَّذة** — 156/156 |
 | 4.5 | النقاط والتسميعات والإحصائيات | نظام نقاط كامل، تسجيل التسميع في الجلسة، شاشة إحصائيات ورسوم، القفل بصلاحية، تنظيف الحمولة الميتة | ٤–٥ أيام | ✅ **منفَّذة** — 201/201 |
+| 4.6 | إدارة المعاهد وحماية اللوحة | دور `developer`، `Gate::before` للأدوار العابرة، `permission:` على كل اللوحة، CRUD المعاهد ومبدّلها، المستخدمون والأدوار، لوحة المعاهد، أدوات المبرمج | ٤–٥ أيام | ✅ **منفَّذة** — 255/255 |
 | 5 | **تطبيق الأستاذ** | Flutter أوف-لاين كامل + `mousqe_core` + `mousqe_ui` | ٨–١٠ أيام | ⬜ التالية |
 | 6 | **تطبيق الديسكتوب** | Windows، إعادة استخدام ≈٧٠٪ من كود الأستاذ + شاشات الإدارة والطباعة | ٦–٨ أيام | ⬜ |
 | 7 | **تطبيق الأهل** | مع إشعارات FCM وطلبات الإذن | ٥–٦ أيام | ⬜ |
@@ -496,12 +526,13 @@ RTL كامل (`dir="rtl"`, `lang="ar"`)، خصائص Tailwind المنطقية (
 
 ```bash
 php artisan migrate:fresh --seed          # معهد + دورة + دوامان + 6 حلقات + 78 طالباً + 30 جلسة تفقّد
-php artisan test --compact                # 201/201 حالياً
+php artisan test --compact                # 255/255 حالياً
 vendor/bin/pint --dirty --format agent    # التنسيق قبل أي إنهاء
 composer run dev                          # serve + queue + vite
 ```
 
-حساب المشرف بعد البذر: `admin@mousqe.test` / `password`
+حسابات البذر: `admin@mousqe.test` (مدير معهد) · 🔄 م.4.6 `super@mousqe.test` (مشرف أعلى) ·
+`dev@mousqe.test` (مبرمج) — وكلمة المرور `password`
 
 **اختبارات منفَّذة ✅ (المرحلة 1):**
 
@@ -553,9 +584,25 @@ composer run dev                          # serve + queue + vite
 
 التفصيل في [CHECKPOINT-PHASE-4.5.MD](CHECKPOINT-PHASE-4.5.MD) §14.
 
+**اختبارات منفَّذة ✅ (المرحلة 4.6):**
+
+- `Authorization/PanelAccessTest` — **الأهمّ**: مصفوفة 17 مساراً × 7 أدوار (المسموح 200 والممنوع 403)،
+  الطالب لا يصل `/institute` ولا `/settings/*` ولا `/students` ولا `/attendance`، ولي الأمر لا يصل
+  `/students` ولا `/teachers`، المبرمج يصل كل شيء عبر `Gate::before`، وصفحات الطباعة خلف `reports.view`.
+- `Actions/InviteUserTest` — الدور يُسنَد في المعهد الصحيح ولا يظهر في غيره، إنشاء سجلّ الأستاذ وربط
+  سجلّ قائم، رابط تعيين كلمة المرور، **ومدير المعهد لا يمنح `super_admin` ولا `developer`**.
+- `Livewire/InstituteSwitcherTest` — التبديل يغيّر السياق ويُرفض لمعهد لا دور فيه، **ومن لا معهد له
+  يعود بـ `null` لا بأوّل معهد فعّال**، ومعهد الجلسة المنتهي يُنسى.
+- `Queries/InstituteAdminQueryTest` — اللوحة تعبر المعاهد، نسبة كل معهد ونقاطه، **وعدد الاستعلامات لا
+  يتغيّر بزيادة المعاهد**.
+- `Livewire/SuperAdminPanelTest` — الشاشات السبع تُصيَّر، إنشاء معهد يبذر دورة مسودّة، المعهد الحالي
+  لا يُحذف، دعوة مستخدم بدور، حساب دخول لأستاذ قائم، وتعليم تعارض مزامنة كمراجَع.
+
+التفصيل في [CHECKPOINT-PHASE-4.6.MD](CHECKPOINT-PHASE-4.6.MD) §9.
+
 **اختبارات مطلوبة في مراحلها:**
 
-- (لا شيء معلّق من هذه القائمة بعد المرحلة 4.5)
+- (لا شيء معلّق من هذه القائمة بعد المرحلة 4.6)
 
 **فلاتر** (`cd mousqe`)
 
@@ -589,6 +636,7 @@ flutter run -d android      (apps/teacher)
 | **قاعدة بيانات الإنتاج** | التطوير على SQLite؛ الانتقال إلى MySQL/MariaDB يُحسم قبل المرحلة ٩ |
 | **المنطقة الزمنية للبيانات القائمة** | 🔴 التطبيق كان يعمل على UTC حتى م.4.5 («اليوم» ينقلب ٣:٠٠ فجراً بتوقيت دمشق)؛ صار `APP_TIMEZONE=Asia/Damascus`. **بيانات كُتبت قبل ذلك تحتاج ترحيلاً زمنياً** — في التطوير `migrate:fresh --seed` يكفي |
 | **دقّة جدول أسطر السور** | جدول `Quran::LINES` تقديريّ مشتقّ حسابياً لا منقول عن مصدر رسمي (انحراف 0.12%)؛ استبداله تعديلُ ثابتٍ واحد ولا يمسّ التاريخ لأن الأسطر والنقاط مجمّدة في السجل |
+| **`reports.view` لدور ولي الأمر** | ⚠️ ولي الأمر يحمل `reports.view` منذ المرحلة 1، فيصل — نظرياً — إلى شاشتَي التقارير والإحصائيات في اللوحة. الإغلاق قرارٌ في كتالوج الأدوار: نزع الصلاحية من الدور (الـ API لا يستعملها إطلاقاً) أو إضافة `reports.panel` للطاقم. **ينتظر قراراً** — انظر [CHECKPOINT-PHASE-4.6.MD](CHECKPOINT-PHASE-4.6.MD) §3.4 |
 | **حجم البيانات** | ≤٢٠ حلقة × ≤٢٠ طالباً ⇒ SQLite محلي ومزامنة كاملة كافيان بلا قلق أداء |
 
 ---
@@ -620,3 +668,11 @@ flutter run -d android      (apps/teacher)
 | 2026-09-03 | استعلامات التجميع تنتهي بـ `->toBase()`: تركيب نماذج Eloquent يحوّل `status` إلى enum فيكسر `(string)`، والأخطر أن مقارنة `note_polarity` تفشل **بصمت** فيُحسب مقياس الأدب بالمقلوب |
 | 2026-09-03 | مكوّنات Livewire المتداخلة في `resources/views/livewire/` لا في `views/components/` — الأخير مليء بمكوّنات Blade المجهولة فيتعارض الاستدعاء |
 | 2026-09-03 | `student_curriculum_progress` أُضيف إليه `points` و`achieved_on` — صفّ التقدّم حالةٌ لا حدث، فبلا تاريخٍ صريح لا تُصفّى نقاطه بمدى زمني |
+| 2026-09-03 | تنفيذ المرحلة 4.6 — انظر [CHECKPOINT-PHASE-4.6.MD](CHECKPOINT-PHASE-4.6.MD) |
+| 2026-09-03 | 🔒 **اللوحة كلها صارت خلف `permission:`**: كانت خلف `['auth', 'verified']` فقط، فأيّ حساب موثَّق يفتح `/institute` و`/settings/*` وقوائم الطلاب. الـ API كان محميّاً واللوحة لم تكن |
+| 2026-09-03 | إضافة دور `developer` وصلاحيتَي `users.invite` و`system.debug`؛ و`admin` و`super_admin` لم يعودا `['*']` متطابقين |
+| 2026-09-03 | **الأدوار العابرة للمعاهد تُسنَد بمفتاح فريق `0` لا `null`** خلافاً لملف الخطة الفرعي: `model_has_roles.institute_id` هو `not null` وجزءٌ من المفتاح الأساسي في مخطّط spatie، والفراغ مستحيل على MySQL أبداً |
+| 2026-09-03 | `SetPanelInstituteScope` ملحقٌ بمجموعة `web`: بدونه يفشل كل `permission:` على اللوحة، فمفتاح فريق spatie كان يُضبط داخل مكوّن Livewire — بعد الـ middleware بمراحل |
+| 2026-09-03 | 🔒 سدّ تسريب عبر المعاهد: السقوط الافتراضي إلى «أوّل معهد فعّال» اقتصر على الأدوار العابرة، وغيرهم يعود بـ `null` — تُوحِّد اللوحةَ مع سلوك `ApiScope` الذي كان يرفض هذه الحالة عمداً |
+| 2026-09-03 | شاشات التفقّد خلف `attendance.take` لا `attendance.view` (خلافاً لجدول الملف الفرعي): الأخيرة يملكها الطالب وولي الأمر، فحراستها بها تفتح لوح تفقّد المعهد كلّه لطالب |
+| 2026-09-03 | «المستخدمون والصلاحيات» نُقلت من المرحلة 6 إلى 4.6 — تطبيقات فلاتر لا تعمل بلا حسابات مربوطة بسجلّات الأساتذة |

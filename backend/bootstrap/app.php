@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\SetApiInstituteScope;
+use App\Http\Middleware\SetPanelInstituteScope;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -23,6 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'institute.scope' => SetApiInstituteScope::class,
         ]);
+
+        /** يضبط مفتاح فريق Spatie قبل middleware الصلاحيات على كل طلبات اللوحة */
+        $middleware->appendToGroup('web', SetPanelInstituteScope::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

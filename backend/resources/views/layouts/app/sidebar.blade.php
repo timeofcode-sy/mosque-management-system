@@ -4,69 +4,138 @@
         @include('partials.head')
     </head>
     <body class="min-h-screen bg-sand-50 dark:bg-zinc-800">
+        {{--
+            عناصر القائمة مغلَّفة بـ @can لا لتزيين الواجهة: بدونها يرى المستخدمُ
+            روابطَ تؤدّي به إلى 403، فتصير الأدوار عقوبةً مفاجئة بدل أن تكون شكلاً
+            للوحة يفهمه من نظرة.
+        --}}
         <flux:sidebar sticky collapsible="mobile" class="border-e border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
+            <div class="px-2 pb-2">
+                <livewire:institute-switcher />
+            </div>
+
             <flux:sidebar.nav>
                 <flux:sidebar.group heading="المتابعة" class="grid">
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         لوحة المعلومات
                     </flux:sidebar.item>
-                    <flux:sidebar.item icon="clipboard-document-check" :href="route('attendance.index')" :current="request()->routeIs('attendance.*')" wire:navigate>
-                        التفقّد
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="envelope-open" :href="route('excuses.index')" :current="request()->routeIs('excuses.*')" wire:navigate>
-                        أذونات الغياب
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="document-chart-bar" :href="route('reports.index')" :current="request()->routeIs('reports.*')" wire:navigate>
-                        التقارير
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="chart-bar" :href="route('stats.index')" :current="request()->routeIs('stats.*')" wire:navigate>
-                        الإحصائيات
-                    </flux:sidebar.item>
+
+                    @can('attendance.take')
+                        <flux:sidebar.item icon="clipboard-document-check" :href="route('attendance.index')" :current="request()->routeIs('attendance.*')" wire:navigate>
+                            التفقّد
+                        </flux:sidebar.item>
+                    @endcan
+
+                    @can('excuses.review')
+                        <flux:sidebar.item icon="envelope-open" :href="route('excuses.index')" :current="request()->routeIs('excuses.*')" wire:navigate>
+                            أذونات الغياب
+                        </flux:sidebar.item>
+                    @endcan
+
+                    @can('reports.view')
+                        <flux:sidebar.item icon="document-chart-bar" :href="route('reports.index')" :current="request()->routeIs('reports.*')" wire:navigate>
+                            التقارير
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="chart-bar" :href="route('stats.index')" :current="request()->routeIs('stats.*')" wire:navigate>
+                            الإحصائيات
+                        </flux:sidebar.item>
+                    @endcan
                 </flux:sidebar.group>
 
-                <flux:sidebar.group heading="التنظيم" class="grid">
-                    <flux:sidebar.item icon="calendar-days" :href="route('courses.index')" :current="request()->routeIs('courses.*')" wire:navigate>
-                        الدورات
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="clock" :href="route('shifts.index')" :current="request()->routeIs('shifts.*')" wire:navigate>
-                        الدوامات
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="squares-2x2" :href="route('circles.index')" :current="request()->routeIs('circles.*')" wire:navigate>
-                        الحلقات
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+                @canany(['courses.manage', 'circles.manage'])
+                    <flux:sidebar.group heading="التنظيم" class="grid">
+                        @can('courses.manage')
+                            <flux:sidebar.item icon="calendar-days" :href="route('courses.index')" :current="request()->routeIs('courses.*')" wire:navigate>
+                                الدورات
+                            </flux:sidebar.item>
+                            <flux:sidebar.item icon="clock" :href="route('shifts.index')" :current="request()->routeIs('shifts.*')" wire:navigate>
+                                الدوامات
+                            </flux:sidebar.item>
+                        @endcan
 
-                <flux:sidebar.group heading="الأشخاص" class="grid">
-                    <flux:sidebar.item icon="users" :href="route('students.index')" :current="request()->routeIs('students.*')" wire:navigate>
-                        الطلاب
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="academic-cap" :href="route('teachers.index')" :current="request()->routeIs('teachers.*')" wire:navigate>
-                        الأساتذة
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+                        @can('circles.manage')
+                            <flux:sidebar.item icon="squares-2x2" :href="route('circles.index')" :current="request()->routeIs('circles.*')" wire:navigate>
+                                الحلقات
+                            </flux:sidebar.item>
+                        @endcan
+                    </flux:sidebar.group>
+                @endcanany
 
-                <flux:sidebar.group heading="المحتوى" class="grid">
-                    <flux:sidebar.item icon="book-open-text" :href="route('curricula.index')" :current="request()->routeIs('curricula.*')" wire:navigate>
-                        المناهج
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+                @canany(['students.manage', 'teachers.manage'])
+                    <flux:sidebar.group heading="الأشخاص" class="grid">
+                        @can('students.manage')
+                            <flux:sidebar.item icon="users" :href="route('students.index')" :current="request()->routeIs('students.*')" wire:navigate>
+                                الطلاب
+                            </flux:sidebar.item>
+                        @endcan
 
-                <flux:sidebar.group heading="الإعدادات" class="grid">
-                    <flux:sidebar.item icon="building-library" :href="route('institute.edit')" :current="request()->routeIs('institute.*')" wire:navigate>
-                        بيانات المعهد
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="adjustments-horizontal" :href="route('custom-fields.index')" :current="request()->routeIs('custom-fields.*')" wire:navigate>
-                        الواصفات المخصّصة
-                    </flux:sidebar.item>
-                    <flux:sidebar.item icon="sparkles" :href="route('traits.index')" :current="request()->routeIs('traits.*')" wire:navigate>
-                        الصفات
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+                        @can('teachers.manage')
+                            <flux:sidebar.item icon="academic-cap" :href="route('teachers.index')" :current="request()->routeIs('teachers.*')" wire:navigate>
+                                الأساتذة
+                            </flux:sidebar.item>
+                        @endcan
+                    </flux:sidebar.group>
+                @endcanany
+
+                @can('curricula.manage')
+                    <flux:sidebar.group heading="المحتوى" class="grid">
+                        <flux:sidebar.item icon="book-open-text" :href="route('curricula.index')" :current="request()->routeIs('curricula.*')" wire:navigate>
+                            المناهج
+                        </flux:sidebar.item>
+                    </flux:sidebar.group>
+                @endcan
+
+                @canany(['institutes.manage', 'users.manage'])
+                    <flux:sidebar.group heading="الإدارة العليا" class="grid">
+                        @can('institutes.manage')
+                            <flux:sidebar.item icon="building-office-2" :href="route('institutes.index')" :current="request()->routeIs('institutes.index') || request()->routeIs('institutes.create') || request()->routeIs('institutes.edit')" wire:navigate>
+                                المعاهد
+                            </flux:sidebar.item>
+                            <flux:sidebar.item icon="presentation-chart-line" :href="route('institutes.overview')" :current="request()->routeIs('institutes.overview')" wire:navigate>
+                                لوحة المعاهد
+                            </flux:sidebar.item>
+                        @endcan
+
+                        @can('users.manage')
+                            <flux:sidebar.item icon="user-group" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>
+                                المستخدمون
+                            </flux:sidebar.item>
+                        @endcan
+                    </flux:sidebar.group>
+                @endcanany
+
+                @can('settings.manage')
+                    <flux:sidebar.group heading="الإعدادات" class="grid">
+                        <flux:sidebar.item icon="building-library" :href="route('institute.edit')" :current="request()->routeIs('institute.*')" wire:navigate>
+                            بيانات المعهد
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="adjustments-horizontal" :href="route('custom-fields.index')" :current="request()->routeIs('custom-fields.*')" wire:navigate>
+                            الواصفات المخصّصة
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="sparkles" :href="route('traits.index')" :current="request()->routeIs('traits.*')" wire:navigate>
+                            الصفات
+                        </flux:sidebar.item>
+                    </flux:sidebar.group>
+                @endcan
+
+                @can('system.debug')
+                    <flux:sidebar.group heading="النظام" class="grid">
+                        <flux:sidebar.item icon="arrows-right-left" :href="route('system.conflicts')" :current="request()->routeIs('system.conflicts')" wire:navigate>
+                            تعارضات المزامنة
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="device-phone-mobile" :href="route('system.devices')" :current="request()->routeIs('system.devices')" wire:navigate>
+                            الأجهزة
+                        </flux:sidebar.item>
+                        <flux:sidebar.item icon="list-bullet" :href="route('system.change-log')" :current="request()->routeIs('system.change-log')" wire:navigate>
+                            سجل التغييرات
+                        </flux:sidebar.item>
+                    </flux:sidebar.group>
+                @endcan
             </flux:sidebar.nav>
 
             <flux:spacer />
@@ -128,6 +197,8 @@
                 </flux:menu>
             </flux:dropdown>
         </flux:header>
+
+        <x-institute-banner />
 
         {{ $slot }}
 

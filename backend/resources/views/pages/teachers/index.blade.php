@@ -1,6 +1,8 @@
 <?php
 
+use App\Actions\InviteUser;
 use App\Concerns\InteractsWithInstitute;
+use App\Enums\PanelRole;
 use App\Enums\TeacherStatus;
 use App\Models\Teacher;
 use App\Queries\InstituteCatalogQuery;
@@ -40,6 +42,13 @@ new #[Title('الأساتذة')] class extends Component {
     public string $status = 'active';
 
     public string $notes = '';
+
+    /** «إنشاء حساب دخول» — يربط سجلّ الأستاذ بحساب ليعمل تطبيق الأستاذ. */
+    public ?int $accountTeacherId = null;
+
+    public string $account_email = '';
+
+    public ?string $inviteLink = null;
 
     public function mount(): void
     {
@@ -121,6 +130,56 @@ new #[Title('الأساتذة')] class extends Component {
         unset($this->teachers);
         Flux::toast(variant: 'success', text: 'حُذف الأستاذ.');
     }
+
+    /**
+     * إنشاء حساب دخول لأستاذ قائم وربطه بسجلّه.
+     *
+     * الربط شرطُ تشغيل تطبيق الأستاذ: ApiScope يشتقّ المعهد من teachers.user_id،
+     * وحسابٌ بلا سجلّ يُرفض بـ 422.
+     */
+    public function createAccount(Teacher $teacher): void
+    {
+        $this->accountTeacherId = $teacher->id;
+        $this->account_email = '';
+        $this->inviteLink = null;
+        $this->resetValidation();
+
+        Flux::modal('teacher-account')->show();
+    }
+
+    public function saveAccount(): void
+    {
+        $validated = $this->validate([
+            'account_email' => ['required', 'email', 'max:255', 'unique:users,email'],
+        ], attributes: ['account_email' => 'البريد الإلكتروني']);
+
+        $teacher = Teacher::findOrFail($this->accountTeacherId);
+        $parts = preg_split('/\s+/u', trim($teacher->display_name), 2) ?: [$teacher->display_name];
+
+        try {
+            $result = app(InviteUser::class)->handle(
+                auth()->user(),
+                [
+                    'first_name' => $parts[0],
+                    'last_name' => $parts[1] ?? $parts[0],
+                    'email' => $validated['account_email'],
+                    'phone' => $teacher->phone,
+                ],
+                PanelRole::Teacher,
+                $this->institute,
+                $teacher,
+            );
+        } catch (RuntimeException $exception) {
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
+
+            return;
+        }
+
+        $this->inviteLink = $result['reset_url'];
+
+        unset($this->teachers);
+        Flux::toast(variant: 'success', text: 'أُنشئ حساب الأستاذ — انسخ رابط تعيين كلمة المرور.');
+    }
 }; ?>
 
 <div class="flex w-full flex-col gap-6">
@@ -159,6 +218,13 @@ new #[Title('الأساتذة')] class extends Component {
                                     <flux:button icon="ellipsis-horizontal" size="sm" variant="subtle" />
                                     <flux:menu>
                                         <flux:menu.item wire:click="edit('{{ $teacher->uuid }}')" icon="pencil">تعديل</flux:menu.item>
+
+                                        @can('users.invite')
+                                            @if ($teacher->user_id === null)
+                                                <flux:menu.item wire:click="createAccount('{{ $teacher->uuid }}')" icon="key">إنشاء حساب دخول</flux:menu.item>
+                                            @endif
+                                        @endcan
+
                                         <flux:menu.separator />
                                         <flux:menu.item wire:click="delete('{{ $teacher->uuid }}')" icon="trash" variant="danger">حذف</flux:menu.item>
                                     </flux:menu>
@@ -198,6 +264,33 @@ new #[Title('الأساتذة')] class extends Component {
                 <flux:button type="submit" variant="primary" data-test="save-teacher">حفظ</flux:button>
                 <flux:modal.close><flux:button variant="ghost">إلغاء</flux:button></flux:modal.close>
             </div>
+        </form>
+    </flux:modal>
+
+    <flux:modal name="teacher-account" class="w-full max-w-lg">
+        <form wire:submit="saveAccount" class="space-y-6">
+            <flux:heading size="lg">إنشاء حساب دخول</flux:heading>
+
+            @if ($inviteLink)
+                <flux:callout icon="link" variant="success">
+                    <flux:callout.heading>أُنشئ الحساب ورُبط بسجلّ الأستاذ</flux:callout.heading>
+                    <flux:callout.text>انسخ الرابط وسلّمه للأستاذ ليعيّن كلمة مروره — لن يُعرض مرّةً أخرى.</flux:callout.text>
+                    <flux:input readonly :value="$inviteLink" class="latin-numerals mt-3" data-test="teacher-invite-link" />
+                </flux:callout>
+
+                <flux:modal.close><flux:button variant="primary">تمّ</flux:button></flux:modal.close>
+            @else
+                <flux:text size="sm" class="text-ink-500 dark:text-zinc-400">
+                    يُسنَد للحساب دور «أستاذ» داخل هذا المعهد، ويُربط بسجلّه — وهذا شرط تشغيل تطبيق الأستاذ.
+                </flux:text>
+
+                <flux:input wire:model="account_email" type="email" label="البريد الإلكتروني" required data-test="teacher-account-email" />
+
+                <div class="flex gap-2">
+                    <flux:button type="submit" variant="primary" data-test="save-teacher-account">إنشاء</flux:button>
+                    <flux:modal.close><flux:button variant="ghost">إلغاء</flux:button></flux:modal.close>
+                </div>
+            @endif
         </form>
     </flux:modal>
 </div>
