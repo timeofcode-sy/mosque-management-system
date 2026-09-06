@@ -49,6 +49,34 @@ enum PanelRole: string
     }
 
     /**
+     * بادئة اسم المستخدم المولَّد لهذا الدور — مع رقمٍ متسلسل تصير student2395.
+     */
+    public function usernamePrefix(): string
+    {
+        return match ($this) {
+            self::Developer => 'dev',
+            self::SuperAdmin => 'sadmin',
+            self::Admin => 'admin',
+            self::Supervisor => 'supervisor',
+            self::Teacher => 'teacher',
+            self::Guardian => 'guardian',
+            self::Student => 'student',
+        };
+    }
+
+    /**
+     * الدور الإداري هو ما يُنشأ يدوياً من شاشة المستخدمين — وما عداه يولّده النظام
+     * تلقائياً مع سجلّه (أستاذ/ولي أمر/طالب).
+     *
+     * وهي القسمة نفسها التي تحكم كلمة المرور: الإداري يغيّر كلمته بنفسه، وغيره
+     * تُدار كلمتُه من اللوحة وحدها كي تبقى قابلةً للطباعة والتوزيع.
+     */
+    public function isAdministrative(): bool
+    {
+        return $this->linkedRecord() === null;
+    }
+
+    /**
      * السجلّ الذي يلزم ربط الحساب به ليعمل نطاق المعهد والـ API.
      */
     public function linkedRecord(): ?string

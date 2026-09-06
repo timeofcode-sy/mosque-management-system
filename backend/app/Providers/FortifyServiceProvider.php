@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
+use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -27,6 +29,7 @@ class FortifyServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureActions();
+        $this->configureAuthentication();
         $this->configureViews();
         $this->configureRateLimiting();
     }
@@ -41,6 +44,31 @@ class FortifyServiceProvider extends ServiceProvider
     }
 
     /**
+     * الدخول باسم المستخدم، ويُقبل البريد بديلاً عنه لمن له بريد.
+     *
+     * الحقل واحد في الاستمارة (username) يُطابَق على العمودين معاً: الطالب وولي
+     * الأمر لا بريد لهما، والإداريّ اعتاد بريده. والحساب المقفل يُرفض هنا لا بعد
+     * إنشاء الجلسة.
+     */
+    private function configureAuthentication(): void
+    {
+        Fortify::authenticateUsing(function (Request $request): ?User {
+            $login = (string) $request->input(Fortify::username());
+
+            $user = User::query()
+                ->where('username', $login)
+                ->orWhere(fn ($query) => $query->whereNotNull('email')->where('email', $login))
+                ->first();
+
+            if ($user === null || ! $user->is_active || ! Hash::check((string) $request->input('password'), $user->password)) {
+                return null;
+            }
+
+            return $user;
+        });
+    }
+
+    /**
      * Configure Fortify views.
      */
     private function configureViews(): void
@@ -49,7 +77,6 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::verifyEmailView(fn () => view('pages::auth.verify-email'));
         Fortify::twoFactorChallengeView(fn () => view('pages::auth.two-factor-challenge'));
         Fortify::confirmPasswordView(fn () => view('pages::auth.confirm-password'));
-        Fortify::registerView(fn () => view('pages::auth.register'));
         Fortify::resetPasswordView(fn () => view('pages::auth.reset-password'));
         Fortify::requestPasswordResetLinkView(fn () => view('pages::auth.forgot-password'));
     }

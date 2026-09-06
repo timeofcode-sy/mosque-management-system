@@ -8,8 +8,10 @@ use App\Models\SyncConflict;
 use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Concerns\BuildsInstitute;
 use Tests\TestCase;
 
@@ -101,26 +103,61 @@ class SuperAdminPanelTest extends TestCase
             ->set('new_institute', (string) $this->institute->id)
             ->call('save')
             ->assertHasNoErrors()
-            ->assertSet('inviteLink', fn (?string $link) => is_string($link) && $link !== '');
+            ->assertSet('issuedCredentials', fn (?array $issued) => is_array($issued)
+                && preg_match('/^supervisor\d{4,}$/', (string) $issued['username']) === 1
+                && preg_match('/^\d{8}$/', $issued['password']) === 1);
 
         $this->assertDatabaseHas('users', ['email' => 'zaid@mousqe.test']);
     }
 
     /**
-     * زرّ «إنشاء حساب دخول» في شاشة الأساتذة — شرط تشغيل تطبيق الأستاذ.
+     * قائمة الإنشاء لا تعرض إلا الأدوار الإدارية — لا «طالب» ولا «أستاذ».
      */
-    public function test_a_teacher_record_gains_a_login_account(): void
+    public function test_the_creation_form_offers_administrative_roles_only(): void
+    {
+        Livewire::test('pages::users.index')
+            ->call('invite')
+            ->set('first_name', 'زيد')
+            ->set('last_name', 'الأنصاري')
+            ->set('new_role', 'student')
+            ->set('new_institute', (string) $this->institute->id)
+            ->call('save')
+            ->assertHasErrors('new_role');
+    }
+
+    /**
+     * إقفال الحساب يمنع دخوله؛ ولا يُقفل أحدٌ حسابه هو.
+     */
+    public function test_an_account_can_be_locked_from_the_users_screen(): void
+    {
+        $target = User::factory()->create();
+        $this->assignRole($target, 'supervisor');
+
+        Livewire::test('pages::users.index')->call('toggleActivation', $target->id, false);
+
+        $this->assertFalse($target->fresh()->is_active);
+
+        /** الفاعل هنا هو المبرمج نفسه — ولا يُقفل أحدٌ حسابه */
+        Livewire::test('pages::users.index')->call('toggleActivation', $this->developer->id, false);
+
+        $this->assertTrue($this->developer->fresh()->is_active);
+    }
+
+    /**
+     * سجلّ الأستاذ يخرج ومعه حسابُه — لا زرّ ولا خطوةَ إنشاء.
+     */
+    public function test_a_teacher_record_is_born_with_a_login_account(): void
     {
         $teacher = Teacher::factory()->create(['institute_id' => $this->institute->id]);
 
-        Livewire::test('pages::teachers.index')
-            ->call('createAccount', $teacher->uuid)
-            ->set('account_email', 'ustaz@mousqe.test')
-            ->call('saveAccount')
-            ->assertHasNoErrors();
+        $user = $teacher->fresh()->user;
 
-        $this->assertNotNull($teacher->fresh()->user_id);
-        $this->assertDatabaseHas('users', ['email' => 'ustaz@mousqe.test']);
+        $this->assertNotNull($user);
+        $this->assertMatchesRegularExpression('/^teacher\d{4,}$/', (string) $user->username);
+        $this->assertMatchesRegularExpression('/^\d{8}$/', (string) $user->generated_password);
+
+        App::make(PermissionRegistrar::class)->setPermissionsTeamId($this->institute->id);
+        $this->assertTrue($user->hasRole('teacher'));
     }
 
     public function test_a_sync_conflict_can_be_marked_reviewed(): void

@@ -1,8 +1,10 @@
 <?php
 
 use App\Actions\AssignUserRole;
+use App\Actions\ChangeUserPassword;
 use App\Actions\InviteUser;
 use App\Actions\RevokeUserRole;
+use App\Actions\ToggleUserActivation;
 use App\Enums\PanelRole;
 use App\Models\Institute;
 use App\Models\User;
@@ -20,8 +22,12 @@ use Livewire\WithPagination;
 
 /**
  * المستخدمون وأدوارهم. الحراسة كلها في الإجراءات (AssignUserRole) لا هنا —
- * القائمة تُبنى من assignableRoles كي لا يرى المستخدم ما لا يملكه، لكنّ الرفض
+ * القائمة تُبنى من الأدوار المتاحة كي لا يرى المستخدم ما لا يملكه، لكنّ الرفض
  * الحقيقي يقع على الخادم.
+ *
+ * الإنشاء اليدوي مقصورٌ على الأدوار الإدارية (creatableRoles): مدير المعهد يرى
+ * «مدير معهد» و«مشرف» لا غير. أما الأستاذ وولي الأمر والطالب فحساباتهم تولَّد مع
+ * سجلّاتها في App\Observers، وتُدار من شاشة «بيانات الدخول».
  */
 new #[Title('المستخدمون')] class extends Component {
     use WithPagination;
@@ -49,10 +55,12 @@ new #[Title('المستخدمون')] class extends Component {
     public string $new_institute = '';
 
     /**
-     * رابط تعيين كلمة المرور — يُعرض مرّةً واحدة بعد الإنشاء ثم يُنسى: لا قناة بريد
-     * في المشروع، فالنسخ اليدوي هو التسليم.
+     * بيانات الدخول المولَّدة — تُعرض مرّةً بعد الإنشاء. لا قناة بريد في المشروع،
+     * فالنسخ اليدوي هو التسليم.
+     *
+     * @var array{username: ?string, password: string}|null
      */
-    public ?string $inviteLink = null;
+    public ?array $issuedCredentials = null;
 
     /** إسناد دور لمستخدم قائم */
     public ?int $targetUserId = null;
@@ -94,6 +102,15 @@ new #[Title('المستخدمون')] class extends Component {
     }
 
     /**
+     * @return array<int, PanelRole>
+     */
+    #[Computed]
+    public function creatableRoles(): array
+    {
+        return AssignUserRole::creatableRoles(auth()->user());
+    }
+
+    /**
      * @return Collection<int, Institute>
      */
     #[Computed]
@@ -104,7 +121,7 @@ new #[Title('المستخدمون')] class extends Component {
 
     public function invite(): void
     {
-        $this->reset('first_name', 'last_name', 'email', 'phone', 'new_role', 'new_institute', 'inviteLink', 'targetUserId');
+        $this->reset('first_name', 'last_name', 'email', 'phone', 'new_role', 'new_institute', 'issuedCredentials', 'targetUserId');
         $this->new_institute = (string) (PanelScope::resolve()?->id ?? '');
         $this->resetValidation();
 
@@ -116,9 +133,9 @@ new #[Title('المستخدمون')] class extends Component {
         $validated = $this->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:32'],
-            'new_role' => ['required', Rule::in(collect($this->assignableRoles)->map->value->all())],
+            'new_role' => ['required', Rule::in(collect($this->creatableRoles)->map->value->all())],
             'new_institute' => ['nullable', Rule::in($this->institutes->modelKeys())],
         ], attributes: [
             'first_name' => 'الاسم', 'last_name' => 'الكنية', 'email' => 'البريد',
@@ -133,7 +150,7 @@ new #[Title('المستخدمون')] class extends Component {
                 [
                     'first_name' => $validated['first_name'],
                     'last_name' => $validated['last_name'],
-                    'email' => $validated['email'],
+                    'email' => $validated['email'] ?: null,
                     'phone' => $validated['phone'] ?: null,
                 ],
                 $role,
@@ -145,10 +162,14 @@ new #[Title('المستخدمون')] class extends Component {
             return;
         }
 
-        $this->inviteLink = $result['reset_url'];
+        $this->issuedCredentials = [
+            'username' => $result['user']->username,
+            'password' => $result['password'],
+        ];
+
         unset($this->users, $this->assignments);
 
-        Flux::toast(variant: 'success', text: 'أُنشئ الحساب — انسخ رابط تعيين كلمة المرور.');
+        Flux::toast(variant: 'success', text: 'أُنشئ الحساب — انسخ بيانات الدخول.');
     }
 
     public function openRoleForm(User $user): void
@@ -207,6 +228,39 @@ new #[Title('المستخدمون')] class extends Component {
         Flux::toast(variant: 'success', text: 'سُحب الدور.');
     }
 
+    /**
+     * تبديل كلمة مرور حساب — بتوليد ثمانية أرقام جديدة.
+     */
+    public function resetPassword(int $userId): void
+    {
+        try {
+            $user = User::findOrFail($userId);
+            $password = app(ChangeUserPassword::class)->handle(auth()->user(), $user);
+        } catch (RuntimeException $exception) {
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
+
+            return;
+        }
+
+        $this->issuedCredentials = ['username' => $user->username, 'password' => $password];
+
+        Flux::modal('issued-credentials')->show();
+    }
+
+    public function toggleActivation(int $userId, bool $active): void
+    {
+        try {
+            app(ToggleUserActivation::class)->handle(auth()->user(), User::findOrFail($userId), $active);
+        } catch (RuntimeException $exception) {
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
+
+            return;
+        }
+
+        unset($this->users);
+        Flux::toast(variant: 'success', text: $active ? 'فُتح الحساب.' : 'أُقفل الحساب.');
+    }
+
     public function linkedRecordOf(User $user): ?string
     {
         return match (true) {
@@ -252,10 +306,10 @@ new #[Title('المستخدمون')] class extends Component {
             <flux:table :paginate="$this->users">
                 <flux:table.columns>
                     <flux:table.column>المستخدم</flux:table.column>
-                    <flux:table.column>البريد</flux:table.column>
+                    <flux:table.column>اسم المستخدم</flux:table.column>
                     <flux:table.column>الأدوار</flux:table.column>
                     <flux:table.column>السجلّ المرتبط</flux:table.column>
-                    <flux:table.column>التحقّق</flux:table.column>
+                    <flux:table.column>الحالة</flux:table.column>
                     <flux:table.column></flux:table.column>
                 </flux:table.columns>
 
@@ -263,7 +317,7 @@ new #[Title('المستخدمون')] class extends Component {
                     @foreach ($this->users as $user)
                         <flux:table.row :key="$user->id">
                             <flux:table.cell>{{ $user->name }}</flux:table.cell>
-                            <flux:table.cell class="latin-numerals">{{ $user->email }}</flux:table.cell>
+                            <flux:table.cell class="latin-numerals">{{ $user->username ?? $user->email }}</flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex flex-wrap gap-1">
                                     @forelse ($this->assignments->get($user->id, []) as $assignment)
@@ -286,15 +340,25 @@ new #[Title('المستخدمون')] class extends Component {
                             </flux:table.cell>
                             <flux:table.cell>{{ $this->linkedRecordOf($user) ?? '—' }}</flux:table.cell>
                             <flux:table.cell>
-                                <flux:badge size="sm" :color="$user->email_verified_at ? 'lime' : 'zinc'">
-                                    {{ $user->email_verified_at ? 'موثَّق' : 'غير موثَّق' }}
+                                <flux:badge size="sm" :color="$user->is_active ? 'lime' : 'zinc'">
+                                    {{ $user->is_active ? 'نشط' : 'مقفل' }}
                                 </flux:badge>
                             </flux:table.cell>
                             <flux:table.cell>
                                 <flux:dropdown position="bottom" align="end">
                                     <flux:button icon="ellipsis-horizontal" size="sm" variant="subtle" />
                                     <flux:menu>
-                                        <flux:menu.item wire:click="openRoleForm('{{ $user->id }}')" icon="key">إسناد دور</flux:menu.item>
+                                        <flux:menu.item wire:click="openRoleForm('{{ $user->id }}')" icon="identification">إسناد دور</flux:menu.item>
+
+                                        @can('credentials.manage')
+                                            <flux:menu.item wire:click="resetPassword({{ $user->id }})" icon="key" data-test="reset-password">توليد كلمة مرور</flux:menu.item>
+                                        @endcan
+
+                                        @if ($user->is_active)
+                                            <flux:menu.item wire:click="toggleActivation({{ $user->id }}, false)" icon="lock-closed">إقفال الحساب</flux:menu.item>
+                                        @else
+                                            <flux:menu.item wire:click="toggleActivation({{ $user->id }}, true)" icon="lock-open">فتح الحساب</flux:menu.item>
+                                        @endif
 
                                         @foreach ($this->assignments->get($user->id, []) as $assignment)
                                             <flux:menu.item
@@ -320,13 +384,17 @@ new #[Title('المستخدمون')] class extends Component {
         <form wire:submit="save" class="space-y-6">
             <flux:heading size="lg">حساب جديد</flux:heading>
 
-            @if ($inviteLink)
-                <flux:callout icon="link" variant="success">
+            @if ($issuedCredentials)
+                <flux:callout icon="key" variant="success">
                     <flux:callout.heading>أُنشئ الحساب</flux:callout.heading>
                     <flux:callout.text>
-                        انسخ هذا الرابط وسلّمه لصاحب الحساب ليعيّن كلمة مروره — لن يُعرض مرّةً أخرى.
+                        سلّم صاحبَ الحساب هذه البيانات — وتبقى متاحةً في شاشة «بيانات الدخول» لمن يعلوه رتبةً.
                     </flux:callout.text>
-                    <flux:input readonly :value="$inviteLink" class="latin-numerals mt-3" data-test="invite-link" />
+
+                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                        <flux:input readonly label="اسم المستخدم" :value="$issuedCredentials['username']" class="latin-numerals" data-test="issued-username" />
+                        <flux:input readonly label="كلمة المرور" :value="$issuedCredentials['password']" class="latin-numerals" data-test="issued-password" />
+                    </div>
                 </flux:callout>
 
                 <flux:modal.close><flux:button variant="primary">تمّ</flux:button></flux:modal.close>
@@ -334,16 +402,20 @@ new #[Title('المستخدمون')] class extends Component {
                 <div class="grid gap-6 sm:grid-cols-2">
                     <flux:input wire:model="first_name" label="الاسم" required />
                     <flux:input wire:model="last_name" label="الكنية" required />
-                    <flux:input wire:model="email" type="email" label="البريد الإلكتروني" required />
+                    <flux:input wire:model="email" type="email" label="البريد الإلكتروني" description="اختياري — يصلح بديلاً لاسم المستخدم عند الدخول" />
                     <flux:input wire:model="phone" label="الجوال" />
                 </div>
 
                 <flux:select wire:model.live="new_role" label="الدور" required>
                     <flux:select.option value="">اختر دوراً</flux:select.option>
-                    @foreach ($this->assignableRoles as $panelRole)
+                    @foreach ($this->creatableRoles as $panelRole)
                         <flux:select.option value="{{ $panelRole->value }}">{{ $panelRole->label() }}</flux:select.option>
                     @endforeach
                 </flux:select>
+
+                <flux:text size="sm" class="text-ink-500 dark:text-zinc-400">
+                    حسابات الأساتذة وأولياء الأمور والطلاب يولّدها النظام مع سجلّاتها، وتُدار من شاشة «بيانات الدخول».
+                </flux:text>
 
                 @unless (\App\Enums\PanelRole::tryFrom($new_role)?->isGlobal())
                     <flux:select wire:model="new_institute" label="المعهد" description="الدور يُسنَد داخل هذا المعهد وحده">
@@ -359,6 +431,21 @@ new #[Title('المستخدمون')] class extends Component {
                 </div>
             @endunless
         </form>
+    </flux:modal>
+
+    <flux:modal name="issued-credentials" class="w-full max-w-md">
+        <div class="space-y-6">
+            <flux:heading size="lg">بيانات الدخول الجديدة</flux:heading>
+
+            @if ($issuedCredentials)
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <flux:input readonly label="اسم المستخدم" :value="$issuedCredentials['username']" class="latin-numerals" />
+                    <flux:input readonly label="كلمة المرور" :value="$issuedCredentials['password']" class="latin-numerals" data-test="regenerated-password" />
+                </div>
+            @endif
+
+            <flux:modal.close><flux:button variant="primary">تمّ</flux:button></flux:modal.close>
+        </div>
     </flux:modal>
 
     <flux:modal name="assign-role" class="w-full max-w-md">

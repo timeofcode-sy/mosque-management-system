@@ -11,22 +11,34 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * دخول تطبيقات فلاتر عبر توكن Sanctum شخصي — لا جلسة ولا كوكي، فالتطبيق يعمل أوف-لاين.
+ *
+ * الحقل username يقبل اسم المستخدم المولَّد أو البريد لمن له بريد: الطالب وولي
+ * الأمر لا بريد لهما، وهما جمهور هذه التطبيقات.
  */
 class AuthController extends Controller
 {
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'username' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
             'device_name' => ['required', 'string', 'max:64'],
         ]);
 
-        $user = User::query()->where('email', $credentials['email'])->first();
+        $user = User::query()
+            ->where('username', $credentials['username'])
+            ->orWhere(fn ($query) => $query->whereNotNull('email')->where('email', $credentials['username']))
+            ->first();
 
         if ($user === null || ! Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['بيانات الدخول غير صحيحة.'],
+                'username' => ['بيانات الدخول غير صحيحة.'],
+            ]);
+        }
+
+        if (! $user->is_active) {
+            throw ValidationException::withMessages([
+                'username' => ['هذا الحساب مقفل.'],
             ]);
         }
 
@@ -37,6 +49,7 @@ class AuthController extends Controller
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'username' => $user->username,
                 'email' => $user->email,
                 'roles' => $user->getRoleNames(),
             ],
@@ -57,6 +70,7 @@ class AuthController extends Controller
         return response()->json([
             'id' => $user->id,
             'name' => $user->name,
+            'username' => $user->username,
             'email' => $user->email,
             'roles' => $user->getRoleNames(),
         ]);

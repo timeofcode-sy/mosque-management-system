@@ -1,6 +1,6 @@
 <x-layouts::auth :title="__('Log in')">
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Log in to your account')" :description="__('Enter your email and password below to log in')" />
+        <x-auth-header title="الدخول إلى حسابك" description="أدخل اسم المستخدم وكلمة المرور" />
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
@@ -10,16 +10,17 @@
         <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-6">
             @csrf
 
-            <!-- Email Address -->
+            <!-- اسم المستخدم — أو البريد لمن له بريد -->
             <flux:input
-                name="email"
-                :label="__('Email address')"
-                :value="old('email')"
-                type="email"
+                name="username"
+                label="اسم المستخدم"
+                :value="old('username')"
+                type="text"
                 required
                 autofocus
-                autocomplete="email"
-                placeholder="email@example.com"
+                autocomplete="username"
+                class="latin-numerals"
+                placeholder="student1234"
             />
 
             <!-- Password -->
@@ -51,9 +52,8 @@
             </div>
         </form>
 
-        <div class="space-x-1 text-sm text-center rtl:space-x-reverse text-zinc-600 dark:text-zinc-400">
-            <span>{{ __('Don\'t have an account?') }}</span>
-            <flux:link :href="route('register')" wire:navigate>{{ __('Sign up') }}</flux:link>
-        </div>
+        <flux:text size="sm" class="text-center">
+            الحسابات تُنشئها إدارة المعهد — راجع مشرفك إن لم تصلك بيانات دخولك.
+        </flux:text>
     </div>
 </x-layouts::auth>

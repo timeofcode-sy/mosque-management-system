@@ -66,7 +66,7 @@
                     </flux:sidebar.group>
                 @endcanany
 
-                @canany(['students.manage', 'teachers.manage'])
+                @canany(['students.manage', 'teachers.manage', 'credentials.export'])
                     <flux:sidebar.group heading="الأشخاص" class="grid">
                         @can('students.manage')
                             <flux:sidebar.item icon="users" :href="route('students.index')" :current="request()->routeIs('students.*')" wire:navigate>
@@ -77,6 +77,12 @@
                         @can('teachers.manage')
                             <flux:sidebar.item icon="academic-cap" :href="route('teachers.index')" :current="request()->routeIs('teachers.*')" wire:navigate>
                                 الأساتذة
+                            </flux:sidebar.item>
+                        @endcan
+
+                        @can('credentials.export')
+                            <flux:sidebar.item icon="key" :href="route('credentials.index')" :current="request()->routeIs('credentials.*')" wire:navigate>
+                                بيانات الدخول
                             </flux:sidebar.item>
                         @endcan
                     </flux:sidebar.group>

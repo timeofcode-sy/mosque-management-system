@@ -13,6 +13,10 @@ class RolesAndPermissionsSeeder extends Seeder
     /**
      * كل صلاحيات النظام مصنّفة حسب المجال.
      *
+     * credentials.export و credentials.manage للمشرف فما فوق: هو من يطبع بطاقات
+     * الدخول ويوزّعها على حلقته، ومن يعيد توليد كلمة نسيها طالب. لكنّهما مقيّدتان
+     * بالرتبة في AssignUserRole::outranks فلا يبلغ بهما مَن فوقه.
+     *
      * @var array<int, string>
      */
     private const PERMISSIONS = [
@@ -32,6 +36,7 @@ class RolesAndPermissionsSeeder extends Seeder
         'customfields.manage', 'tags.manage',
         'announcements.view', 'announcements.manage',
         'settings.manage', 'users.manage', 'users.invite',
+        'credentials.export', 'credentials.manage',
         'sync.pull', 'sync.push', 'conflicts.review',
         'system.debug',
     ];
@@ -51,6 +56,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'attendance.view', 'attendance.take', 'attendance.amend', 'attendance.lock',
             'excuses.review', 'progress.view', 'progress.manage', 'evaluations.view', 'evaluations.manage',
             'reports.view', 'reports.export', 'announcements.view', 'announcements.manage',
+            'credentials.export', 'credentials.manage',
             'sync.pull', 'sync.push', 'conflicts.review',
         ],
         'teacher' => [

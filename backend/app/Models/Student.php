@@ -8,8 +8,10 @@ use App\Enums\EnrollmentStatus;
 use App\Enums\Gender;
 use App\Enums\GuardianRelation;
 use App\Enums\StudentStatus;
+use App\Observers\StudentObserver;
 use Database\Factories\StudentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,6 +30,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'family_members_count', 'student_health_status', 'family_health_status',
     'status', 'notes',
 ])]
+#[ObservedBy(StudentObserver::class)]
 class Student extends Model
 {
     /** @use HasFactory<StudentFactory> */

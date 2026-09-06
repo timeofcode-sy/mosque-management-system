@@ -20,6 +20,12 @@ new #[Title('Security settings')] class extends Component {
     public string $password = '';
     public string $password_confirmation = '';
 
+    /**
+     * الأستاذ وولي الأمر والطالب لا يبدّلون كلماتهم بأنفسهم — يُنظر إلى
+     * User::managesOwnPassword().
+     */
+    public bool $canManageOwnPassword;
+
     public bool $canManageTwoFactor;
 
     public bool $twoFactorEnabled;
@@ -45,6 +51,8 @@ new #[Title('Security settings')] class extends Component {
      */
     public function mount(DisableTwoFactorAuthentication $disableTwoFactorAuthentication): void
     {
+        $this->canManageOwnPassword = auth()->user()->managesOwnPassword();
+
         $this->canManageTwoFactor = Features::canManageTwoFactorAuthentication();
 
         if ($this->canManageTwoFactor) {
@@ -68,6 +76,8 @@ new #[Title('Security settings')] class extends Component {
      */
     public function updatePassword(): void
     {
+        abort_unless($this->canManageOwnPassword, 403);
+
         try {
             $validated = $this->validate([
                 'current_password' => $this->currentPasswordRules(),
@@ -79,9 +89,11 @@ new #[Title('Security settings')] class extends Component {
             throw $e;
         }
 
-        Auth::user()->update([
+        /** النسخة المشفَّرة تُمسح: ما اختاره صاحبُ الحساب لا يطّلع عليه مشرف */
+        Auth::user()->forceFill([
             'password' => $validated['password'],
-        ]);
+            'generated_password' => null,
+        ])->save();
 
         $this->reset('current_password', 'password', 'password_confirmation');
 
@@ -172,6 +184,11 @@ new #[Title('Security settings')] class extends Component {
     <flux:heading class="sr-only">{{ __('Security settings') }}</flux:heading>
 
     <x-pages::settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
+        @unless ($canManageOwnPassword)
+            <flux:callout icon="lock-closed" class="mt-6">
+                <flux:callout.text>كلمة مرور حسابك تُدار من إدارة المعهد — راجع مشرفك لتبديلها.</flux:callout.text>
+            </flux:callout>
+        @else
         <form method="POST" wire:submit="updatePassword" class="mt-6 space-y-6">
             <flux:input
                 wire:model="current_password"
@@ -206,6 +223,7 @@ new #[Title('Security settings')] class extends Component {
                 </flux:button>
             </div>
         </form>
+        @endunless
 
         @if ($canManageTwoFactor)
             <section class="mt-12">

@@ -58,6 +58,7 @@ class DemoInstituteSeeder extends Seeder
         App::make(PermissionRegistrar::class)->setPermissionsTeamId($institute->id);
 
         $admin = User::factory()->create([
+            'username' => 'admin1000',
             'first_name' => 'مشرف',
             'last_name' => 'المعهد',
             'email' => 'admin@mousqe.test',
@@ -128,12 +129,14 @@ class DemoInstituteSeeder extends Seeder
     private function seedGlobalAccounts(): void
     {
         User::factory()->create([
+            'username' => 'sadmin1000',
             'first_name' => 'المشرف',
             'last_name' => 'الأعلى',
             'email' => 'super@mousqe.test',
         ])->assignGlobalRole('super_admin');
 
         User::factory()->create([
+            'username' => 'dev1000',
             'first_name' => 'مبرمج',
             'last_name' => 'النظام',
             'email' => 'dev@mousqe.test',

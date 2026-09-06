@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Concerns\HasUuid;
+use App\Observers\GuardianObserver;
 use Database\Factories\GuardianFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'institute_id', 'user_id', 'full_name', 'phone', 'alternate_phone',
     'occupation', 'national_id', 'address', 'is_alive', 'notes',
 ])]
+#[ObservedBy(GuardianObserver::class)]
 class Guardian extends Model
 {
     /** @use HasFactory<GuardianFactory> */

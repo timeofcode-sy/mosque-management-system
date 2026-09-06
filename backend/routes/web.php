@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CredentialExportController;
 use App\Http\Controllers\ReportPrintController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +25,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware('permission:users.manage')->group(function () {
         Route::livewire('users', 'pages::users.index')->name('users.index');
+    });
+
+    /**
+     * بيانات الدخول شاشةٌ مستقلّة عن «المستخدمون» لأن جمهورها غيرُ جمهورها: المشرف
+     * يطبع بطاقات حلقته ولا يملك users.manage أصلاً.
+     */
+    Route::middleware('permission:credentials.export')->group(function () {
+        Route::livewire('credentials', 'pages::credentials.index')->name('credentials.index');
+        Route::get('credentials/export', [CredentialExportController::class, 'csv'])->name('credentials.csv');
+        Route::get('credentials/print', [CredentialExportController::class, 'print'])->name('credentials.print');
     });
 
     Route::middleware('permission:system.debug')->group(function () {

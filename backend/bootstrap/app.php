@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\SetApiInstituteScope;
 use App\Http\Middleware\SetPanelInstituteScope;
 use Illuminate\Foundation\Application;
@@ -27,6 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         /** يضبط مفتاح فريق Spatie قبل middleware الصلاحيات على كل طلبات اللوحة */
         $middleware->appendToGroup('web', SetPanelInstituteScope::class);
+
+        /** الحساب المقفل لا تنفعه جلسةٌ قائمة ولا رمزٌ سابق */
+        $middleware->appendToGroup('web', EnsureUserIsActive::class);
+        $middleware->appendToGroup('api', EnsureUserIsActive::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

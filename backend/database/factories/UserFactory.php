@@ -25,6 +25,7 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'username' => fake()->unique()->userName(),
             'first_name' => fake()->firstName(),
             'last_name' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
@@ -35,6 +36,16 @@ class UserFactory extends Factory
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
         ];
+    }
+
+    /**
+     * حسابٌ مقفل — يُرفض دخولُه وتسقط رموزُه.
+     */
+    public function inactive(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_active' => false,
+        ]);
     }
 
     /**

@@ -5,8 +5,10 @@ namespace App\Models;
 use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
 use App\Enums\TeacherStatus;
+use App\Observers\TeacherObserver;
 use Database\Factories\TeacherFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +21,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'institute_id', 'user_id', 'display_name', 'phone', 'national_id', 'birth_date',
     'specialization', 'qualification', 'photo_path', 'address', 'hired_on', 'status', 'notes',
 ])]
+#[ObservedBy(TeacherObserver::class)]
 class Teacher extends Model
 {
     /** @use HasFactory<TeacherFactory> */
