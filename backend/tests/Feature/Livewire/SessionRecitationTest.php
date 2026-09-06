@@ -136,6 +136,110 @@ class SessionRecitationTest extends TestCase
         $this->assertSame($this->todaySession()->id, $award->attendance_session_id);
     }
 
+    public function test_a_recorded_recitation_is_corrected_in_place(): void
+    {
+        $log = $this->record(1, 30);
+
+        $this->recitations()
+            ->assertSeeHtml('edit-recitation-'.$log->id)
+            ->call('editRecitation', $log->uuid)
+            ->assertSet('surah', 67)
+            ->assertSet('fromAyah', 1)
+            ->assertSet('toAyah', 30)
+            ->set('toAyah', 12)
+            ->set('grade', RecitationGrade::Good->value)
+            ->call('saveRecitation')
+            ->assertHasNoErrors();
+
+        $log->refresh();
+
+        // سجلٌّ واحد لا سجلّان: التصحيح تعديلٌ لا إضافة.
+        $this->assertSame(1, MemorizationLog::query()->where('student_id', $this->student->id)->count());
+        $this->assertSame(12, $log->to_ayah);
+        $this->assertSame(RecitationGrade::Good, $log->grade);
+    }
+
+    public function test_a_corrected_recitation_is_not_a_repeat_of_itself(): void
+    {
+        $log = $this->record(1, 30);
+
+        $this->recitations()
+            ->call('editRecitation', $log->uuid)
+            ->call('saveRecitation')
+            ->assertHasNoErrors();
+
+        $log->refresh();
+
+        // لو حُسبت الخريطة بالسجلّ نفسه لصار الجديد صفراً والنقاط معه.
+        $this->assertEqualsWithDelta(31.0, (float) $log->new_lines, 0.01);
+        $this->assertEqualsWithDelta(20.67, (float) $log->points, 0.01);
+    }
+
+    public function test_a_recitation_of_another_student_is_refused(): void
+    {
+        $log = $this->record(1, 30);
+        $log->update(['student_id' => $this->enroll()->id]);
+
+        $component = $this->recitations()->call('editRecitation', $log->uuid);
+
+        $this->assertNull($component->get('editingRecitationId'));
+
+        $component->call('deleteRecitation', $log->uuid);
+
+        $this->assertNotNull($log->fresh());
+    }
+
+    public function test_a_completed_session_refuses_a_correction_without_the_amend_permission(): void
+    {
+        $log = $this->record(1, 30);
+
+        Livewire::test('pages::attendance.take', ['courseCircle' => $this->courseCircle])
+            ->set('date', '2026-09-01')
+            ->call('complete');
+
+        $teacher = User::factory()->create();
+        $this->assignRole($teacher, 'teacher');
+        $this->actingAs($teacher);
+
+        Livewire::test('session-student-recitations', [
+            'student' => $this->student,
+            'session' => $this->todaySession(),
+            'editable' => false,
+        ])
+            ->assertDontSeeHtml('edit-recitation-'.$log->id)
+            ->call('editRecitation', $log->uuid)
+            ->set('toAyah', 12)
+            ->call('saveRecitation');
+
+        $this->assertSame(30, $log->fresh()->to_ayah);
+    }
+
+    public function test_a_recorded_award_is_corrected_in_place(): void
+    {
+        $this->recitations()
+            ->call('openPoints')
+            ->set('pointReason', 'behavior')
+            ->set('pointValue', '-2')
+            ->call('savePoints');
+
+        $award = StudentPoint::query()->where('student_id', $this->student->id)->sole();
+
+        $this->recitations()
+            ->call('editAward', $award->uuid)
+            ->assertSet('pointReason', 'behavior')
+            ->assertSet('pointValue', '-2')
+            ->set('pointValue', '-5')
+            ->set('pointNote', 'خصم مصحَّح')
+            ->call('savePoints')
+            ->assertHasNoErrors();
+
+        $award->refresh();
+
+        $this->assertSame(1, StudentPoint::query()->where('student_id', $this->student->id)->count());
+        $this->assertEqualsWithDelta(-5.0, (float) $award->points, 0.01);
+        $this->assertSame('خصم مصحَّح', $award->note);
+    }
+
     public function test_a_note_is_saved_with_its_polarity(): void
     {
         Livewire::test('pages::attendance.take', ['courseCircle' => $this->courseCircle])
@@ -202,6 +306,23 @@ class SessionRecitationTest extends TestCase
             ->call('saveRecitation');
 
         $this->assertSame(0, MemorizationLog::query()->count());
+    }
+
+    /**
+     * تسميع مسجَّل في سورة الملك — أرضيّةُ اختبارات التصحيح.
+     */
+    private function record(int $from, int $to): MemorizationLog
+    {
+        $this->recitations()
+            ->call('openRecitation')
+            ->set('juz', 29)
+            ->set('surah', 67)
+            ->set('fromAyah', $from)
+            ->set('toAyah', $to)
+            ->set('grade', RecitationGrade::Excellent->value)
+            ->call('saveRecitation');
+
+        return MemorizationLog::query()->where('student_id', $this->student->id)->latest('id')->firstOrFail();
     }
 
     private function recitations(): Testable

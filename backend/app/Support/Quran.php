@@ -216,6 +216,20 @@ class Quran
     }
 
     /**
+     * أوّل جزء تقع فيه السورة — يلزم فتح نموذج التسميع على سجلّ لا جزء مسجّلاً له.
+     */
+    public static function juzOfSurah(int $surah): int
+    {
+        foreach (self::JUZ_SURAHS as $juz => $surahs) {
+            if (in_array($surah, $surahs, true)) {
+                return $juz;
+            }
+        }
+
+        return 30;
+    }
+
+    /**
      * أسطر مدى جزئي داخل السورة نسبةً وتناسباً: (آيات المدى ÷ آيات السورة) × أسطر السورة.
      *
      * تُبنى فوق coverage() فتصحّ للمدى العابر لعدّة سور، وتعود بمنزلتين عشريتين لتُجمع

@@ -50,6 +50,12 @@ new class extends Component
 
     public string $pointNote = '';
 
+    /** التسميع المفتوح للتصحيح — فارغٌ يعني تسميعاً جديداً. */
+    public ?int $editingRecitationId = null;
+
+    /** المنحة المفتوحة للتصحيح — فارغةٌ تعني منحة جديدة. */
+    public ?int $editingAwardId = null;
+
     /**
      * @return Collection<int, MemorizationLog>
      */
@@ -79,12 +85,14 @@ new class extends Component
     /**
      * ما سمّعه الطالب سابقاً — منه يُقترح المقطع غير المكتمل، وبه تُطرح الآيات المكرّرة.
      *
+     * السجلّ قيد التصحيح يُستثنى منها، وإلا حُسب مكرّراً لنفسه فصارت نقاطه صفراً.
+     *
      * @return array<int, array<int, array{int, int}>>
      */
     #[Computed]
     public function coverage(): array
     {
-        return app(BuildStudentCoverageMap::class)->handle($this->student);
+        return app(BuildStudentCoverageMap::class)->handle($this->student, $this->editingRecitationId);
     }
 
     /**
@@ -127,11 +135,41 @@ new class extends Component
 
     public function openRecitation(): void
     {
+        $this->editingRecitationId = null;
+        unset($this->coverage);
+
         $this->juz = $this->lastJuz();
         $this->grade = RecitationGrade::Excellent->value;
         $this->resetValidation();
 
         $this->selectFirstSurahOfJuz();
+
+        Flux::modal($this->recitationModal())->show();
+    }
+
+    /**
+     * فتح تسميع مسجَّل على نموذجه لتصحيحه — النموذج يعرف سورةً واحدة، فالمدى العابر
+     * لعدّة سور (لا يأتي إلا من المزامنة) يبقى على حذفه وإعادة تسجيله.
+     */
+    public function editRecitation(MemorizationLog $log): void
+    {
+        if (! $this->editable || ! $this->owns($log) || $log->from_surah !== $log->to_surah) {
+            return;
+        }
+
+        $this->editingRecitationId = $log->id;
+        unset($this->coverage);
+
+        $surah = (int) $log->from_surah;
+
+        $this->surah = $surah;
+        $this->juz = in_array($surah, Quran::surahsOfJuz((int) $log->juz), true)
+            ? (int) $log->juz
+            : Quran::juzOfSurah($surah);
+        $this->fromAyah = $log->from_ayah;
+        $this->toAyah = $log->to_ayah;
+        $this->grade = $log->grade?->value ?? RecitationGrade::Excellent->value;
+        $this->resetValidation();
 
         Flux::modal($this->recitationModal())->show();
     }
@@ -150,6 +188,10 @@ new class extends Component
 
     public function saveRecitation(): void
     {
+        if (! $this->editable) {
+            return;
+        }
+
         $this->validate([
             'juz' => ['required', 'integer', 'between:1,30'],
             'surah' => ['required', 'integer', 'between:1,114'],
@@ -173,6 +215,7 @@ new class extends Component
                     'juz' => $this->juz,
                 ],
                 auth()->user(),
+                editingId: $this->editingRecitationId,
             );
         } catch (RuntimeException $exception) {
             Flux::toast(variant: 'danger', text: $exception->getMessage());
@@ -180,13 +223,21 @@ new class extends Component
             return;
         }
 
+        $edited = $this->editingRecitationId !== null;
+
+        $this->editingRecitationId = null;
+
         unset($this->recitations, $this->coverage);
         Flux::modal($this->recitationModal())->close();
-        Flux::toast(variant: 'success', text: 'سُجّل التسميع.');
+        Flux::toast(variant: 'success', text: $edited ? 'عُدّل التسميع.' : 'سُجّل التسميع.');
     }
 
     public function deleteRecitation(MemorizationLog $log): void
     {
+        if (! $this->editable || ! $this->owns($log)) {
+            return;
+        }
+
         try {
             app(DeleteRecitation::class)->handle($log);
         } catch (RuntimeException $exception) {
@@ -201,6 +252,7 @@ new class extends Component
 
     public function openPoints(): void
     {
+        $this->editingAwardId = null;
         $this->pointReason = PointReason::Participation->value;
         $this->pointValue = '';
         $this->pointNote = '';
@@ -209,8 +261,30 @@ new class extends Component
         Flux::modal($this->pointsModal())->show();
     }
 
+    /**
+     * فتح منحة مسجَّلة على نموذجها لتصحيح قيمتها أو سببها.
+     */
+    public function editAward(StudentPoint $studentPoint): void
+    {
+        if (! $this->editable || ! $this->owns($studentPoint)) {
+            return;
+        }
+
+        $this->editingAwardId = $studentPoint->id;
+        $this->pointReason = $studentPoint->reason->value;
+        $this->pointValue = (string) (float) $studentPoint->points;
+        $this->pointNote = (string) $studentPoint->note;
+        $this->resetValidation();
+
+        Flux::modal($this->pointsModal())->show();
+    }
+
     public function savePoints(): void
     {
+        if (! $this->editable) {
+            return;
+        }
+
         $this->validate([
             'pointReason' => ['required', Illuminate\Validation\Rule::enum(PointReason::class)],
             'pointValue' => ['required', 'numeric', 'not_in:0', 'between:-100,100'],
@@ -223,6 +297,7 @@ new class extends Component
                 ['points' => $this->pointValue, 'reason' => $this->pointReason, 'note' => $this->pointNote],
                 auth()->user(),
                 $this->session,
+                editingId: $this->editingAwardId,
             );
         } catch (RuntimeException $exception) {
             Flux::toast(variant: 'danger', text: $exception->getMessage());
@@ -230,14 +305,18 @@ new class extends Component
             return;
         }
 
+        $edited = $this->editingAwardId !== null;
+
+        $this->editingAwardId = null;
+
         unset($this->awards);
         Flux::modal($this->pointsModal())->close();
-        Flux::toast(variant: 'success', text: 'مُنحت النقاط.');
+        Flux::toast(variant: 'success', text: $edited ? 'عُدّلت النقاط.' : 'مُنحت النقاط.');
     }
 
     public function deleteAward(StudentPoint $studentPoint): void
     {
-        if (! $this->editable) {
+        if (! $this->editable || ! $this->owns($studentPoint)) {
             return;
         }
 
@@ -255,6 +334,15 @@ new class extends Component
     public function pointsModal(): string
     {
         return "points-{$this->student->id}";
+    }
+
+    /**
+     * السجلّ لهذا الطالب في هذه الجلسة — المعرّف يأتي من المتصفّح فلا يُؤتمن وحده.
+     */
+    private function owns(MemorizationLog|StudentPoint $record): bool
+    {
+        return $record->student_id === $this->student->id
+            && $record->attendance_session_id === $this->session->id;
     }
 
     /**
@@ -317,12 +405,20 @@ new class extends Component
         :data-test="'open-points-'.$student->id"
     >نقاط</flux:button>
 
+    {{-- القلم يفتح المسجَّل على نموذجه، فالخطأ في التقدير أو المدى يُصحَّح ولا يُمحى ويُعاد --}}
     @foreach ($this->recitations as $log)
         <flux:badge wire:key="recitation-{{ $log->id }}" size="sm" :color="$log->grade?->color() ?? 'zinc'" class="latin-numerals">
             {{ Quran::name($log->from_surah) }} {{ $log->from_ayah }}–{{ $log->to_ayah }}
             @if ($log->grade) · {{ $log->grade->label() }} @endif
             · {{ rtrim(rtrim(number_format((float) $log->points, 2, '.', ''), '0'), '.') }} نقطة
             @if ($editable)
+                {{-- المدى العابر لعدّة سور لا يسعه النموذج، فيبقى على الحذف وحده --}}
+                @if ($log->from_surah === $log->to_surah)
+                    <x-badge-edit
+                        wire:click="editRecitation('{{ $log->uuid }}')"
+                        :data-test="'edit-recitation-'.$log->id"
+                    />
+                @endif
                 <flux:badge.close wire:click="deleteRecitation('{{ $log->uuid }}')" />
             @endif
         </flux:badge>
@@ -333,6 +429,10 @@ new class extends Component
             {{ $award->points > 0 ? '+' : '' }}{{ rtrim(rtrim(number_format((float) $award->points, 2, '.', ''), '0'), '.') }}
             {{ $award->reason->label() }}
             @if ($editable)
+                <x-badge-edit
+                    wire:click="editAward('{{ $award->uuid }}')"
+                    :data-test="'edit-award-'.$award->id"
+                />
                 <flux:badge.close wire:click="deleteAward('{{ $award->uuid }}')" />
             @endif
         </flux:badge>
@@ -340,7 +440,7 @@ new class extends Component
 
     <flux:modal :name="$this->recitationModal()" class="w-full max-w-lg">
         <form wire:submit="saveRecitation" class="space-y-6">
-            <flux:heading size="lg">تسميع {{ $student->full_name }}</flux:heading>
+            <flux:heading size="lg">{{ $editingRecitationId ? 'تعديل تسميع' : 'تسميع' }} {{ $student->full_name }}</flux:heading>
 
             <div class="grid gap-6 sm:grid-cols-2">
                 <flux:select wire:model.live="juz" label="الجزء" class="latin-numerals" :data-test="'recitation-juz-'.$student->id">
@@ -414,7 +514,7 @@ new class extends Component
 
     <flux:modal :name="$this->pointsModal()" class="w-full max-w-lg">
         <form wire:submit="savePoints" class="space-y-6">
-            <flux:heading size="lg">نقاط تقديرية · {{ $student->full_name }}</flux:heading>
+            <flux:heading size="lg">{{ $editingAwardId ? 'تعديل النقاط' : 'نقاط تقديرية' }} · {{ $student->full_name }}</flux:heading>
 
             <flux:select wire:model="pointReason" label="السبب" :data-test="'point-reason-'.$student->id">
                 @foreach (PointReason::options() as $value => $label)

@@ -20,8 +20,9 @@ class AwardStudentPoints
 {
     /**
      * @param  array{points: float|int|string, reason: string, note?: string|null, awarded_on?: string|null, course_circle_id?: int|null}  $data
+     * @param  int|null  $editingId  منحة قائمة تُصحَّح بدل أن تُضاف ثانية
      */
-    public function handle(Student $student, array $data, ?User $actor = null, ?AttendanceSession $session = null): StudentPoint
+    public function handle(Student $student, array $data, ?User $actor = null, ?AttendanceSession $session = null, ?int $editingId = null): StudentPoint
     {
         if ($session?->status === SessionStatus::Locked) {
             throw new RuntimeException('الجلسة مقفلة ولا تقبل التعديل.');
@@ -39,17 +40,23 @@ class AwardStudentPoints
             throw new RuntimeException('لا معنى لمنح صفر نقطة.');
         }
 
-        return StudentPoint::create([
+        $attributes = [
             'student_id' => $student->id,
             'course_circle_id' => $data['course_circle_id'] ?? $session?->course_circle_id,
             'attendance_session_id' => $session?->id,
             'points' => $points,
             'reason' => $reason,
             'note' => blank($data['note'] ?? null) ? null : $data['note'],
-            'awarded_by' => $actor?->id,
             'awarded_on' => $data['awarded_on']
                 ?? $session?->session_date?->toDateString()
                 ?? Carbon::today()->toDateString(),
-        ]);
+        ];
+
+        // المانح يُثبَّت لحظة المنح: من صحّح القيمة لاحقاً لا يرث نسبتها إليه.
+        if ($editingId === null) {
+            $attributes['awarded_by'] = $actor?->id;
+        }
+
+        return StudentPoint::updateOrCreate(['id' => $editingId], $attributes);
     }
 }

@@ -503,7 +503,7 @@ new #[Title('تفقّد الحلقة')] class extends Component {
                                     max="600"
                                     wire:model="rows.{{ $studentId }}.late_minutes"
                                     placeholder="دقائق"
-                                    class="latin-numerals w-24"
+                                    class="latin-numerals max-w-24"
                                     :disabled="! $this->editable"
                                 />
                             @endif
@@ -562,7 +562,7 @@ new #[Title('تفقّد الحلقة')] class extends Component {
                         <flux:input
                             wire:model="teacherRows.{{ $teacher->id }}.note"
                             placeholder="ملاحظة"
-                            class="w-40"
+                            class="max-w-40"
                             :disabled="! $this->editable"
                         />
                     </div>
