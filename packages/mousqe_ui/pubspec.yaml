@@ -1,0 +1,38 @@
+name: mousqe_ui
+description: >
+  الهوية البصرية المشتركة لتطبيقات موسقي الأربعة — ثيم مشتق من ألوان المعهد،
+  تعريب وRTL، ومكوّنات واجهة دنيا.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.27.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  fonts:
+    - family: Reem Kufi
+      fonts:
+        - asset: lib/src/fonts/ReemKufi-Regular.ttf
+        - asset: lib/src/fonts/ReemKufi-Bold.ttf
+          weight: 700
+    - family: IBM Plex Sans Arabic
+      fonts:
+        - asset: lib/src/fonts/IBMPlexSansArabic-Regular.ttf
+        - asset: lib/src/fonts/IBMPlexSansArabic-Medium.ttf
+          weight: 500
+        - asset: lib/src/fonts/IBMPlexSansArabic-Bold.ttf
+          weight: 700
