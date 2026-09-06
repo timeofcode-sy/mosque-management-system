@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
 use App\Observers\GuardianObserver;
 use Database\Factories\GuardianFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -21,10 +23,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'occupation', 'national_id', 'address', 'is_alive', 'notes',
 ])]
 #[ObservedBy(GuardianObserver::class)]
-class Guardian extends Model
+class Guardian extends Model implements Syncable
 {
     /** @use HasFactory<GuardianFactory> */
-    use HasFactory, HasUuid, SoftDeletes;
+    use HasFactory, HasUuid, RecordsSyncChanges, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -51,5 +53,13 @@ class Guardian extends Model
         return $this->belongsToMany(Student::class)
             ->withPivot(['relation', 'is_primary', 'can_view_reports', 'can_submit_excuses'])
             ->withTimestamps();
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return $this->institute_id;
     }
 }

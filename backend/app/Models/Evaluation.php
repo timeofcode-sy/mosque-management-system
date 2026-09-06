@@ -4,7 +4,10 @@ namespace App\Models;
 
 use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
 use App\Enums\EvaluationPeriod;
+use App\Support\SyncScope;
 use Database\Factories\EvaluationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,10 +19,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'student_id', 'course_circle_id', 'period', 'period_start', 'period_end',
     'behavior', 'commitment', 'memorization', 'tajweed', 'total', 'teacher_id', 'notes',
 ])]
-class Evaluation extends Model
+class Evaluation extends Model implements Syncable
 {
     /** @use HasFactory<EvaluationFactory> */
-    use HasFactory, HasUuid, SoftDeletes;
+    use HasFactory, HasUuid, RecordsSyncChanges, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -51,5 +54,13 @@ class Evaluation extends Model
     public function teacher(): BelongsTo
     {
         return $this->belongsTo(Teacher::class);
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return SyncScope::via(Student::class, $this->student_id);
     }
 }

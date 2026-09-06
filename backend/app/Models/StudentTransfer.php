@@ -4,6 +4,9 @@ namespace App\Models;
 
 use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
+use App\Support\SyncScope;
 use Database\Factories\StudentTransferFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,10 +17,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'student_id', 'course_id', 'from_course_circle_id', 'to_course_circle_id',
     'transferred_on', 'reason', 'performed_by',
 ])]
-class StudentTransfer extends Model
+class StudentTransfer extends Model implements Syncable
 {
     /** @use HasFactory<StudentTransferFactory> */
-    use HasFactory, HasUuid;
+    use HasFactory, HasUuid, RecordsSyncChanges;
 
     /**
      * @return array<string, string>
@@ -52,5 +55,13 @@ class StudentTransfer extends Model
     public function performedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'performed_by');
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return SyncScope::via(Student::class, $this->student_id);
     }
 }

@@ -3,7 +3,10 @@
 namespace App\Models;
 
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
 use App\Enums\AttendanceStatus;
+use App\Support\SyncScope;
 use Database\Factories\TeacherAttendanceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,10 +18,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'attendance_session_id', 'teacher_id', 'status',
     'late_minutes', 'note', 'recorded_by', 'recorded_at',
 ])]
-class TeacherAttendance extends Model
+class TeacherAttendance extends Model implements Syncable
 {
     /** @use HasFactory<TeacherAttendanceFactory> */
-    use HasFactory, HasUuid, SoftDeletes;
+    use HasFactory, HasUuid, RecordsSyncChanges, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -45,5 +48,13 @@ class TeacherAttendance extends Model
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return SyncScope::via(Teacher::class, $this->teacher_id);
     }
 }

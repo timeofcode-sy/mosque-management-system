@@ -70,7 +70,30 @@ class SyncPushPullTest extends TestCase
 
         $response->assertOk();
         $response->assertJson(['applied' => [$takeOp], 'skipped' => []]);
-        $this->assertSame(2, ChangeLog::query()->count());
+
+        $this->assertSame(1, ChangeLog::query()
+            ->where('table_name', 'attendance_sessions')
+            ->where('row_uuid', $sessionUuid)
+            ->where('operation', 'create')
+            ->count());
+
+        /**
+         * صفُّ الحضور نفسه — لا صفُّ الجلسة وحده.
+         *
+         * كان الدفع يسجّل تغييراً واحداً على attendance_sessions، وحمولتُه لا تحمل حالات
+         * الطلاب؛ فكان العميل يعرف أن الجلسة تغيّرت ولا يعرف بماذا. صار المراقب يسجّل كل
+         * صفٍّ تغيّر بحمولته، وهذا ما يجعل sync/pull قابلاً للتطبيق على مخزن العميل.
+         */
+        $attendanceUuid = $this->courseCircle->attendanceSessions()->first()
+            ->attendances()->where('student_id', $student->id)->sole()->uuid;
+
+        $change = ChangeLog::query()
+            ->where('table_name', 'attendances')
+            ->where('row_uuid', $attendanceUuid)
+            ->sole();
+
+        $this->assertSame(AttendanceStatus::Present->value, $change->payload['status']);
+        $this->assertSame($takeOp, $change->op_uuid);
     }
 
     public function test_resending_the_same_op_uuid_is_ignored(): void
@@ -203,9 +226,11 @@ class SyncPushPullTest extends TestCase
         $teacher = $this->actingAsTeacher($this->institute);
         CourseCircleTeacher::create(['course_circle_id' => $this->courseCircle->id, 'teacher_id' => $teacher->id, 'role' => TeacherRole::Main]);
 
+        $foreignRowUuid = (string) Str::uuid7();
+
         ChangeLog::create([
             'table_name' => 'attendance_sessions',
-            'row_uuid' => (string) Str::uuid7(),
+            'row_uuid' => $foreignRowUuid,
             'operation' => 'create',
             'scope_key' => 'institute:'.Str::uuid7(),
             'op_uuid' => (string) Str::uuid7(),
@@ -224,7 +249,10 @@ class SyncPushPullTest extends TestCase
         $response = $this->getJson('/api/v1/sync/pull?since=0&app=teacher');
 
         $response->assertOk();
-        $this->assertCount(1, $response->json('changes'));
-        $this->assertSame('attendance_sessions', $response->json('changes.0.table_name'));
+
+        $rowUuids = collect($response->json('changes'))->pluck('row_uuid');
+
+        $this->assertNotContains($foreignRowUuid, $rowUuids);
+        $this->assertContains($this->courseCircle->attendanceSessions()->sole()->uuid, $rowUuids);
     }
 }

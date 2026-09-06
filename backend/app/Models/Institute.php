@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
 use Database\Factories\InstituteFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,10 +13,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['name', 'short_name', 'logo_path', 'phone', 'email', 'address', 'settings', 'is_active'])]
-class Institute extends Model
+class Institute extends Model implements Syncable
 {
     /** @use HasFactory<InstituteFactory> */
-    use HasFactory, HasUuid, SoftDeletes;
+    use HasFactory, HasUuid, RecordsSyncChanges, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -80,5 +82,13 @@ class Institute extends Model
     public function currentCourse(): ?Course
     {
         return $this->courses()->where('is_current', true)->first();
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return $this->id;
     }
 }

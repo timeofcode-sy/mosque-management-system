@@ -3,15 +3,17 @@
 namespace App\Models;
 
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['institute_id', 'scope', 'scope_ids', 'title', 'body', 'created_by', 'published_at'])]
-class Announcement extends Model
+class Announcement extends Model implements Syncable
 {
-    use HasUuid, SoftDeletes;
+    use HasUuid, RecordsSyncChanges, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -32,5 +34,13 @@ class Announcement extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return $this->institute_id;
     }
 }

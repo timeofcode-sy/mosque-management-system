@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
 use App\Enums\TraitPolarity;
 use Database\Factories\PersonalTraitFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -15,10 +17,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * صفة شخصية أو سلوكية للطالب (هادئ، مبدع، خجول...). الاسم PersonalTrait لأن Trait كلمة محجوزة في PHP.
  */
 #[Fillable(['institute_id', 'name', 'slug', 'polarity', 'color', 'sort_order', 'is_active'])]
-class PersonalTrait extends Model
+class PersonalTrait extends Model implements Syncable
 {
     /** @use HasFactory<PersonalTraitFactory> */
-    use HasFactory, HasUuid;
+    use HasFactory, HasUuid, RecordsSyncChanges;
 
     protected $table = 'traits';
 
@@ -44,5 +46,13 @@ class PersonalTrait extends Model
         return $this->belongsToMany(Student::class, 'student_trait', 'trait_id', 'student_id')
             ->withPivot(['note', 'noted_by'])
             ->withTimestamps();
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return $this->institute_id;
     }
 }

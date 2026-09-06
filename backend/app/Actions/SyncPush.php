@@ -8,9 +8,12 @@ use App\Models\ChangeLog;
 use App\Models\CourseCircle;
 use App\Models\MemorizationLog;
 use App\Models\Student;
+use App\Models\SyncDevice;
 use App\Models\Teacher;
 use App\Models\User;
 use App\Support\ApiScope;
+use App\Support\SyncRecorder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -20,6 +23,11 @@ use RuntimeException;
  *
  * كل عملية تحمل op_uuid فريداً يولّده العميل؛ عمليةٌ سبق تطبيقها (نفس op_uuid موجود في
  * change_log) تُتجاهل بصمت فتصير إعادة الإرسال بعد انقطاع الشبكة آمنة (idempotent).
+ *
+ * 🔄 تسجيلُ التغيير لم يعد من مسؤولية هذا الصنف: مراقب App\Concerns\RecordsSyncChanges
+ * يسجّل **كلّ صفٍّ تغيّر فعلاً** لا صفَّ الجلسة وحده — وكان الأوّلُ ينقص العميلَ صفوفَ
+ * الحضور نفسها. ما بقي هنا ضبطُ السياق (المستخدم والجهاز وop_uuid) وصفٌّ دالٌّ للعملية
+ * التي لم تغيّر شيئاً، حفظاً لمنع التكرار.
  */
 class SyncPush
 {
@@ -34,6 +42,7 @@ class SyncPush
         private readonly AwardStudentPoints $awardPoints,
         private readonly RecordChange $recordChange,
         private readonly ResolveAttendanceConflicts $resolveConflicts,
+        private readonly SyncRecorder $recorder,
     ) {}
 
     /**
@@ -58,30 +67,42 @@ class SyncPush
                 continue;
             }
 
-            DB::transaction(function () use ($op, $user, $institute, $scopeKey, $deviceUuid): void {
-                $this->apply($op, $user, $institute->id, $scopeKey, $deviceUuid, $op['op_uuid']);
+            DB::transaction(function () use ($op, $user, $institute, $scopeKey, $deviceUuid, $opUuid): void {
+                $target = null;
+
+                $recorded = $this->recorder->during($user, $deviceUuid, $opUuid, function () use (&$target, $op, $user, $institute, $deviceUuid): void {
+                    $target = $this->apply($op, $user, $institute->id, $deviceUuid);
+                });
+
+                if (! $recorded) {
+                    $this->recordChange->handle($target, SyncOperation::Update, $scopeKey, $user, $deviceUuid, $opUuid);
+                }
             });
 
             $applied[] = $opUuid;
         }
 
+        $this->touchDevice($deviceUuid);
+
         return ['applied' => $applied, 'skipped' => $skipped];
     }
 
     /**
+     * الصفّ الذي مسّته العملية — يُستعمل صفّاً دالاً حين لا تغيّر العملية شيئاً.
+     *
      * @param  array<string, mixed>  $op
      */
-    private function apply(array $op, User $user, int $instituteId, string $scopeKey, ?string $deviceUuid, string $opUuid): void
+    private function apply(array $op, User $user, int $instituteId, ?string $deviceUuid): Model
     {
-        match ($op['type'] ?? null) {
-            'attendance.session.open' => $this->applyOpenSession($op, $user, $instituteId, $scopeKey, $deviceUuid, $opUuid),
-            'attendance.take' => $this->applyTakeAttendance($op, $user, $instituteId, $scopeKey, $deviceUuid, $opUuid),
-            'attendance.teacher.take' => $this->applyTakeTeacherAttendance($op, $user, $scopeKey, $deviceUuid, $opUuid),
-            'attendance.session.complete' => $this->applyCompleteSession($op, $user, $scopeKey, $deviceUuid, $opUuid),
-            'excuse.submit' => $this->applySubmitExcuse($op, $user, $instituteId, $scopeKey, $deviceUuid, $opUuid),
-            'recitation.save' => $this->applySaveRecitation($op, $user, $instituteId, $scopeKey, $deviceUuid, $opUuid),
-            'recitation.delete' => $this->applyDeleteRecitation($op, $user, $scopeKey, $deviceUuid, $opUuid),
-            'points.award' => $this->applyAwardPoints($op, $user, $instituteId, $scopeKey, $deviceUuid, $opUuid),
+        return match ($op['type'] ?? null) {
+            'attendance.session.open' => $this->applyOpenSession($op, $user, $instituteId),
+            'attendance.take' => $this->applyTakeAttendance($op, $user, $instituteId, $deviceUuid),
+            'attendance.teacher.take' => $this->applyTakeTeacherAttendance($op, $user, $instituteId),
+            'attendance.session.complete' => $this->applyCompleteSession($op, $user, $instituteId),
+            'excuse.submit' => $this->applySubmitExcuse($op, $user, $instituteId),
+            'recitation.save' => $this->applySaveRecitation($op, $user, $instituteId),
+            'recitation.delete' => $this->applyDeleteRecitation($op, $instituteId),
+            'points.award' => $this->applyAwardPoints($op, $user, $instituteId),
             default => throw new RuntimeException("نوع عملية غير معروف: {$op['type']}"),
         };
     }
@@ -89,19 +110,17 @@ class SyncPush
     /**
      * @param  array<string, mixed>  $op
      */
-    private function applyOpenSession(array $op, User $user, int $instituteId, string $scopeKey, ?string $deviceUuid, string $opUuid): void
+    private function applyOpenSession(array $op, User $user, int $instituteId): AttendanceSession
     {
         $courseCircle = $this->courseCircle($op['course_circle_uuid'], $instituteId);
 
-        $session = $this->openSession->handle($courseCircle, $op['session_date'] ?? null, $user);
-
-        $this->recordChange->handle($session, SyncOperation::Create, $scopeKey, $user, $deviceUuid, $opUuid);
+        return $this->openSession->handle($courseCircle, $op['session_date'] ?? null, $user);
     }
 
     /**
      * @param  array<string, mixed>  $op
      */
-    private function applyTakeAttendance(array $op, User $user, int $instituteId, string $scopeKey, ?string $deviceUuid, string $opUuid): void
+    private function applyTakeAttendance(array $op, User $user, int $instituteId, ?string $deviceUuid): AttendanceSession
     {
         $session = $this->attendanceSession($op['session_uuid'], $instituteId);
 
@@ -124,22 +143,20 @@ class SyncPush
 
         $rows = $this->resolveConflicts->handle($session, $rows, $deviceUuid);
 
-        $session = $this->takeAttendance->handle($session, $rows, $user, (bool) ($op['amend'] ?? false));
-
-        $this->recordChange->handle($session, SyncOperation::Update, $scopeKey, $user, $deviceUuid, $opUuid);
+        return $this->takeAttendance->handle($session, $rows, $user, (bool) ($op['amend'] ?? false));
     }
 
     /**
      * @param  array<string, mixed>  $op
      */
-    private function applyTakeTeacherAttendance(array $op, User $user, string $scopeKey, ?string $deviceUuid, string $opUuid): void
+    private function applyTakeTeacherAttendance(array $op, User $user, int $instituteId): AttendanceSession
     {
-        $session = AttendanceSession::where('uuid', $op['session_uuid'])->firstOrFail();
+        $session = $this->attendanceSession($op['session_uuid'], $instituteId);
 
         $rows = [];
 
         foreach ($op['teacher_attendances'] ?? [] as $row) {
-            $teacher = Teacher::where('uuid', $row['teacher_uuid'])->first();
+            $teacher = Teacher::where('uuid', $row['teacher_uuid'])->where('institute_id', $instituteId)->first();
 
             if ($teacher === null) {
                 continue;
@@ -152,69 +169,61 @@ class SyncPush
             ];
         }
 
-        $session = $this->takeTeacherAttendance->handle($session, $rows, $user);
-
-        $this->recordChange->handle($session, SyncOperation::Update, $scopeKey, $user, $deviceUuid, $opUuid);
+        return $this->takeTeacherAttendance->handle($session, $rows, $user);
     }
 
     /**
      * @param  array<string, mixed>  $op
      */
-    private function applyCompleteSession(array $op, User $user, string $scopeKey, ?string $deviceUuid, string $opUuid): void
+    private function applyCompleteSession(array $op, User $user, int $instituteId): AttendanceSession
     {
-        $session = AttendanceSession::where('uuid', $op['session_uuid'])->firstOrFail();
-
-        $session = $this->completeSession->handle($session, $user);
-
-        $this->recordChange->handle($session, SyncOperation::Update, $scopeKey, $user, $deviceUuid, $opUuid);
+        return $this->completeSession->handle($this->attendanceSession($op['session_uuid'], $instituteId), $user);
     }
 
     /**
      * @param  array<string, mixed>  $op
      */
-    private function applySubmitExcuse(array $op, User $user, int $instituteId, string $scopeKey, ?string $deviceUuid, string $opUuid): void
+    private function applySubmitExcuse(array $op, User $user, int $instituteId): Model
     {
-        $student = Student::where('uuid', $op['student_uuid'])->where('institute_id', $instituteId)->firstOrFail();
+        $student = $this->student($op['student_uuid'], $instituteId);
 
-        $excuse = $this->submitExcuse->handle($student, [
+        return $this->submitExcuse->handle($student, [
             'from_date' => $op['from_date'],
             'to_date' => $op['to_date'],
             'reason' => $op['reason'],
             'attachment_path' => $op['attachment_path'] ?? null,
         ], $user);
-
-        $this->recordChange->handle($excuse, SyncOperation::Create, $scopeKey, $user, $deviceUuid, $opUuid);
     }
 
     /**
      * @param  array<string, mixed>  $op
      */
-    private function applySaveRecitation(array $op, User $user, int $instituteId, string $scopeKey, ?string $deviceUuid, string $opUuid): void
+    private function applySaveRecitation(array $op, User $user, int $instituteId): Model
     {
         $session = $this->attendanceSession($op['session_uuid'], $instituteId);
         $student = $this->student($op['student_uuid'], $instituteId);
 
-        $log = $this->saveRecitation->handle($session, $student, $op['recitation'] ?? [], $user, $op['recorded_at'] ?? null);
-
-        $this->recordChange->handle($log, SyncOperation::Create, $scopeKey, $user, $deviceUuid, $opUuid);
+        return $this->saveRecitation->handle($session, $student, $op['recitation'] ?? [], $user, $op['recorded_at'] ?? null);
     }
 
     /**
      * @param  array<string, mixed>  $op
      */
-    private function applyDeleteRecitation(array $op, User $user, string $scopeKey, ?string $deviceUuid, string $opUuid): void
+    private function applyDeleteRecitation(array $op, int $instituteId): MemorizationLog
     {
-        $log = MemorizationLog::where('uuid', $op['recitation_uuid'])->firstOrFail();
+        $log = MemorizationLog::where('uuid', $op['recitation_uuid'])
+            ->whereHas('student', fn ($query) => $query->where('institute_id', $instituteId))
+            ->firstOrFail();
 
         $this->deleteRecitation->handle($log);
 
-        $this->recordChange->handle($log, SyncOperation::Delete, $scopeKey, $user, $deviceUuid, $opUuid);
+        return $log;
     }
 
     /**
      * @param  array<string, mixed>  $op
      */
-    private function applyAwardPoints(array $op, User $user, int $instituteId, string $scopeKey, ?string $deviceUuid, string $opUuid): void
+    private function applyAwardPoints(array $op, User $user, int $instituteId): Model
     {
         $student = $this->student($op['student_uuid'], $instituteId);
 
@@ -222,14 +231,25 @@ class SyncPush
             ? null
             : $this->attendanceSession($op['session_uuid'], $instituteId);
 
-        $award = $this->awardPoints->handle($student, [
+        return $this->awardPoints->handle($student, [
             'points' => $op['points'],
             'reason' => $op['reason'],
             'note' => $op['note'] ?? null,
             'awarded_on' => $op['awarded_on'] ?? null,
         ], $user, $session);
+    }
 
-        $this->recordChange->handle($award, SyncOperation::Create, $scopeKey, $user, $deviceUuid, $opUuid);
+    /**
+     * مؤشّر آخر دفعٍ للجهاز — تعرضه شاشة system/devices، وبه يُعرف الجهاز الذي توقّف
+     * عن الدفع من الذي لم يُنشئ شيئاً بعد.
+     */
+    private function touchDevice(?string $deviceUuid): void
+    {
+        if ($deviceUuid === null) {
+            return;
+        }
+
+        SyncDevice::query()->where('device_uuid', $deviceUuid)->update(['last_pushed_at' => now()]);
     }
 
     private function student(string $uuid, int $instituteId): Student

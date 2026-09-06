@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
 use App\Enums\CustomFieldType;
 use Database\Factories\CustomFieldFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -16,10 +18,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * واصفة إضافية يعرّفها المشرف من اللوحة دون كتابة كود.
  */
 #[Fillable(['institute_id', 'entity', 'key', 'label', 'type', 'options', 'group', 'is_required', 'is_active', 'sort_order'])]
-class CustomField extends Model
+class CustomField extends Model implements Syncable
 {
     /** @use HasFactory<CustomFieldFactory> */
-    use HasFactory, HasUuid, SoftDeletes;
+    use HasFactory, HasUuid, RecordsSyncChanges, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -43,5 +45,13 @@ class CustomField extends Model
     public function values(): HasMany
     {
         return $this->hasMany(CustomFieldValue::class);
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return $this->institute_id;
     }
 }

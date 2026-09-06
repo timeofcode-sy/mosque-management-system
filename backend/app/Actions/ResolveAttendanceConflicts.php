@@ -17,7 +17,13 @@ use Illuminate\Support\Carbon;
  *
  * القيمة المزروعة تلقائياً عند فتح الجلسة (OpenAttendanceSession) ليست "كتابة" بالمعنى
  * الذي يستحق تعارضاً: لا جهاز حقيقي أنتجها. لذا لا يُعتبر الصفّ منافساً إلا إذا كان
- * change_log يحمل عملية attendance.take سابقة عليه من جهاز آخر فعلاً.
+ * change_log يحمل تعديلاً سابقاً عليه من جهاز آخر فعلاً — والزرعُ create لا update،
+ * فيميّزه هذا الشرط وحده.
+ *
+ * 🔄 كان الفحص على مستوى **الجلسة** («هل دفع جهازٌ آخر تفقّداً لهذه الجلسة؟») لأن
+ * change_log لم يكن يحمل يومها إلا صفَّ الجلسة. وصار على مستوى **صفّ الحضور** بعد أن
+ * صار المراقب يسجّل كل صفّ يتغيّر: التعارض نزاعٌ على طالبٍ بعينه لا على الجلسة كلّها،
+ * فجهازان يتفقّدان طالبين مختلفين في جلسة واحدة لم يعودا يُحسبان متنازعين.
  */
 class ResolveAttendanceConflicts
 {
@@ -28,7 +34,7 @@ class ResolveAttendanceConflicts
     public function handle(AttendanceSession $session, array $rows, ?string $deviceUuid): array
     {
         $existing = $session->attendances()->get()->keyBy('student_id');
-        $anotherDeviceAlreadyTookThisSession = $this->wasPreviouslyTakenByAnotherDevice($session, $deviceUuid);
+        $contested = $this->rowsWrittenByAnotherDevice($existing->pluck('uuid')->all(), $deviceUuid);
 
         $accepted = [];
 
@@ -37,7 +43,7 @@ class ResolveAttendanceConflicts
             $current = $existing->get($studentId);
 
             $isGenuineConflict = $current !== null
-                && $anotherDeviceAlreadyTookThisSession
+                && in_array($current->uuid, $contested, true)
                 && $current->recorded_at !== null
                 && $current->recorded_at->gt($incomingRecordedAt)
                 && $current->status->value !== ($row['status'] ?? null);
@@ -55,16 +61,34 @@ class ResolveAttendanceConflicts
     }
 
     /**
-     * هل سبق أن دفع جهازٌ آخر تفقّداً صريحاً لهذه الجلسة؟
+     * صفوف الحضور التي عدّلها جهازٌ آخر فعلاً — استعلامٌ واحد للجلسة كلّها لا واحدٌ
+     * لكل طالب.
+     *
+     * @param  array<int, string>  $rowUuids
+     * @return array<int, string>
      */
-    private function wasPreviouslyTakenByAnotherDevice(AttendanceSession $session, ?string $deviceUuid): bool
+    private function rowsWrittenByAnotherDevice(array $rowUuids, ?string $deviceUuid): array
     {
+        if ($rowUuids === []) {
+            return [];
+        }
+
+        $notMine = fn ($query) => $query->when(
+            $deviceUuid !== null,
+            fn ($q) => $q->where(fn ($inner) => $inner->whereNull('device_uuid')->orWhere('device_uuid', '!=', $deviceUuid)),
+        );
+
         return ChangeLog::query()
-            ->where('table_name', 'attendance_sessions')
-            ->where('row_uuid', $session->uuid)
-            ->where('operation', 'update')
-            ->when($deviceUuid !== null, fn ($query) => $query->where(fn ($q) => $q->whereNull('device_uuid')->orWhere('device_uuid', '!=', $deviceUuid)))
-            ->exists();
+            ->where('table_name', 'attendances')
+            ->whereIn('row_uuid', $rowUuids)
+            ->where(fn ($query) => $query
+                // تعديلٌ: كتابةٌ حقيقية أياً كان مصدرها — اللوحة (بلا جهاز) أو جهاز آخر.
+                ->where(fn ($q) => $q->where('operation', 'update')->where($notMine))
+                // إنشاء: كتابةٌ حقيقية **فقط** إن حملت جهازاً — فالزرع عند فتح الجلسة
+                // يُسجَّل بلا جهاز (OpenAttendanceSession)، وليس قيمةً رآها أحد.
+                ->orWhere(fn ($q) => $q->where('operation', 'create')->whereNotNull('device_uuid')->where($notMine)))
+            ->pluck('row_uuid')
+            ->all();
     }
 
     /**

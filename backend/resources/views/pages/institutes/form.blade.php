@@ -2,7 +2,9 @@
 
 use App\Actions\CreateInstitute;
 use App\Models\Institute;
+use App\Support\AttendanceSettings;
 use App\Support\InstituteForm;
+use App\Support\InstituteTheme;
 use App\Support\PointsSettings;
 use Flux\Flux;
 use Livewire\Attributes\Title;
@@ -39,9 +41,23 @@ new #[Title('معهد')] class extends Component {
      */
     public array $points = [];
 
+    /**
+     * ألوان المعهد الثلاثة — تُقرأ وتُكتب في institutes.settings['theme'].
+     *
+     * @var array<string, string>
+     */
+    public array $theme = [];
+
+    /**
+     * @var array<string, mixed>
+     */
+    public array $attendance = [];
+
     public function mount(?Institute $institute = null): void
     {
         $this->points = PointsSettings::for($institute)->toArray();
+        $this->theme = InstituteTheme::for($institute)->toArray();
+        $this->attendance = AttendanceSettings::for($institute)->toArray();
 
         if ($institute?->exists !== true) {
             return;

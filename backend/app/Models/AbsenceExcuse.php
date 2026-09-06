@@ -4,7 +4,10 @@ namespace App\Models;
 
 use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
 use App\Enums\ExcuseStatus;
+use App\Support\SyncScope;
 use Database\Factories\AbsenceExcuseFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,10 +23,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'student_id', 'from_date', 'to_date', 'reason', 'attachment_path',
     'submitted_by', 'status', 'reviewed_by', 'reviewed_at', 'review_note',
 ])]
-class AbsenceExcuse extends Model
+class AbsenceExcuse extends Model implements Syncable
 {
     /** @use HasFactory<AbsenceExcuseFactory> */
-    use HasFactory, HasUuid, SoftDeletes;
+    use HasFactory, HasUuid, RecordsSyncChanges, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -61,5 +64,13 @@ class AbsenceExcuse extends Model
         $query->where('status', ExcuseStatus::Approved)
             ->whereDate('from_date', '<=', $date)
             ->whereDate('to_date', '>=', $date);
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return SyncScope::via(Student::class, $this->student_id);
     }
 }

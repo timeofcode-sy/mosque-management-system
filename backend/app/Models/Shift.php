@@ -3,7 +3,10 @@
 namespace App\Models;
 
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
 use App\Enums\Weekday;
+use App\Support\SyncScope;
 use Database\Factories\ShiftFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,10 +16,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['course_id', 'name', 'starts_at', 'ends_at', 'sort_order', 'is_active'])]
-class Shift extends Model
+class Shift extends Model implements Syncable
 {
     /** @use HasFactory<ShiftFactory> */
-    use HasFactory, HasUuid, SoftDeletes;
+    use HasFactory, HasUuid, RecordsSyncChanges, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -62,5 +65,13 @@ class Shift extends Model
     public function weekdayLabels(): array
     {
         return array_map(fn (int $weekday): string => Weekday::from($weekday)->label(), $this->weekdays());
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return SyncScope::via(Course::class, $this->course_id);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Support\SyncRecorder;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // سياق تسجيل التغييرات حالةُ طلبٍ لا حالةُ نموذج: SyncPush يضبطه مرّة لكل عملية،
+        // ومراقبُ RecordsSyncChanges يقرؤه من حيث لا يملك تمرير وسيط. ولذلك نسخةٌ واحدة.
+        $this->app->singleton(SyncRecorder::class);
     }
 
     /**

@@ -76,7 +76,17 @@ class ScopeTest extends TestCase
         $response = $this->getJson('/api/v1/sync/pull?since=0&app=teacher');
 
         $response->assertOk();
-        $this->assertCount(0, $response->json('changes'));
+
+        /**
+         * الغريب يسحب تغييرات معهده هو — بناءُ الاختبار نفسه أنتجها — والمقصود أن
+         * تخلو صفحتُه من صفوف هذا المعهد. ولا يصحّ قياسُه بعددٍ صفرٍ بعد أن صار كلُّ
+         * إنشاءٍ يُسجَّل تغييراً.
+         */
+        $rowUuids = collect($response->json('changes'))->pluck('row_uuid');
+
+        $this->assertNotContains($mine->uuid, $rowUuids);
+        $this->assertNotContains($this->institute->uuid, $rowUuids);
+        $this->assertContains($otherCourseCircle->uuid, $rowUuids);
 
         $circles = $this->getJson('/api/v1/teacher/circles');
         $circles->assertOk();

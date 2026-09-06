@@ -10,6 +10,7 @@ use App\Models\AttendanceSession;
 use App\Models\CourseCircle;
 use App\Models\Enrollment;
 use App\Models\User;
+use App\Support\SyncRecorder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,8 @@ use Illuminate\Support\Facades\DB;
  */
 class OpenAttendanceSession
 {
+    public function __construct(private readonly SyncRecorder $recorder) {}
+
     public function handle(CourseCircle $courseCircle, ?string $date = null, ?User $openedBy = null): AttendanceSession
     {
         $date = $date ?? Carbon::today()->toDateString();
@@ -32,7 +35,12 @@ class OpenAttendanceSession
                 ['status' => SessionStatus::Draft, 'opened_by' => $openedBy?->id],
             );
 
-            $this->seedAttendances($session, $this->enrollmentsOn($courseCircle, $date), $date, $openedBy);
+            // الزرعُ ليس ملاحظةَ جهاز بل قيمةٌ افتراضية تنتظر من يؤكّدها، فيُسجَّل بلا
+            // device_uuid — وعليه يميّزه ResolveAttendanceConflicts فلا يهدر تفقّداً حقيقياً
+            // وصل متأخّراً دفاعاً عن قيمةٍ لم يقلها أحد.
+            $this->recorder->withoutDevice(
+                fn () => $this->seedAttendances($session, $this->enrollmentsOn($courseCircle, $date), $date, $openedBy),
+            );
 
             return $session->refresh();
         });

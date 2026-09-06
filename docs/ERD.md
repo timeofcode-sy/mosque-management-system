@@ -207,6 +207,21 @@ institutes (معهد)
  'grade_multiplier' => ['excellent' => 100, 'very_good' => 80, 'good' => 60]]
 ```
 
+### مفاتيح `institutes.settings` الثلاثة 🔄 م.5.1
+
+العمود يحمل اليوم ثلاثة مفاتيح مستقلّة، لكلٍّ صنفُ غلافٍ في `app/Support/` يقرؤه بقيمٍ افتراضية
+فلا تتناثر `data_get()` في الشاشات:
+
+| المفتاح | الغلاف | المحتوى |
+|---|---|---|
+| `points` | `PointsSettings` | كما أعلاه |
+| `theme` | `InstituteTheme` | `['primary' => '#7D0A0A', 'secondary' => '#FFBF9B', 'surface' => '#EAD196']` — ثلاثة ألوان تُشتقّ منها سلالمُ `brand`/`gold`/`sand` كاملةً لِلوحة والتقارير والتطبيقات الأربعة |
+| `attendance` | `AttendanceSettings` | `['late_grace_minutes' => 0]` — تُطرح من دقائق التأخير المحسوبة من `shifts.starts_at` |
+
+الثلاثة تُحرَّر في شاشة واحدة («بيانات المعهد» و«المعاهد» تتشاركان `x-institute-form-fields`)،
+ويُستبدل كلُّ مفتاح على حدة عند الحفظ فلا يمسح أحدُها الآخر. و`institutes` نفسه صفٌّ يُزامَن، فتغييرُ
+الألوان يصل التطبيقات عبر `sync/pull` كما يصل عبر `/bootstrap`.
+
 ---
 
 ## 5. الإحصاء والتقارير

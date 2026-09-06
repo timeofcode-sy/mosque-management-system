@@ -6,7 +6,7 @@
     ويحرّر أيّها شاء. النموذج واحد، فلا يصحّ أن يتفرّع الحقلُ في إحداهما دون الأخرى.
 
     تعتمد على خصائص المكوّن المستدعي بأسمائها: name · short_name · phone · email ·
-    address · is_active · logo · points.
+    address · is_active · logo · points · theme · attendance.
 --}}
 <div class="space-y-6">
     <flux:input wire:model="name" label="اسم المعهد" required autofocus />
@@ -27,6 +27,54 @@
     />
 
     <flux:switch wire:model="is_active" label="المعهد فعّال" />
+
+    <flux:separator text="الهوية البصرية" />
+
+    {{--
+        ثلاثة ألوان تكفي: منها تُشتقّ سلالمُ التدرّج كلّها (App\Support\InstituteTheme)،
+        وتُعتمد في اللوحة وصفحات الطباعة وتطبيقات الموبايل والديسكتوب معاً — فيكفي أن
+        تُدخَل مرّةً هنا لتتوحّد واجهات المعهد كلُّها.
+    --}}
+    <flux:text size="sm" class="text-ink-500 dark:text-zinc-400">
+        تُؤخذ عادةً من شعار المعهد: لونه الغالب أساسياً، ولونه المساعد ثانوياً، وأفتحُ ألوانه أرضيةً.
+        وتُطبَّق فوراً على اللوحة والتقارير وتطبيقات الأستاذ والأهل والطالب.
+    </flux:text>
+
+    <div class="grid gap-6 sm:grid-cols-3">
+        @foreach ([
+            'primary' => ['اللون الأساسي', 'الترويسات والأزرار والروابط'],
+            'secondary' => ['اللون الثانوي', 'الإبرازات والشارات'],
+            'surface' => ['لون الأرضية', 'خلفية الصفحات والبطاقات'],
+        ] as $key => [$label, $hint])
+            <div wire:key="theme-{{ $key }}" class="space-y-2">
+                <flux:input
+                    wire:model.live="theme.{{ $key }}"
+                    :label="$label"
+                    :description="$hint"
+                    class="latin-numerals"
+                    dir="ltr"
+                    maxlength="7"
+                    :data-test="'theme-'.$key"
+                />
+                <label class="flex items-center gap-2">
+                    {{-- منتقي اللون الأصلي: الإدخال اليدوي للهكس يبقى، وهذا يخدم من لا يحفظه --}}
+                    <input type="color" wire:model.live="theme.{{ $key }}" class="h-8 w-14 cursor-pointer rounded border border-sand-300 bg-transparent dark:border-zinc-600">
+                    <span class="text-xs text-ink-500 dark:text-zinc-400">اختيار من اللوحة</span>
+                </label>
+            </div>
+        @endforeach
+    </div>
+
+    <flux:separator text="التفقّد" />
+
+    <flux:input
+        wire:model="attendance.late_grace_minutes"
+        type="number" min="0" max="240"
+        label="فترة السماح · دقائق"
+        description="دقائق التأخير تُحسب تلقائياً من بداية الدوام مطروحاً منها هذه الفترة. صفرٌ يعني احتساب التأخير من بداية الدوام تماماً."
+        class="latin-numerals max-w-56"
+        data-test="late-grace"
+    />
 
     <flux:separator text="النقاط" />
 

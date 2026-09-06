@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
 use App\Enums\EnrollmentStatus;
 use App\Enums\Gender;
 use App\Enums\GuardianRelation;
@@ -31,10 +33,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'status', 'notes',
 ])]
 #[ObservedBy(StudentObserver::class)]
-class Student extends Model
+class Student extends Model implements Syncable
 {
     /** @use HasFactory<StudentFactory> */
-    use HasFactory, HasUuid, SoftDeletes;
+    use HasFactory, HasUuid, RecordsSyncChanges, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -145,5 +147,13 @@ class Student extends Model
     public function tags(): MorphToMany
     {
         return $this->morphToMany(Tag::class, 'taggable');
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return $this->institute_id;
     }
 }

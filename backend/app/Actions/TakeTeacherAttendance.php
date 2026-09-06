@@ -7,6 +7,8 @@ use App\Enums\SessionStatus;
 use App\Models\AttendanceSession;
 use App\Models\TeacherAttendance;
 use App\Models\User;
+use App\Support\AttendanceSettings;
+use App\Support\LateMinutes;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -27,7 +29,12 @@ class TakeTeacherAttendance
             throw new RuntimeException('الجلسة مقفلة ولا تقبل التعديل.');
         }
 
-        return DB::transaction(function () use ($session, $rows, $recordedBy): AttendanceSession {
+        // نفس مرجع تأخير الطالب: بداية الدوام. الأستاذ الذي يفتح حلقته متأخراً يُقاس
+        // تأخيرُه بما وعد به الدوامُ لا بما فعله هو.
+        $grace = AttendanceSettings::for($session->courseCircle?->circle?->institute)->lateGraceMinutes();
+        $computed = LateMinutes::afterGrace(LateMinutes::forSession($session), $grace) ?? 0;
+
+        return DB::transaction(function () use ($session, $rows, $recordedBy, $computed): AttendanceSession {
             foreach ($rows as $teacherId => $row) {
                 $status = AttendanceStatus::tryFrom((string) ($row['status'] ?? ''));
 
@@ -39,7 +46,11 @@ class TakeTeacherAttendance
                     ['attendance_session_id' => $session->id, 'teacher_id' => (int) $teacherId],
                     [
                         'status' => $status,
-                        'late_minutes' => $status === AttendanceStatus::Late ? (int) ($row['late_minutes'] ?? 0) : null,
+                        'late_minutes' => match (true) {
+                            $status !== AttendanceStatus::Late => null,
+                            ! blank($row['late_minutes'] ?? null) => max(0, (int) $row['late_minutes']),
+                            default => $computed,
+                        },
                         'note' => blank($row['note'] ?? null) ? null : $row['note'],
                         'recorded_by' => $recordedBy?->id,
                         'recorded_at' => now(),

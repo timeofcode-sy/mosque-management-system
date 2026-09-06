@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
 use App\Enums\TeacherStatus;
 use App\Observers\TeacherObserver;
 use Database\Factories\TeacherFactory;
@@ -22,10 +24,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'specialization', 'qualification', 'photo_path', 'address', 'hired_on', 'status', 'notes',
 ])]
 #[ObservedBy(TeacherObserver::class)]
-class Teacher extends Model
+class Teacher extends Model implements Syncable
 {
     /** @use HasFactory<TeacherFactory> */
-    use HasFactory, HasUuid, SoftDeletes;
+    use HasFactory, HasUuid, RecordsSyncChanges, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -69,5 +71,13 @@ class Teacher extends Model
     public function customFieldValues(): MorphMany
     {
         return $this->morphMany(CustomFieldValue::class, 'entity');
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return $this->institute_id;
     }
 }

@@ -12,4 +12,7 @@
 @fonts
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+@include('partials.institute-theme', ['institute' => App\Support\PanelScope::resolve()])
+
 @fluxAppearance

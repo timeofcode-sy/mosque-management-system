@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
 use App\Enums\CurriculumType;
 use Database\Factories\CurriculumFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -16,10 +18,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * منهج علمي: القرآن الكريم، الحديث الشريف، المتون العلمية، أو منهج يضيفه المعهد.
  */
 #[Fillable(['institute_id', 'name', 'slug', 'type', 'description', 'sort_order', 'is_active'])]
-class Curriculum extends Model
+class Curriculum extends Model implements Syncable
 {
     /** @use HasFactory<CurriculumFactory> */
-    use HasFactory, HasUuid, SoftDeletes;
+    use HasFactory, HasUuid, RecordsSyncChanges, SoftDeletes;
 
     protected $table = 'curricula';
 
@@ -43,5 +45,13 @@ class Curriculum extends Model
     public function items(): HasMany
     {
         return $this->hasMany(CurriculumItem::class)->orderBy('sort_order');
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return $this->institute_id;
     }
 }

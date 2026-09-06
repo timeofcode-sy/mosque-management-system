@@ -9,6 +9,8 @@
 
     @vite(['resources/css/app.css'])
 
+    @include('partials.institute-theme', ['institute' => $institute])
+
     <style>
         /* الطباعة: A4 بهوامش معقولة، وإخفاء شريط الأدوات، ومنع كسر الجداول بين الصفحات */
         @page { size: A4; margin: 14mm 12mm; }

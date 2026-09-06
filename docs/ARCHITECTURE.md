@@ -1,7 +1,8 @@
 # معمارية النظام — mousqe
 
-الحالة: **2026-09-06 · محدَّث حتى المرحلة 4.7** — الباك إند واللوحة منفَّذان بالكامل (المراحل 0–4.7)،
-وتطبيقات فلاتر الأربعة والحزمتان المشتركتان ⬜ لم تبدأ بعد.
+الحالة: **2026-09-06 · محدَّث حتى المرحلة 5.1** — الباك إند واللوحة منفَّذان بالكامل (المراحل 0–5.1)،
+وتطبيقات فلاتر الأربعة والحزمتان المشتركتان ⬜ لم تبدأ بعد (م.5.2 و5.3 —
+[PHASE-5-STAGES.MD](PHASE-5-STAGES.MD)).
 
 > هذا الملف هو **الصورة العامة**: من يتكلّم مع من وبأي نمط. التفاصيل في:
 > [ERD.md](ERD.md) نموذج البيانات · [PLAN.md](PLAN.md) الخطة والمراحل ·
@@ -23,12 +24,12 @@ mousqe/
 │    ├─ app/Queries/      ← كل قراءة
 │    └─ (MySQL/MariaDB إنتاجاً · SQLite تطويراً)
 │
-├─ packages/  ⬜ فارغة فعلياً (تُبنى في المرحلة 5)
+├─ packages/  ⬜ فارغة فعلياً (تُبنى في المرحلة 5.2)
 │    ├─ mousqe_core   ← نماذج freezed + drift(SQLite) + SyncEngine + ApiClient + تخزين التوكن
-│    └─ mousqe_ui     ← نظام التصميم المولَّد من design/design-tokens.json ✅
+│    └─ mousqe_ui     ← نظام التصميم: design-tokens.json افتراضاً + ألوان المعهد من /bootstrap
 │
 └─ apps/  ⬜ الأربعة فارغة فعلياً
-     ├─ teacher/        م.5 · Android + iOS  ─┐
+     ├─ teacher/        م.5.3 · Android + iOS ─┐
      ├─ admin_desktop/  م.6 · Windows         ├─ REST /api/v1 + مزامنة أوف-لاين
      ├─ guardian/       م.7 · Android + iOS   │
      └─ student/        م.8 · Android + iOS  ─┘
@@ -47,10 +48,9 @@ mousqe/
 `change_log` هو القناة التي يقرأ منها العملاء بعضهم من بعض: تفقّدُ الأستاذ أوف-لاين يصل إلى
 الديسكتوب عبر هذا الجدول.
 
-> 🔴 **وهو اليوم قناة باتجاه واحد.** `RecordChange` — الفعل الوحيد الذي يكتب في `change_log` —
-> **لا يُستدعى إلا من `SyncPush`**، فكتابات اللوحة (تسجيل طالب، تعديل تفقّد، مراجعة إذن) **لا تظهر
-> في `sync/pull` إطلاقاً**. هذه فجوة تنفيذ لا قرار تصميم، وتسدّها المرحلة 5 —
-> [SYNC-PROTOCOL.md §10](SYNC-PROTOCOL.md).
+> ✅ **م.5.1: صار قناةً بالاتجاهين.** كان `RecordChange` لا يُستدعى إلا من `SyncPush`، فكتابات
+> اللوحة (تسجيل طالب، تعديل تفقّد، مراجعة إذن) لا تظهر في `sync/pull` إطلاقاً. صار التسجيلُ أثراً
+> بنيوياً: مراقبٌ على كل نموذج ينفّذ `App\Contracts\Syncable` — [SYNC-PROTOCOL.md §2](SYNC-PROTOCOL.md).
 
 ---
 
@@ -58,8 +58,8 @@ mousqe/
 
 | العميل | المرحلة | نمط الاتصال | أوف-لاين | مخزن محلي |
 |---|---|---|---|---|
-| **اللوحة** (Livewire) | ✅ 0–4.7 | مكوّنات Livewire فوق نفس القاعدة **مباشرة — بلا REST إطلاقاً** | ✗ | ✗ |
-| **الأستاذ** | ⬜ م.5 | REST `/api/v1` + `sync/push` + `sync/pull` | ✓ كامل | drift/SQLite |
+| **اللوحة** (Livewire) | ✅ 0–5.1 | مكوّنات Livewire فوق نفس القاعدة **مباشرة — بلا REST إطلاقاً** | ✗ | ✗ |
+| **الأستاذ** | ⬜ م.5.3 | REST `/api/v1` + `sync/push` + `sync/pull` | ✓ كامل | drift/SQLite |
 | **الديسكتوب** | ⬜ م.6 | REST `/api/v1` + `sync/push` + `sync/pull` | ✓ كامل | drift/SQLite |
 | **الأهل** | ⬜ م.7 | REST `/api/v1` + `sync/pull` فقط (بلا `sync.push`) | ✓ قراءة | drift/SQLite |
 | **الطالب** | ⬜ م.8 | REST `/api/v1` + `sync/pull` فقط (بلا `sync.push`) | ✓ قراءة | drift/SQLite |
@@ -87,16 +87,22 @@ mousqe/
 | `recitation.delete` | `DeleteRecitation` | ✅ |
 | `points.award` | `AwardStudentPoints` | ✅ |
 
-وكل فرع منها يُنهي بـ`RecordChange` الذي يكتب صفّ `change_log`.
+✅ **م.5.1: الاشتراك اكتمل.** كان المشترك **منطق الكتابة** لا **تسجيل التغيير**: `RecordChange`
+مستدعىً من `SyncPush` وحده، فالمسار نفسه حين يُسلَك من اللوحة يكتب في الجداول ولا يكتب في
+`change_log`. صار التسجيل أثراً بنيوياً على مستوى **النموذج** لا الفعل — `SyncRecorder` +
+`RecordsSyncChanges` — فيستوي مصدرُ الكتابة، ولم يعد على كاتبِ فعلٍ جديد أن يتذكّر شيئاً:
 
-> 🔴 **حدّ إعادة الاستخدام القائم:** المشترك اليوم هو **منطق الكتابة** لا **تسجيل التغيير**.
-> `RecordChange` مستدعىً من `SyncPush` وحده؛ المسار نفسه حين يُسلَك من اللوحة (أو من
-> `POST /guardian/excuses`) يكتب في الجداول ولا يكتب في `change_log`. النتيجة أن العميل يرى
-> كتاباتِ العملاء ولا يرى كتاباتِ اللوحة — [SYNC-PROTOCOL.md §10](SYNC-PROTOCOL.md).
+```
+شاشة Livewire  ┐
+sync/push      ├─► app/Actions/ ─► نموذج Syncable ─► مراقب ─► change_log
+REST مباشر     ┘                                              (صفٌّ لكل صفّ تغيّر)
+أمر artisan    ┘
+```
 
-الأصناف المشتركة الأخرى في `app/Support/`: `PointsSettings` · `AttendanceRate` · `Quran` · `HijriDate` ·
-`DateRange` · `Credentials`. أمّا حسم النطاق فمنفصل عمداً: `PanelScope` للوحة و`ApiScope` للـ API —
-والفرق بينهما مقصود (§6 أدناه و[API.md §4](API.md)).
+الأصناف المشتركة الأخرى في `app/Support/`: `PointsSettings` · `AttendanceSettings` · `InstituteTheme` ·
+`LateMinutes` · `AttendanceRate` · `Quran` · `HijriDate` · `DateRange` · `Credentials` · `SyncRecorder` ·
+`SyncScope`. أمّا حسم النطاق فمنفصل عمداً: `PanelScope` للوحة و`ApiScope` للـ API — والفرق بينهما
+مقصود (§6 أدناه و[API.md §4](API.md)).
 
 ---
 
@@ -135,11 +141,12 @@ mousqe/
    auth:sanctum → EnsureUserIsActive → SetApiInstituteScope (يضبط مفتاح فريق spatie)
                 → permission:sync.push → SyncController::push → SyncPush
    لكل عملية:  op_uuid موجود في change_log؟  ⇒ skipped (idempotent)
-               وإلا: DB::transaction ⇒ ResolveAttendanceConflicts ⇒ TakeAttendance ⇒ RecordChange
+               وإلا: DB::transaction ⇒ ResolveAttendanceConflicts ⇒ TakeAttendance
+                     ⇒ مراقبُ Syncable يكتب change_log لكل صفٍّ تغيّر
 
 4. الأثر في القاعدة
    attendances (صفّ لكل طالب) + attendance_sessions.status
-   + change_log (صفّ بـ scope_key = "institute:{uuid}")
+   + change_log (صفٌّ لكل صفّ تغيّر، بـ scope_key = "institute:{uuid}")
    + sync_conflicts إن رُفض صفّ (نادر — SYNC-PROTOCOL §5)
 
 5. المشرف على اللوحة
@@ -150,9 +157,9 @@ mousqe/
    ⇒ SyncPull يعيد صفوف change_log ضمن scope_key نفسه ⇒ يحدّث sync_devices.last_pulled_seq
    ⇒ mousqe_core يطبّقها على drift المحلي.
 
-7. 🔴 والاتجاه المعاكس مقطوع اليوم
-   لو عدّل المشرفُ الصفَّ نفسه من اللوحة في الخطوة 5، لم يُكتب له صفُّ change_log،
-   فلا يصل التعديل إلى تطبيق الأستاذ ولا إلى الديسكتوب — SYNC-PROTOCOL §10.
+7. ✅ والاتجاه المعاكس يعمل — م.5.1
+   لو عدّل المشرفُ الصفَّ نفسه من اللوحة في الخطوة 5، كُتب له صفُّ change_log بحمولة
+   صفّ الحضور، فيصل التعديلُ إلى تطبيق الأستاذ وإلى الديسكتوب في سحبهما التالي.
 ```
 
 الفارق بين الخطوتين 5 و6 هو **جوهر هذه المعمارية**: اللوحة تقرأ الحقيقة مباشرة، والعملاء يقرؤون
@@ -168,8 +175,10 @@ mousqe/
 | **Flutter Desktop لا Electron للديسكتوب** | ≈٧٠٪ من كود تطبيق الأستاذ يُعاد استخدامه ([PLAN.md §9](PLAN.md)) وينضمّ إلى نفس `mousqe_core` و`mousqe_ui`؛ Electron كان يعني محرّك مزامنة ثانياً بلغة ثانية لنفس البروتوكول |
 | **مستودع موحّد** | الباك إند والتطبيقات يتشاركان **نموذج بيانات واحداً** وملف توكنات تصميم واحداً؛ فصلهما كان سيجعل كل تعديل في [ERD.md](ERD.md) تغييراً متزامناً على مستودعين |
 | **`design-tokens.json` مصدراً واحداً للألوان** | يُولَّد منه `@theme` في Tailwind و`ThemeData` في `mousqe_ui` ⇒ تطابق بصري مضمون بين الويب والتطبيقات بلا مزامنة يدوية |
+| **ثلاثة ألوان لكل معهد فوق التوكنات** 🔄 م.5.1 | التوكنات صارت **الافتراضيَّ لا المفروض**: `institutes.settings['theme']` يحمل ثلاثة ألوان يُدخلها مديرُ المعهد، ويشتقّ منها `InstituteTheme` سلالمَ التدرّج كاملة. ولماذا ثلاثة لا لوحة كاملة؟ لأن من يُدخلها ليس مصمّماً — والاشتقاق الخوارزمي يمنع تبايناً غيرَ مقروء. تُبثّ في `/bootstrap` وفي `sync/pull` معاً، فتُدخَل مرّةً وتتوحّد بها خمسةُ أسطح ([API.md §3.4](API.md)) |
+| **دقائق التأخير تُحسب في `TakeAttendance` لا في الشاشة** 🔄 م.5.1 | نفس مبدأ §3: الحسابُ في الفعل المشترك فيستوي مصدرُ الكتابة — لوحةٌ وتطبيقٌ ودفعةُ مزامنة تعطي الرقم نفسه لنفس الحدث. والمرجع `shifts.starts_at` لا لحظةُ فتح الجلسة، فلا يصير «تأخيرُ الطالب» تابعاً لتأخير أستاذه ([API.md §6](API.md)) |
 | **`ApiScope` يرفض بدل أن يخمّن** | نظير `PanelScope` لكن **بلا سقوط افتراضي إلى «أوّل معهد نشط»**: توكنٌ بلا معهد مرتبط يُرفض صراحةً. التخمين على اللوحة يُصحّحه المستخدم بمبدّل المعاهد، وعلى الـ API يكتب بيانات في معهد خطأ بلا أن يلاحظ أحد |
-| **`change_log` قناة واحدة لا قناتان** | القرار: كل كتابة تمرّ بـ`RecordChange` فلا تلزم آلية بثّ ثانية. 🔴 **التنفيذ لم يكتمل** — الاستدعاء موجود في `SyncPush` وحده، انظر التحذير في §3 |
+| **`change_log` قناة واحدة لا قناتان** | كل كتابة تمرّ بـ`RecordChange` فلا تلزم آلية بثّ ثانية. ✅ **اكتمل في م.5.1** — والتسجيل صار على النموذج لا على الفعل، فكاتبُ فعلٍ جديد لا يحتاج أن يتذكّر شيئاً (§3) |
 | **`/bootstrap` منفصل عن `sync/pull`** | أول تشغيل يحتاج لقطةً صغيرة تُبنى بها الشاشة الأولى فوراً، لا مئات صفوف `change_log` من الصفر — [API.md §3](API.md) |
 
 قرارات المرحلة 4.6 حول هرم الأدوار وحماية اللوحة في [CHECKPOINT-PHASE-4.6.MD](CHECKPOINT-PHASE-4.6.MD)،

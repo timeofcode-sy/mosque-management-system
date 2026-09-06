@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\ApiScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 /**
  * دخول تطبيقات فلاتر عبر توكن Sanctum شخصي — لا جلسة ولا كوكي، فالتطبيق يعمل أوف-لاين.
@@ -46,13 +48,7 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'username' => $user->username,
-                'email' => $user->email,
-                'roles' => $user->getRoleNames(),
-            ],
+            'user' => self::identity($user),
         ]);
     }
 
@@ -65,14 +61,34 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user();
+        return response()->json(self::identity($request->user()));
+    }
 
-        return response()->json([
+    /**
+     * هوية صاحب التوكن — واحدةٌ في login وme حتى لا تفترقا.
+     *
+     * 🔄 كانت roles تعود [] دائماً: المساران خارج institute.scope فمفتاح فريق spatie
+     * غير مضبوط، وroles() في spatie 8 تُصفّي بالمعهد فلا تجد صفّاً. والحلّ ضبطُ النطاق
+     * هنا **إن أمكن**: حسابٌ بلا معهد مرتبط (مدير معهد مثلاً) يبقى قادراً على الدخول
+     * وتسجيل جهازه ثم يُرفض عند أول نقطة بيانات — وهو التمييز المقصود بين «كلمة مرور
+     * خاطئة» و«حسابك غير مربوط بمعهد».
+     *
+     * @return array<string, mixed>
+     */
+    private static function identity(User $user): array
+    {
+        try {
+            ApiScope::for($user)->institute();
+        } catch (RuntimeException) {
+            // بلا معهد ⇒ بلا أدوار داخل معهد. الحقل يعود فارغاً لا الطلب يفشل.
+        }
+
+        return [
             'id' => $user->id,
             'name' => $user->name,
             'username' => $user->username,
             'email' => $user->email,
             'roles' => $user->getRoleNames(),
-        ]);
+        ];
     }
 }

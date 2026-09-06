@@ -13,6 +13,8 @@ use App\Enums\Weekday;
 use App\Models\AttendanceSession;
 use App\Models\CourseCircle;
 use App\Queries\AttendanceSessionQuery;
+use App\Support\AttendanceSettings;
+use App\Support\LateMinutes;
 use Flux\Flux;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -196,6 +198,29 @@ new #[Title('تفقّد الحلقة')] class extends Component {
         }
 
         $this->rows[$studentId]['status'] = $status;
+
+        if ($status === AttendanceStatus::Late->value && blank($this->rows[$studentId]['late_minutes'])) {
+            $this->rows[$studentId]['late_minutes'] = $this->autoLateMinutes;
+        }
+    }
+
+    /**
+     * دقائق التأخير المقترحة الآن — تُملأ في الحقل لحظةَ الضغط على «متأخر» فيراها
+     * الأستاذ قبل الحفظ، ويبقى تعديلها بيده.
+     *
+     * القيمة نفسها يحسبها الخادم في TakeAttendance لو تُرك الحقل فارغاً؛ فما هنا
+     * عرضٌ مبكّر لا مصدرُ حقيقة ثانٍ.
+     */
+    #[Computed]
+    public function autoLateMinutes(): int
+    {
+        if ($this->session === null) {
+            return 0;
+        }
+
+        $grace = AttendanceSettings::for($this->institute)->lateGraceMinutes();
+
+        return LateMinutes::afterGrace(LateMinutes::forSession($this->session), $grace) ?? 0;
     }
 
     public function setTeacherStatus(int $teacherId, string $status): void

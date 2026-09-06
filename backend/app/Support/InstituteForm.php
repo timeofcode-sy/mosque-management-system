@@ -28,6 +28,10 @@ class InstituteForm
             'address' => ['nullable', 'string', 'max:255'],
             'is_active' => ['boolean'],
             'logo' => ['nullable', 'image', 'max:2048'],
+            'theme.primary' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'theme.secondary' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'theme.surface' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'attendance.late_grace_minutes' => ['required', 'integer', 'min:0', 'max:240'],
             'points.quran_per_15_lines' => ['required', 'numeric', 'min:0', 'max:1000'],
             'points.hadith_per_item' => ['required', 'numeric', 'min:0', 'max:1000'],
             'points.mutun_per_bayt' => ['required', 'numeric', 'min:0', 'max:1000'],
@@ -45,13 +49,18 @@ class InstituteForm
             'points.quran_per_15_lines' => 'نقاط كل خمسة عشر سطراً',
             'points.hadith_per_item' => 'نقاط الحديث الواحد',
             'points.mutun_per_bayt' => 'نقاط البيت الواحد',
+            'theme.primary' => 'اللون الأساسي',
+            'theme.secondary' => 'اللون الثانوي',
+            'theme.surface' => 'لون الأرضية',
+            'attendance.late_grace_minutes' => 'فترة السماح',
         ];
     }
 
     /**
      * الحقول جاهزةً للإسناد على النموذج، والشعارُ مخزَّناً إن رُفع.
      *
-     * الإعدادات الأخرى في العمود تبقى كما هي — يُستبدل مفتاح points وحده.
+     * الإعدادات الأخرى في العمود تبقى كما هي — تُستبدل المفاتيح المعروضة في النموذج
+     * وحدها (points · theme · attendance)، فإضافةُ مفتاحٍ لاحقاً لا تمسح ما قبله.
      *
      * @param  array<string, mixed>  $validated
      * @param  array<string, mixed>  $points
@@ -59,11 +68,20 @@ class InstituteForm
      */
     public static function attributesFor(?Institute $institute, array $validated, array $points, UploadedFile|TemporaryUploadedFile|null $logo = null): array
     {
-        unset($validated['logo'], $validated['points']);
+        $theme = InstituteTheme::fromArray((array) ($validated['theme'] ?? []))->toArray();
+        $attendance = AttendanceSettings::for(null)->toArray();
+        $attendance['late_grace_minutes'] = (int) data_get($validated, 'attendance.late_grace_minutes', 0);
+
+        unset($validated['logo'], $validated['points'], $validated['theme'], $validated['attendance']);
 
         $attributes = [
             ...$validated,
-            'settings' => [...(array) $institute?->settings, 'points' => $points],
+            'settings' => [
+                ...(array) $institute?->settings,
+                'points' => $points,
+                'theme' => $theme,
+                'attendance' => $attendance,
+            ],
         ];
 
         if ($logo !== null) {

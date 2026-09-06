@@ -3,7 +3,10 @@
 namespace App\Models;
 
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
 use App\Enums\EnrollmentStatus;
+use App\Support\SyncScope;
 use Database\Factories\CourseCircleFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,10 +20,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * تشغيل حلقة ضمن دورة ودوام محدّدين — هنا يعيش التسجيل والتفقّد والإحصاء.
  */
 #[Fillable(['course_id', 'circle_id', 'shift_id', 'room', 'capacity', 'status', 'notes'])]
-class CourseCircle extends Model
+class CourseCircle extends Model implements Syncable
 {
     /** @use HasFactory<CourseCircleFactory> */
-    use HasFactory, HasUuid, SoftDeletes;
+    use HasFactory, HasUuid, RecordsSyncChanges, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -89,5 +92,13 @@ class CourseCircle extends Model
     public function cumulativeStats(): HasMany
     {
         return $this->hasMany(CircleCumulativeStat::class);
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return SyncScope::via(Circle::class, $this->circle_id);
     }
 }

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\CourseCircleResource;
 use App\Queries\TeacherCircleQuery;
 use App\Support\ApiScope;
+use App\Support\AttendanceSettings;
+use App\Support\InstituteTheme;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -22,10 +24,20 @@ class BootstrapController extends Controller
         $course = $institute->currentCourse();
 
         return response()->json([
+            'user' => [
+                'name' => $user->name,
+                // الدور هنا لا في /auth/login وحدها: هذه أول نقطة بعد الدخول ونطاقُها
+                // محسوم، فيبني عليها التطبيق توجيهه بلا فحص 404 على /teacher/circles.
+                'roles' => $user->getRoleNames(),
+            ],
             'institute' => [
                 'uuid' => $institute->uuid,
                 'name' => $institute->name,
                 'logo_path' => $institute->logo_path,
+                // الألوان الثلاثة — منها يبني mousqe_ui سلالمَه بنفس نسب InstituteTheme.
+                'theme' => InstituteTheme::for($institute)->toArray(),
+                // ما يحتاجه العميل ليحسب دقائق التأخير محلياً قبل أن يؤكّدها الخادم.
+                'attendance' => AttendanceSettings::for($institute)->toArray(),
             ],
             'course' => $course === null ? null : [
                 'uuid' => $course->uuid,

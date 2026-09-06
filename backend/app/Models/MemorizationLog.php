@@ -4,8 +4,11 @@ namespace App\Models;
 
 use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
+use App\Concerns\RecordsSyncChanges;
+use App\Contracts\Syncable;
 use App\Enums\MemorizationType;
 use App\Enums\RecitationGrade;
+use App\Support\SyncScope;
 use Database\Factories\MemorizationLogFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,10 +24,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'from_surah', 'from_ayah', 'to_surah', 'to_ayah', 'pages', 'lines', 'new_lines', 'points', 'juz',
     'memorization_score', 'tajweed_score', 'mistakes_count', 'teacher_id', 'notes',
 ])]
-class MemorizationLog extends Model
+class MemorizationLog extends Model implements Syncable
 {
     /** @use HasFactory<MemorizationLogFactory> */
-    use HasFactory, HasUuid, SoftDeletes;
+    use HasFactory, HasUuid, RecordsSyncChanges, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -73,5 +76,13 @@ class MemorizationLog extends Model
     public function teacher(): BelongsTo
     {
         return $this->belongsTo(Teacher::class);
+    }
+
+    /**
+     * @see Syncable
+     */
+    public function syncInstituteId(): ?int
+    {
+        return SyncScope::via(Student::class, $this->student_id);
     }
 }
