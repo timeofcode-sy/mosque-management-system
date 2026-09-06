@@ -24,15 +24,15 @@ mousqe/
 │    ├─ app/Queries/      ← كل قراءة
 │    └─ (MySQL/MariaDB إنتاجاً · SQLite تطويراً)
 │
-├─ packages/  ⬜ فارغة فعلياً (تُبنى في المرحلة 5.2)
+├─ packages/  ✅ (م.5.2)
 │    ├─ mousqe_core   ← نماذج freezed + drift(SQLite) + SyncEngine + ApiClient + تخزين التوكن
 │    └─ mousqe_ui     ← نظام التصميم: design-tokens.json افتراضاً + ألوان المعهد من /bootstrap
 │
-└─ apps/  ⬜ الأربعة فارغة فعلياً
-     ├─ teacher/        م.5.3 · Android + iOS ─┐
-     ├─ admin_desktop/  م.6 · Windows         ├─ REST /api/v1 + مزامنة أوف-لاين
-     ├─ guardian/       م.7 · Android + iOS   │
-     └─ student/        م.8 · Android + iOS  ─┘
+└─ apps/
+     ├─ teacher/     ✅ م.5.3 · Android ────────┐
+     ├─ admin_desktop/  ⬜ م.6 · Windows      ├─ REST /api/v1 + مزامنة أوف-لاين
+     ├─ guardian/       ⬜ م.7 · Android+iOS  │
+     └─ student/        ⬜ م.8 · Android+iOS ─┘
 ```
 
 مسار البيانات — الكتابة تلتقي في `app/Actions/` مهما كان مصدرها:
@@ -51,6 +51,12 @@ mousqe/
 > ✅ **م.5.1: صار قناةً بالاتجاهين.** كان `RecordChange` لا يُستدعى إلا من `SyncPush`، فكتابات
 > اللوحة (تسجيل طالب، تعديل تفقّد، مراجعة إذن) لا تظهر في `sync/pull` إطلاقاً. صار التسجيلُ أثراً
 > بنيوياً: مراقبٌ على كل نموذج ينفّذ `App\Contracts\Syncable` — [SYNC-PROTOCOL.md §2](SYNC-PROTOCOL.md).
+
+> 🔴 **م.5.3: التيّار تيّارُ تغييرات لا لقطةُ حالة.** `SyncPull` يقرأ `change_log` **وحده** ولا يمسّ
+> جداول الدومين، فالصفُّ الذي لم يمرّ بالمراقب لا سبيل لأي عميل أن يعرفه — لا في `since=0` ولا
+> بعدها. وثلاثةُ مصادر تُنتج صفوفاً كهذه: بياناتُ ما قبل م.5.1، والبذرُ الذي يعطّل التسجيل للسرعة،
+> والإدراجُ بالجملة الذي لا يُطلق أحداث Eloquent. يردمها `php artisan sync:backfill-change-log`
+> (مُتماثِل، ويجري تلقائياً في نهاية كل بذرة) — [SYNC-PROTOCOL.md §10](SYNC-PROTOCOL.md) البند 9.
 
 ---
 

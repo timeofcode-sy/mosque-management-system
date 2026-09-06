@@ -20,20 +20,34 @@ use Illuminate\Support\Facades\DB;
  *
  * الجلسة تُبذَر بصفٍّ لكل طالب مسجَّل في ذلك التاريخ حتى تفتح الشبكة جاهزة للضغط،
  * والطالب الذي يغطّيه إذن غياب مقبول يُقترح "مأذون" بدل "حاضر".
+ *
+ * 🔄 م.5.3: $uuid يقبل معرّفاً يولّده العميل أوف-لاين. بدونه كان الأستاذُ المنقطع
+ * عن الشبكة يفتح جلسةً بلا أن يعرف معرّفها، فلا يستطيع أن يُتبعها بـattendance.take
+ * في نفس الطابور. ويُستعمل **عند الإنشاء وحده**: جلسةٌ قائمة (فتحها المشرف من
+ * اللوحة مثلاً) تحتفظ بمعرّفها، والعميل يصل إليها بالمفتاح الطبيعي
+ * (course_circle_id, session_date) — انظر SyncPush::attendanceSession.
  */
 class OpenAttendanceSession
 {
     public function __construct(private readonly SyncRecorder $recorder) {}
 
-    public function handle(CourseCircle $courseCircle, ?string $date = null, ?User $openedBy = null): AttendanceSession
+    public function handle(CourseCircle $courseCircle, ?string $date = null, ?User $openedBy = null, ?string $uuid = null): AttendanceSession
     {
         $date = $date ?? Carbon::today()->toDateString();
 
-        return DB::transaction(function () use ($courseCircle, $date, $openedBy): AttendanceSession {
-            $session = AttendanceSession::firstOrCreate(
+        return DB::transaction(function () use ($courseCircle, $date, $openedBy, $uuid): AttendanceSession {
+            $session = AttendanceSession::firstOrNew(
                 ['course_circle_id' => $courseCircle->id, 'session_date' => $date],
-                ['status' => SessionStatus::Draft, 'opened_by' => $openedBy?->id],
             );
+
+            if (! $session->exists) {
+                // uuid خارج #[Fillable] عمداً، فيُضبط هنا صراحةً لا عبر الإسناد الجماعي.
+                $session->forceFill(array_filter([
+                    'uuid' => $uuid,
+                    'status' => SessionStatus::Draft,
+                    'opened_by' => $openedBy?->id,
+                ], fn ($value) => $value !== null))->save();
+            }
 
             // الزرعُ ليس ملاحظةَ جهاز بل قيمةٌ افتراضية تنتظر من يؤكّدها، فيُسجَّل بلا
             // device_uuid — وعليه يميّزه ResolveAttendanceConflicts فلا يهدر تفقّداً حقيقياً

@@ -10,6 +10,7 @@ dev_dependencies:
 workspace:
   - packages/mousqe_core
   - packages/mousqe_ui
+  - apps/teacher
 
 melos:
   name: mousqe

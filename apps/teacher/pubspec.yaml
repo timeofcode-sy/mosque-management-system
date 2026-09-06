@@ -1,0 +1,32 @@
+name: mousqe_teacher
+description: >
+  تطبيق الأستاذ — تفقّدُ الحلقة وتسميعُها ونقاطُها، عاملاً بلا شبكة ومتزامناً
+  حين تعود عبر mousqe_core.
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.27.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  mousqe_core: ^0.1.0
+  mousqe_ui: ^0.1.0
+  drift: ^2.22.1
+  dio: ^5.7.0
+  uuid: ^4.5.1
+  intl: ^0.20.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  retrofit: ^4.4.1
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true

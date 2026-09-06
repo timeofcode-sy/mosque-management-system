@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Support\ApiScope;
 use App\Support\SyncRecorder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -114,7 +115,7 @@ class SyncPush
     {
         $courseCircle = $this->courseCircle($op['course_circle_uuid'], $instituteId);
 
-        return $this->openSession->handle($courseCircle, $op['session_date'] ?? null, $user);
+        return $this->openSession->handle($courseCircle, $op['session_date'] ?? null, $user, $op['uuid'] ?? null);
     }
 
     /**
@@ -122,7 +123,7 @@ class SyncPush
      */
     private function applyTakeAttendance(array $op, User $user, int $instituteId, ?string $deviceUuid): AttendanceSession
     {
-        $session = $this->attendanceSession($op['session_uuid'], $instituteId);
+        $session = $this->attendanceSession($op, $instituteId);
 
         $rows = [];
 
@@ -151,7 +152,7 @@ class SyncPush
      */
     private function applyTakeTeacherAttendance(array $op, User $user, int $instituteId): AttendanceSession
     {
-        $session = $this->attendanceSession($op['session_uuid'], $instituteId);
+        $session = $this->attendanceSession($op, $instituteId);
 
         $rows = [];
 
@@ -177,7 +178,7 @@ class SyncPush
      */
     private function applyCompleteSession(array $op, User $user, int $instituteId): AttendanceSession
     {
-        return $this->completeSession->handle($this->attendanceSession($op['session_uuid'], $instituteId), $user);
+        return $this->completeSession->handle($this->attendanceSession($op, $instituteId), $user);
     }
 
     /**
@@ -200,7 +201,7 @@ class SyncPush
      */
     private function applySaveRecitation(array $op, User $user, int $instituteId): Model
     {
-        $session = $this->attendanceSession($op['session_uuid'], $instituteId);
+        $session = $this->attendanceSession($op, $instituteId);
         $student = $this->student($op['student_uuid'], $instituteId);
 
         return $this->saveRecitation->handle($session, $student, $op['recitation'] ?? [], $user, $op['recorded_at'] ?? null);
@@ -227,9 +228,9 @@ class SyncPush
     {
         $student = $this->student($op['student_uuid'], $instituteId);
 
-        $session = blank($op['session_uuid'] ?? null)
+        $session = blank($op['session_uuid'] ?? null) && blank($op['course_circle_uuid'] ?? null)
             ? null
-            : $this->attendanceSession($op['session_uuid'], $instituteId);
+            : $this->attendanceSession($op, $instituteId);
 
         return $this->awardPoints->handle($student, [
             'points' => $op['points'],
@@ -264,10 +265,45 @@ class SyncPush
             ->firstOrFail();
     }
 
-    private function attendanceSession(string $uuid, int $instituteId): AttendanceSession
+    /**
+     * الجلسة التي تقصدها العملية — بمعرّفها، أو بمفتاحها الطبيعي حين لا يُطابق المعرّف.
+     *
+     * 🔄 م.5.3: العميلُ الذي يفتح جلسةً أوف-لاين يولّد لها uuid ويرسله في
+     * attendance.session.open، فتُنشأ به على الخادم ويطابق ما في الطابور. لكن جهازين
+     * فتحا نفس الجلسة أوف-لاين — أو مشرفاً سبقهما من اللوحة — يعني أن الصفّ القائم
+     * يحمل معرّفاً آخر، والمفتاح الطبيعي (course_circle_id, session_date) هو **الوحيد**
+     * الذي يتفق عليه الجميع (وهو قيد unique في الهجرة). فلذلك تُرسَل
+     * course_circle_uuid وsession_date مع كل عملية جلسة أُنشئت أوف-لاين، وتُستعمل
+     * احتياطاً هنا — وإلا ضاع تفقّدُ يومٍ كاملٍ بـ404 لأن جهازاً آخر سبقه بثانية.
+     *
+     * @param  array<string, mixed>  $op
+     */
+    private function attendanceSession(array $op, int $instituteId): AttendanceSession
     {
-        return AttendanceSession::where('uuid', $uuid)
-            ->whereHas('courseCircle.circle', fn ($q) => $q->where('institute_id', $instituteId))
-            ->firstOrFail();
+        $inInstitute = fn () => AttendanceSession::query()
+            ->whereHas('courseCircle.circle', fn ($q) => $q->where('institute_id', $instituteId));
+
+        if (filled($op['session_uuid'] ?? null)) {
+            $session = $inInstitute()->where('uuid', $op['session_uuid'])->first();
+
+            if ($session !== null) {
+                return $session;
+            }
+        }
+
+        if (filled($op['course_circle_uuid'] ?? null) && filled($op['session_date'] ?? null)) {
+            $courseCircle = $this->courseCircle($op['course_circle_uuid'], $instituteId);
+
+            $session = $inInstitute()
+                ->where('course_circle_id', $courseCircle->id)
+                ->whereDate('session_date', $op['session_date'])
+                ->first();
+
+            if ($session !== null) {
+                return $session;
+            }
+        }
+
+        throw (new ModelNotFoundException)->setModel(AttendanceSession::class, [$op['session_uuid'] ?? null]);
     }
 }

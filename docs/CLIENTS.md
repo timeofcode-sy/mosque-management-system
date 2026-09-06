@@ -15,13 +15,14 @@
 | التطبيق | المرحلة | الأدوار التي يخدمها | نمط الاتصال | أوف-لاين | الحالة |
 |---|---|---|---|---|---|
 | **اللوحة** `backend/` | 0–4.7 | `developer` · `super_admin` · `admin` · `supervisor` · `teacher` (جزئياً) | Livewire فوق القاعدة مباشرة — **بلا REST** | ✗ | ✅ **27 شاشة · 279 اختباراً** |
-| **الأستاذ** `apps/teacher/` | م.5 | `teacher` | REST + `sync/push` + `sync/pull` | ✓ كامل | ⬜ مجلد فارغ |
+| **الأستاذ** `apps/teacher/` | م.5 | `teacher` | REST + `sync/push` + `sync/pull` | ✓ كامل | ✅ **8 شاشات · 26 اختباراً** · Android |
 | **الديسكتوب** `apps/admin_desktop/` | م.6 | `supervisor` (⚠️ §5) | REST + `sync/push` + `sync/pull` | ✓ كامل | ⬜ مجلد فارغ |
 | **الأهل** `apps/guardian/` | م.7 | `guardian` | REST + `sync/pull` فقط | ✓ قراءة | ⬜ مجلد فارغ |
 | **الطالب** `apps/student/` | م.8 | `student` | REST + `sync/pull` فقط | ✓ قراءة | ⬜ مجلد فارغ |
 
-الحزمتان المشتركتان `packages/mousqe_core` و`packages/mousqe_ui` ⬜ فارغتان أيضاً؛ محتواهما المخطَّط
-في [PLAN.md §7](PLAN.md)، والملزم منه في [SYNC-PROTOCOL.md §8](SYNC-PROTOCOL.md).
+الحزمتان المشتركتان `packages/mousqe_core` و`packages/mousqe_ui` ✅ منجَزتان (م.5.2)؛ محتواهما
+المخطَّط في [PLAN.md §7](PLAN.md)، وعقدُ العميل الملزم — منفَّذاً كاملاً — في
+[SYNC-PROTOCOL.md §8](SYNC-PROTOCOL.md).
 
 **ثلاثة أدوار لا تطبيق لها:** `developer` و`super_admin` و`admin` يعملون من اللوحة وحدها — وليس
 هذا اختياراً بل نتيجة بنيوية: `ApiScope` يحسم المعهد من سجلّ `teacher`/`guardian`/`student`
@@ -88,6 +89,31 @@
 **وتبعيةٌ اختيارية أُضيفت في م.5.1:** «بيانات المعهد» → الألوان الثلاثة. بلا ضبطها يعمل التطبيق
 على لوحة `design-tokens.json` الافتراضية؛ وبضبطها **مرّةً واحدة** تتوحّد ألوانُ اللوحة والتقارير
 المطبوعة وتطبيقات الأستاذ والأهل والطالب والديسكتوب معاً ([API.md §3.4](API.md)).
+
+### ما يكتبه تطبيق الأستاذ وما يقرؤه ✅ م.5.3
+
+**لا يكتب صفّاً في جدولٍ متزامَن مباشرةً — أبداً.** كلُّ كتابةٍ عمليةٌ في طابور `pending_operations`
+المحلي، والخادمُ وحده يُنشئ الصفّ. والسببُ أن الجهاز لا يعرف إن كان أحدٌ قد سبقه إلى فتح جلسة
+اليوم (مشرفٌ من اللوحة، أو أستاذٌ ثانٍ)، فلو زرع صفّاً في الجدول المتزامن لَصار عند عودة الشبكة
+**صفّان** لنفس (الحلقة + التاريخ) بمعرّفين مختلفين، أحدهما وهمٌ لا شيء يزيله.
+
+فالمسودّةُ تسكن جدولين محليَّين بحتين (`local_sessions` و`local_attendances`) مفتاحُهما
+(الحلقة + التاريخ) لا المعرّف، ويُبنى العرضُ منها فوق المتزامن فوق الاقتراح الافتراضي:
+
+```
+المسودّة المحلية  ←  فوق  ←  صفوف attendances المتزامنة  ←  فوق  ←  اقتراحٌ افتراضي
+   (pending)                        (synced)                        (suggested)
+```
+
+وتُمسح المسودّةُ حين يفرغ الطابور بعد دورةٍ كاملة (`push` ثم `pull` حتى الصفحة الفارغة) — أي حين
+يثبت أن الخادم التزم بكل ما كُتب وأعاده مطبَّقاً.
+
+| العمليات التي يدفعها | يقرأ من `sync/pull` |
+|---|---|
+| `attendance.session.open` (بـ`uuid` يولّده) · `attendance.take` · `attendance.session.complete` · `recitation.save` · `points.award` | `institutes` (الثيم) · `circles` · `shifts` · `courses` · `course_circles` · `teachers` · `course_circle_teachers` · `students` · `enrollments` · `attendance_sessions` · `attendances` |
+
+والترشيحُ صريحٌ بـ`user.teacher_uuid` من `/bootstrap`: السحبُ معهدٌ كامل، فتصله حلقاتُ أساتذةٍ
+آخرين ([SYNC-PROTOCOL.md §4](SYNC-PROTOCOL.md)).
 
 ### تطبيق الديسكتوب (م.6) يحتاج
 

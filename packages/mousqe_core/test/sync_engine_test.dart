@@ -66,6 +66,22 @@ void main() {
       expect(remaining, hasLength(1));
     });
 
+    test('the batch carries the device uuid the server resolves conflicts with', () async {
+      await engine.enqueue('attendance.session.open', {'course_circle_uuid': 'c1'});
+
+      Map<String, dynamic>? sent;
+      when(() => api.syncPush(any())).thenAnswer((invocation) async {
+        sent = invocation.positionalArguments.first as Map<String, dynamic>;
+        return _response({'applied': <String>[], 'skipped': <String>[]});
+      });
+
+      await engine.push();
+
+      // بدونه لا يميّز ResolveAttendanceConflicts «كتابتي» من «كتابة غيري»
+      // (SYNC-PROTOCOL §5)، ويبقى last_pushed_at فارغاً في شاشة الأجهزة.
+      expect(sent!['device_uuid'], 'device-1');
+    });
+
     test('applied and skipped operations are both removed from the queue', () async {
       final opA = await engine.enqueue('attendance.session.open', {'course_circle_uuid': 'c1'});
       final opB = await engine.enqueue('attendance.session.complete', {'session_uuid': 's1'});
@@ -144,6 +160,33 @@ void main() {
 
       final state = await db.select(db.syncState).getSingle();
       expect(state.lastPulledSeq, 15);
+      expect(state.lastPulledAt, isNotNull);
+    });
+
+    test('a quiet institute still stamps the last successful pull', () async {
+      when(() => api.syncPull(any(), any(), any()))
+          .thenAnswer((_) async => _response({'server_seq': 0, 'changes': []}));
+
+      await engine.pull();
+
+      // لا صفَّ sync_state يُكتب حين لا تغييرات، فالختمُ تحديثاً وحده كان يترك
+      // «آخر سحب ناجح» فارغاً إلى الأبد على معهدٍ لم يتغيّر فيه شيء.
+      expect(await engine.watchLastPulledAt().first, isNotNull);
+    });
+  });
+
+  group('watchPendingCount', () {
+    test('follows the queue as operations are enqueued and confirmed', () async {
+      expect(await engine.watchPendingCount().first, 0);
+
+      final opUuid = await engine.enqueue('points.award', {'student_uuid': 'stu-1'});
+      expect(await engine.watchPendingCount().first, 1);
+
+      when(() => api.syncPush(any()))
+          .thenAnswer((_) async => _response({'applied': [opUuid], 'skipped': <String>[]}));
+      await engine.push();
+
+      expect(await engine.watchPendingCount().first, 0);
     });
   });
 }

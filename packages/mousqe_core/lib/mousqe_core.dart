@@ -23,3 +23,4 @@ export 'src/sync/sync_engine.dart';
 export 'src/sync/sync_payload_applier.dart';
 
 export 'src/support/late_minutes.dart';
+export 'src/support/quran.dart';

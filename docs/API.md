@@ -141,7 +141,8 @@ spatie غير مضبوط. صار `AuthController::identity()` يحسم النط�
 {
   "user": {                                     // ✅ م.5.1
     "name": "أحمد بن سعيد",
-    "roles": ["teacher"]                        // الدور هنا يبني عليه التطبيق توجيهه
+    "roles": ["teacher"],                       // الدور هنا يبني عليه التطبيق توجيهه
+    "teacher_uuid": "0199…"                     // ✅ م.5.3 — null لمن ليس أستاذاً
   },
   "institute": {
     "uuid": "0199…",
@@ -170,6 +171,12 @@ spatie غير مضبوط. صار `AuthController::identity()` يحسم النط�
   ]
 }
 ```
+
+**`teacher_uuid` هو مفتاح ترشيح العرض في العميل.** ✅ م.5.3 — `sync/pull` يبثّ **معهداً كاملاً**
+([SYNC-PROTOCOL.md §4](SYNC-PROTOCOL.md))، فتصل جهازَ الأستاذ صفوفُ `course_circle_teachers` عن
+حلقات كل أساتذة المعهد بمعرّفاتِ أساتذةٍ لا يعرف أيُّها هو. بدون هذا الحقل لا يستطيع أن يرشّح
+«حلقاتي» من مخزنه المحلّي، فيبقى معتمداً على `/teacher/circles` — أي على الشبكة. وهو `null` لمن
+ليس أستاذاً، وثابتٌ لا يتغيّر، فيُحفَظ مع لقطة `/bootstrap` ويُقرأ منها أوف-لاين.
 
 **`theme` عقدٌ من ثلاثة ألوان لا لوحةٌ كاملة.** الخادم يشتقّ منها سلالمَ التدرّج للوحة وصفحات
 الطباعة (`App\Support\InstituteTheme`)، و`mousqe_ui` يشتقّها للتطبيقات **بنفس النسب** — خلطٌ خطّي في
@@ -320,14 +327,14 @@ institute() = user->teacher?->institute_id
 
 | `type` | الحقول | ملاحظات |
 |---|---|---|
-| `attendance.session.open` | `course_circle_uuid` · `session_date?` | الحلقة تُتحقَّق ضمن معهد المستخدم |
-| `attendance.take` | `session_uuid` · `attendances[]{student_uuid, status, late_minutes?, note?, recorded_at?}` · `amend?` | `recorded_at` **هو مفتاح حسم التعارض** — أرسله دائماً بزمن الجهاز وقت التسجيل، لا وقت الدفع. و`late_minutes` **اتركه فارغاً** ليحسبه الخادم (انظر أسفل الجدول) |
-| `attendance.teacher.take` | `session_uuid` · `teacher_attendances[]{teacher_uuid, status, late_minutes?, note?}` | بلا `recorded_at` ⇒ بلا حسم تعارض |
-| `attendance.session.complete` | `session_uuid` | يقفل الجلسة (§6 في SYNC-PROTOCOL) |
+| `attendance.session.open` | `course_circle_uuid` · `session_date?` · `uuid?` ✅ م.5.3 | الحلقة تُتحقَّق ضمن معهد المستخدم. `uuid` معرّفٌ يولّده العميل ويُستعمل **عند الإنشاء وحده** (انظر أسفل الجدول) |
+| `attendance.take` | `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 · `attendances[]{student_uuid, status, late_minutes?, note?, recorded_at?}` · `amend?` | `recorded_at` **هو مفتاح حسم التعارض** — أرسله دائماً بزمن الجهاز وقت التسجيل، لا وقت الدفع. و`late_minutes` **اتركه فارغاً** ليحسبه الخادم (انظر أسفل الجدول) |
+| `attendance.teacher.take` | `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 · `teacher_attendances[]{teacher_uuid, status, late_minutes?, note?}` | بلا `recorded_at` ⇒ بلا حسم تعارض |
+| `attendance.session.complete` | `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 | يقفل الجلسة (§6 في SYNC-PROTOCOL) |
 | `excuse.submit` | `student_uuid` · `from_date` · `to_date` · `reason` · `attachment_path?` | نظير `POST /guardian/excuses` لعميل يملك `sync.push` |
-| `recitation.save` | `session_uuid` · `student_uuid` · `recitation{from_surah, from_ayah, to_surah, to_ayah, grade?, juz?, type?, curriculum_item_id?, notes?}` · `recorded_at?` | `grade`: `excellent`/`very_good`/`good` · `type`: `hifz`/`murajaa`/`tilawah`. الأسطر والنقاط تُحسب على الخادم وتُجمَّد |
+| `recitation.save` | `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 · `student_uuid` · `recitation{from_surah, from_ayah, to_surah, to_ayah, grade?, juz?, type?, curriculum_item_id?, notes?}` · `recorded_at?` | `grade`: `excellent`/`very_good`/`good` · `type`: `hifz`/`murajaa`/`tilawah`. الأسطر والنقاط تُحسب على الخادم وتُجمَّد |
 | `recitation.delete` | `recitation_uuid` | |
-| `points.award` | `student_uuid` · `points` · `reason` · `note?` · `awarded_on?` · `session_uuid?` | `reason`: `behavior`/`participation`/`competition`/`reward`/`excellence`/`volunteering`/`other` |
+| `points.award` | `student_uuid` · `points` · `reason` · `note?` · `awarded_on?` · `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 | `reason`: `behavior`/`participation`/`competition`/`reward`/`excellence`/`volunteering`/`other` |
 
 ```jsonc
 // POST /sync/push  ⇒  200
@@ -335,6 +342,32 @@ institute() = user->teacher?->institute_id
 ```
 
 `skipped` = عمليات سبق تطبيقها بنفس `op_uuid` (إعادة إرسال بعد انقطاع). أي نوع خارج الجدول ⇒ 500.
+
+### كيف تُحسَم الجلسة في عمليات الجلسة ✅ م.5.3
+
+كان `session_uuid` **مطلوباً** في الأنواع الخمسة، وهو ما جعل «فتحُ جلسةٍ أوف-لاين» مستحيلاً:
+الأستاذُ المنقطع لا يعرف المعرّف الذي سيولّده الخادم، فلا يستطيع أن يُتبع `attendance.session.open`
+بـ`attendance.take` في **نفس الطابور**. الحلُّ شقّان:
+
+**1) العميل يولّد `uuid` الجلسة** ويرسله في `attendance.session.open`، فيُستعمل عند الإنشاء وحده
+(`OpenAttendanceSession::handle(..., ?string $uuid)`). **جلسةٌ قائمة تحتفظ بمعرّفها** — لو استبدلناه
+لَتغيّر معرّفٌ سبق أن بُثَّ لأجهزة أخرى في `sync/pull`.
+
+**2) المفتاح الطبيعي احتياطاً.** لأن الجلسة قد تكون فُتحت قبله — مشرفٌ من اللوحة، أو أستاذٌ ثانٍ
+أوف-لاين بمعرّفٍ آخر — فالصفُّ القائم يحمل معرّفاً لا يعرفه هذا الجهاز. لذلك يحسم `SyncPush`
+الجلسةَ بهذا الترتيب:
+
+```
+session_uuid موجود وطابق صفّاً في المعهد؟      ⇒ هي
+وإلا: course_circle_uuid + session_date طابقا؟  ⇒ هي   (قيد unique في الهجرة)
+وإلا:                                            ⇒ 404
+```
+
+فليرسل العميلُ **الثلاثة معاً** في كل عملية جلسة أنشأها أوف-لاين. وبلا مفتاحٍ طبيعي يبقى السلوك
+القديم كما هو: `session_uuid` وحده، و404 إن لم يُطابق — فالعملاءُ القدامى لا ينكسرون (§7).
+
+⚠️ `points.award` استثناءٌ في قراءة الفراغ: الجلسة فيه **اختيارية أصلاً**، فلا تُطلَب إلا حين يصل
+`session_uuid` أو `course_circle_uuid`؛ وبلا أيّهما تُسجَّل النقاط بلا جلسة كما كانت.
 
 ### `late_minutes` يحسبه الخادم ✅ م.5.1
 

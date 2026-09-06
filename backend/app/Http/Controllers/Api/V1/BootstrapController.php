@@ -29,6 +29,10 @@ class BootstrapController extends Controller
                 // الدور هنا لا في /auth/login وحدها: هذه أول نقطة بعد الدخول ونطاقُها
                 // محسوم، فيبني عليها التطبيق توجيهه بلا فحص 404 على /teacher/circles.
                 'roles' => $user->getRoleNames(),
+                // 🔄 م.5.3: معرّف صفّ الأستاذ نفسه — بدونه لا يستطيع العميل أن يرشّح
+                // «حلقاتي» من مخزنه المحلي، لأن course_circle_teachers يصله في
+                // sync/pull بمعرّف أستاذٍ لا يعرف أنه هو (SYNC-PROTOCOL §8 البند 7).
+                'teacher_uuid' => $user->teacher?->uuid,
             ],
             'institute' => [
                 'uuid' => $institute->uuid,
