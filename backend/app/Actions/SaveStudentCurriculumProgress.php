@@ -71,7 +71,7 @@ class SaveStudentCurriculumProgress
         return match ($status) {
             ProgressStatus::NotStarted => 0,
             ProgressStatus::Memorized, ProgressStatus::Mastered => 100,
-            ProgressStatus::InProgress => min(99, max(1, (int) $percent)),
+            ProgressStatus::InProgress => min(100, max(1, (int) $percent)),
         };
     }
 }

@@ -153,7 +153,7 @@ class StudentPointsTest extends TestCase
         // خارج المدى — لا يُحتسب.
         StudentPoint::factory()->create([
             'student_id' => $this->student->id,
-            'points' => 99,
+            'points' => 100,
             'awarded_on' => '2026-10-01',
         ]);
 

@@ -461,7 +461,7 @@ new #[Title('ملف الطالب')] class extends Component
                 @if ($progressStatus === ProgressStatus::InProgress->value)
                     <flux:input
                         wire:model="progressPercent"
-                        type="number" min="1" max="99"
+                        type="number" min="1" max="100"
                         label="النسبة المنجَزة %"
                         class="latin-numerals"
                         data-test="progress-percent"
