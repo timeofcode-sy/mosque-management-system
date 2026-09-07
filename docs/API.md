@@ -1,8 +1,9 @@
 # عقد الـ API — mousqe
 
-الحالة: **2026-09-06 · محدَّث حتى المرحلة 5.1** — ✅ 14 نقطة منفَّذة ومغطّاة باختبارات
-(`tests/Feature/Api/`). هذا الملف هو **العقد الذي تبني عليه تطبيقات المراحل 5–8** — كل حقل فيه منسوخ
-من `routes/api.php` ومن المتحكّمات و`app/Http/Resources/V1/` لا مستنتَج.
+الحالة: **2026-09-06 · محدَّث حتى المرحلة 5.3** — ✅ 14 نقطة منفَّذة ومغطّاة باختبارات
+(`tests/Feature/Api/`)، و**مستهلَكةٌ فعلياً** من تطبيق الأستاذ لا من الاختبارات وحدها. هذا الملف هو
+**العقد الذي تبني عليه تطبيقات المراحل 5–8** — كل حقل فيه منسوخ من `routes/api.php` ومن المتحكّمات
+و`app/Http/Resources/V1/` لا مستنتَج.
 
 > الصورة العامة في [ARCHITECTURE.md](ARCHITECTURE.md) · المزامنة بتفصيلها في
 > [SYNC-PROTOCOL.md](SYNC-PROTOCOL.md) · من يستهلك ماذا في [CLIENTS.md](CLIENTS.md) ·
@@ -332,9 +333,10 @@ institute() = user->teacher?->institute_id
 | `attendance.teacher.take` | `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 · `teacher_attendances[]{teacher_uuid, status, late_minutes?, note?}` | بلا `recorded_at` ⇒ بلا حسم تعارض |
 | `attendance.session.complete` | `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 | يقفل الجلسة (§6 في SYNC-PROTOCOL) |
 | `excuse.submit` | `student_uuid` · `from_date` · `to_date` · `reason` · `attachment_path?` | نظير `POST /guardian/excuses` لعميل يملك `sync.push` |
-| `recitation.save` | `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 · `student_uuid` · `recitation{from_surah, from_ayah, to_surah, to_ayah, grade?, juz?, type?, curriculum_item_id?, notes?}` · `recorded_at?` | `grade`: `excellent`/`very_good`/`good` · `type`: `hifz`/`murajaa`/`tilawah`. الأسطر والنقاط تُحسب على الخادم وتُجمَّد |
-| `recitation.delete` | `recitation_uuid` | |
-| `points.award` | `student_uuid` · `points` · `reason` · `note?` · `awarded_on?` · `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 | `reason`: `behavior`/`participation`/`competition`/`reward`/`excellence`/`volunteering`/`other` |
+| `recitation.save` | `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 · `student_uuid` · `recitation{uuid?, from_surah, from_ayah, to_surah, to_ayah, grade?, juz?, type?, curriculum_item_id?, notes?}` · `recorded_at?` | `grade`: `excellent`/`very_good`/`good` · `type`: `hifz`/`murajaa`/`tilawah`. الأسطر والنقاط تُحسب على الخادم وتُجمَّد. `uuid` معرّفٌ يولّده العميل: معرّفٌ جديد ⇒ تسجيل، ومعرّفٌ قائم ⇒ **تصحيحٌ في مكانه** ✅ م.5.4 (انظر أسفل الجدول) |
+| `recitation.delete` | `recitation_uuid` | تسميعٌ لا وجود له ⇒ نجاحٌ صامت لا 404 ✅ م.5.4 |
+| `points.award` | `uuid?` ✅ م.5.4 · `student_uuid` · `points` · `reason` · `note?` · `awarded_on?` · `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 | `reason`: `behavior`/`participation`/`competition`/`reward`/`excellence`/`volunteering`/`other`. و`uuid` كنظيره في `recitation.save` |
+| `points.delete` ✅ م.5.4 | `point_uuid` | منحةٌ لا وجود لها ⇒ نجاحٌ صامت لا 404 |
 
 ```jsonc
 // POST /sync/push  ⇒  200
@@ -368,6 +370,28 @@ session_uuid موجود وطابق صفّاً في المعهد؟      ⇒ هي
 
 ⚠️ `points.award` استثناءٌ في قراءة الفراغ: الجلسة فيه **اختيارية أصلاً**، فلا تُطلَب إلا حين يصل
 `session_uuid` أو `course_circle_uuid`؛ وبلا أيّهما تُسجَّل النقاط بلا جلسة كما كانت.
+
+### التصحيح والحذف من عميلٍ أوف-لاين ✅ م.5.4
+
+`recitation.save` و`points.award` كانتا **تسجيلاً فقط**: كل دفعةٍ تُنشئ صفّاً جديداً. فالأستاذ
+الذي أخطأ في المدى أو في التقدير لا يملك من جهازه إلا أن يترك الخطأ — لا مفتاحَ أساسياً عنده
+يشير به إلى صفٍّ قد لا يكون أُنشئ على الخادم بعد.
+
+الحلّ نفسُ حلّ الجلسة في م.5.3: **العميل يولّد المعرّف**. يرسله في `recitation.save`
+(داخل `recitation{}`) وفي `points.award` (في جذر العملية)، فيُحسم الصفّ به:
+
+```
+uuid فارغ؟                    ⇒ تسجيلٌ جديد بمعرّفٍ يولّده الخادم   (سلوك العملاء القدامى)
+uuid لا يطابق صفّاً؟           ⇒ تسجيلٌ جديد يحمل معرّف العميل
+uuid يطابق صفّاً (ولو محذوفاً)؟ ⇒ تصحيحٌ في مكانه، والمحذوف يُحيا
+```
+
+فيصير التصحيح **إعادةَ إرسالٍ بنفس `uuid` وبـ`op_uuid` جديد**، والحذف عمليةً مستقلّة
+(`recitation.delete` · `points.delete`). والأسطر والنقاط تُعاد حسابُها في كل تصحيح، والسجلُّ
+المصحَّح يُستثنى من خريطة تغطيته كي لا يُحسب مكرّراً لنفسه.
+
+⚠️ الحذف **لا يُرجع 404** حين لا يجد صفّه: العميلُ قد يصفّ الحذف مرّتين أو يحذف ما حذفه غيرُه،
+وعمليةٌ واحدة مرفوضة تُعلّق الطابور كلَّه خلفها. فالنتيجة محقَّقة ⇒ العملية `applied`.
 
 ### `late_minutes` يحسبه الخادم ✅ م.5.1
 
