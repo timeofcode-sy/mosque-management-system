@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\ApiScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -78,8 +79,9 @@ class AuthController extends Controller
     private static function identity(User $user): array
     {
         try {
-            ApiScope::for($user)->institute();
-        } catch (RuntimeException) {
+            // بلا ترويسةِ معهد: الدخول يسبق اختيارَ المعهد، ولا يصحّ أن يفشل بسببه.
+            ApiScope::for($user, '')->institute();
+        } catch (AuthorizationException|RuntimeException) {
             // بلا معهد ⇒ بلا أدوار داخل معهد. الحقل يعود فارغاً لا الطلب يفشل.
         }
 

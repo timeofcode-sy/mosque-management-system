@@ -1,11 +1,11 @@
 <?php
 
 use App\Actions\OverturnSyncConflict;
+use App\Actions\ReviewSyncConflict;
 use App\Concerns\InteractsWithInstitute;
 use App\Models\SyncConflict;
 use Flux\Flux;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Carbon;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -82,14 +82,11 @@ new #[Title('تعارضات المزامنة')] class extends Component {
 
     /**
      * إبقاء حكم الخادم: التعارض يُختم مراجَعاً ولا يُكتب شيء — الصفّ أصلاً يحمل قيمة
-     * الخادم منذ لحظة الدفع.
+     * الخادم منذ لحظة الدفع. والفعلُ مشترك مع الديسكتوب (م.6.1) كنظيره في القلب.
      */
-    public function markReviewed(string $uuid): void
+    public function markReviewed(string $uuid, ReviewSyncConflict $review): void
     {
-        $this->find($uuid)->update([
-            'reviewed_by' => auth()->id(),
-            'resolved_at' => Carbon::now(),
-        ]);
+        $review->handle($this->find($uuid), auth()->user());
 
         unset($this->conflicts);
         Flux::toast(variant: 'success', text: 'أُبقيت قيمة الخادم، وعُلّم التعارض مراجَعاً.');

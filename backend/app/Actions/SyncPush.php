@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
+use Throwable;
 
 /**
  * يطبّق دفعة عمليات أُنشئت أوف-لاين (تفقّد الأستاذ غالباً)، معتمداً على أفعال اللوحة
@@ -27,6 +28,13 @@ use RuntimeException;
  *
  * كل عملية تحمل op_uuid فريداً يولّده العميل؛ عمليةٌ سبق تطبيقها (نفس op_uuid موجود في
  * change_log) تُتجاهل بصمت فتصير إعادة الإرسال بعد انقطاع الشبكة آمنة (idempotent).
+ *
+ * 🔄 م.6.1 — **العملية المسمومة لم تعد توقف الطابور كلَّه.** كانت الدفعة كتلةً واحدة:
+ * عمليةٌ ترفع استثناءً تُنهي الطلب كلَّه، فتبقى العشرُ اللاحقة معلّقةً في الجهاز إلى
+ * الأبد لأن الأولى لن تنجح أبداً — وهو خطرٌ ازداد بالديسكتوب: جهازٌ ثانٍ يكتب بالتوازي
+ * فيَكثُر ما يُرفض. صارت كلُّ عملية في معاملتها، والمرفوضةُ تُردّ في failed[] برسالتها
+ * ويمضي الباقي. والحكمُ فيها لصاحب الجهاز: العميل يعزلها ويعرضها ولا يحذفها
+ * ([SYNC-PROTOCOL.md §3]).
  *
  * 🔄 تسجيلُ التغيير لم يعد من مسؤولية هذا الصنف: مراقب App\Concerns\RecordsSyncChanges
  * يسجّل **كلّ صفٍّ تغيّر فعلاً** لا صفَّ الجلسة وحده — وكان الأوّلُ ينقص العميلَ صفوفَ
@@ -52,7 +60,7 @@ class SyncPush
 
     /**
      * @param  array<int, array{op_uuid: string, type: string, course_circle_uuid?: string, session_date?: string, attendances?: array<int, array{student_uuid: string, status: string, late_minutes?: int|null, note?: string|null}>, student_uuid?: string, from_date?: string, to_date?: string, reason?: string}>  $operations
-     * @return array{applied: array<int, string>, skipped: array<int, string>}
+     * @return array{applied: array<int, string>, skipped: array<int, string>, failed: array<int, array{op_uuid: string, message: string}>}
      */
     public function handle(User $user, array $operations, ?string $deviceUuid = null): array
     {
@@ -62,6 +70,7 @@ class SyncPush
 
         $applied = [];
         $skipped = [];
+        $failed = [];
 
         foreach ($operations as $op) {
             $opUuid = $op['op_uuid'];
@@ -72,26 +81,47 @@ class SyncPush
                 continue;
             }
 
-            DB::transaction(function () use ($op, $user, $institute, $scopeKey, $deviceUuid, $opUuid): void {
-                $target = null;
+            try {
+                DB::transaction(function () use ($op, $user, $institute, $scopeKey, $deviceUuid, $opUuid): void {
+                    $target = null;
 
-                $recorded = $this->recorder->during($user, $deviceUuid, $opUuid, function () use (&$target, $op, $user, $institute, $deviceUuid): void {
-                    $target = $this->apply($op, $user, $institute->id, $deviceUuid);
+                    $recorded = $this->recorder->during($user, $deviceUuid, $opUuid, function () use (&$target, $op, $user, $institute, $deviceUuid): void {
+                        $target = $this->apply($op, $user, $institute->id, $deviceUuid);
+                    });
+
+                    // صفٌّ دالّ لعمليةٍ لم تغيّر شيئاً — إلا حين لا يوجد صفّ أصلاً (حذفُ
+                    // ما سبق حذفُه): تلك تُعدّ مطبَّقة فيُنظَّف الطابور، بلا صفٍّ تسجّله.
+                    if (! $recorded && $target !== null) {
+                        $this->recordChange->handle($target, SyncOperation::Update, $scopeKey, $user, $deviceUuid, $opUuid);
+                    }
                 });
+            } catch (Throwable $exception) {
+                $failed[] = ['op_uuid' => $opUuid, 'message' => self::reason($exception)];
 
-                // صفٌّ دالّ لعمليةٍ لم تغيّر شيئاً — إلا حين لا يوجد صفّ أصلاً (حذفُ
-                // ما سبق حذفُه): تلك تُعدّ مطبَّقة فيُنظَّف الطابور، بلا صفٍّ تسجّله.
-                if (! $recorded && $target !== null) {
-                    $this->recordChange->handle($target, SyncOperation::Update, $scopeKey, $user, $deviceUuid, $opUuid);
-                }
-            });
+                continue;
+            }
 
             $applied[] = $opUuid;
         }
 
         $this->touchDevice($deviceUuid);
 
-        return ['applied' => $applied, 'skipped' => $skipped];
+        return ['applied' => $applied, 'skipped' => $skipped, 'failed' => $failed];
+    }
+
+    /**
+     * سببُ الرفض بالعربية — يعرضه العميل لصاحب الجهاز.
+     *
+     * رسالةُ ModelNotFoundException اسمُ صنفٍ ومعرّف، وهي لغةُ سجلٍّ لا لغةُ مستخدم؛
+     * وما عداها رسائلُ أفعالنا نفسها («الجلسة مقفلة…») وهي مكتوبةٌ للقراءة أصلاً.
+     */
+    private static function reason(Throwable $exception): string
+    {
+        if ($exception instanceof ModelNotFoundException) {
+            return 'صفٌّ تقصده العملية غير موجود في هذا المعهد.';
+        }
+
+        return $exception->getMessage();
     }
 
     /**

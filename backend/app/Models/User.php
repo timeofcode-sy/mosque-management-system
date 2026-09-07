@@ -230,6 +230,74 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * معاهد هذا المستخدم: معهدُ سجلّه المرتبط، ومعاهدُ أدواره المسنَدة.
+     *
+     * 🔄 م.6.1: كانت هذه المعرفة حبيسةَ PanelScope، فلم يعرف الـ API إلا أصحاب
+     * السجلّات الثلاثة (أستاذ/ولي أمر/طالب) — وحسابُ مدير المعهد والمشرف بلا سجلّ
+     * عمداً، فكان يُرفض بـ422. وهي ليست معرفةً «لوحية» أصلاً بل صفةٌ في المستخدم
+     * نفسه، فموضعُها هنا ليقرأها السطحان معاً.
+     *
+     * @return array<int, int>
+     */
+    public function instituteIds(): array
+    {
+        $ids = array_filter([
+            $this->teacher?->institute_id,
+            $this->guardian?->institute_id,
+            $this->student?->institute_id,
+            ...$this->roleInstituteIds(),
+        ]);
+
+        return array_values(array_unique(array_map('intval', $ids)));
+    }
+
+    /**
+     * معهدُ المستخدم الأصلي — سجلُّه أولاً، ثم أوّلُ معهدٍ أُسند له فيه دور.
+     */
+    public function homeInstituteId(): ?int
+    {
+        return $this->teacher?->institute_id
+            ?? $this->guardian?->institute_id
+            ?? $this->student?->institute_id
+            ?? $this->roleInstituteIds()[0]
+            ?? null;
+    }
+
+    /**
+     * هل يعمل هذا المستخدم في هذا المعهد؟ حاملُ الدور العابر يعمل في كلّها.
+     */
+    public function canAccessInstitute(Institute $institute): bool
+    {
+        return $this->hasGlobalRole() || in_array($institute->id, $this->instituteIds(), true);
+    }
+
+    /**
+     * معاهد الأدوار المسنَدة، عدا الإسناد العابر للمعاهد.
+     *
+     * استعلامٌ مباشر على model_has_roles لا عبر علاقة spatie: تلك مقيَّدة بالمعهد
+     * الحالي بحكم وضع الفرق، فتُخفي أدوارَ المستخدم في بقيّة معاهده.
+     *
+     * @return array<int, int>
+     */
+    public function roleInstituteIds(): array
+    {
+        if (! $this->exists) {
+            return [];
+        }
+
+        $teamKey = config('permission.column_names.team_foreign_key');
+
+        return $this->roleAssignmentQuery()
+            ->where(config('permission.table_names.model_has_roles').'.'.$teamKey, '!=', self::GLOBAL_TEAM_ID)
+            ->orderBy(config('permission.table_names.model_has_roles').'.'.$teamKey)
+            ->pluck(config('permission.table_names.model_has_roles').'.'.$teamKey)
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
      * إسنادات أدوار هذا المستخدم في جدول الربط مباشرةً — غير مقيّدة بمعهد.
      */
     private function roleAssignmentQuery(): Builder

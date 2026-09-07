@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -59,11 +58,7 @@ class PanelScope
 
     public static function canAccess(User $user, Institute $institute): bool
     {
-        if ($user->hasGlobalRole()) {
-            return true;
-        }
-
-        return in_array($institute->id, self::instituteIdsFor($user), true);
+        return $user->canAccessInstitute($institute);
     }
 
     /**
@@ -91,11 +86,7 @@ class PanelScope
             return null;
         }
 
-        $instituteId = $user->teacher?->institute_id
-            ?? $user->guardian?->institute_id
-            ?? $user->student?->institute_id
-            ?? self::roleInstituteIds($user)[0]
-            ?? null;
+        $instituteId = $user->homeInstituteId();
 
         return $instituteId ? Institute::find($instituteId) : null;
     }
@@ -118,14 +109,7 @@ class PanelScope
      */
     public static function instituteIdsFor(User $user): array
     {
-        $ids = array_filter([
-            $user->teacher?->institute_id,
-            $user->guardian?->institute_id,
-            $user->student?->institute_id,
-            ...self::roleInstituteIds($user),
-        ]);
-
-        return array_values(array_unique(array_map('intval', $ids)));
+        return $user->instituteIds();
     }
 
     private static function fromSession(User $user): ?Institute
@@ -158,26 +142,5 @@ class PanelScope
         }
 
         return Institute::query()->where('is_active', true)->orderBy('id')->first();
-    }
-
-    /**
-     * معاهد الأدوار المسنَدة، عدا الإسناد العابر للمعاهد.
-     *
-     * @return array<int, int>
-     */
-    private static function roleInstituteIds(User $user): array
-    {
-        $pivotTable = config('permission.table_names.model_has_roles');
-
-        return DB::table($pivotTable)
-            ->where('model_type', $user->getMorphClass())
-            ->where(config('permission.column_names.model_morph_key'), $user->getKey())
-            ->where(config('permission.column_names.team_foreign_key'), '!=', User::GLOBAL_TEAM_ID)
-            ->orderBy(config('permission.column_names.team_foreign_key'))
-            ->pluck(config('permission.column_names.team_foreign_key'))
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
     }
 }

@@ -121,7 +121,12 @@ class Phase5ContractTest extends TestCase
                 'type' => 'recitation.delete',
                 'recitation_uuid' => $log->uuid,
             ]],
-        ])->assertNotFound();
+        ])
+            // 🔄 م.6.1: الرفض في failed[] لا في رمز الطلب — العمليةُ المرفوضة لم
+            // تعد تُسقط الدفعة كلَّها معها، والحصرُ بالمعهد باقٍ كما هو.
+            ->assertOk()
+            ->assertJsonPath('applied', [])
+            ->assertJsonCount(1, 'failed');
 
         $this->assertNotSoftDeleted($log);
     }
@@ -147,7 +152,12 @@ class Phase5ContractTest extends TestCase
                 'type' => 'attendance.session.complete',
                 'session_uuid' => $otherSession->uuid,
             ]],
-        ])->assertNotFound();
+        ])
+            // 🔄 م.6.1: الرفض في failed[] لا في رمز الطلب — العمليةُ المرفوضة لم
+            // تعد تُسقط الدفعة كلَّها معها، والحصرُ بالمعهد باقٍ كما هو.
+            ->assertOk()
+            ->assertJsonPath('applied', [])
+            ->assertJsonCount(1, 'failed');
     }
 
     public function test_pushing_stamps_the_devices_last_push(): void
