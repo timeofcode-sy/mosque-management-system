@@ -6,6 +6,8 @@
 > مخطّطُ الخادم لم يتغيّر بعد م.4.7 (آخرُ هجرة `add_login_credentials_to_users_table`): المراحل
 > 5.1–5.4 وسّعت `institutes.settings` (§4.5) والسلوكَ حول `change_log` (§6) لا الجداولَ نفسها.
 > ومخطّطُ **العميل** المحلي (drift) موصوفٌ في [CHECKPOINT-PHASE-5.3.MD](CHECKPOINT-PHASE-5.3.MD) §3
+> — وجدولا المسودّة المضافان في م.5.4 (`local_recitations` · `local_points`) في
+> [CHECKPOINT-PHASE-5.4.MD](CHECKPOINT-PHASE-5.4.MD) §3.2
 > لا هنا — فهو مخزنٌ مشتقّ لا مصدرُ حقيقة.
 
 ## قواعد عامة

@@ -28,7 +28,7 @@ mousqe/
 │    └─ mousqe_ui     ← نظام التصميم: design-tokens.json افتراضاً + ألوان المعهد من /bootstrap
 │
 └─ apps/
-     ├─ teacher/     ✅ م.5.3 · Android ────────┐
+     ├─ teacher/     ✅ م.5.3–5.4 · Android ────┐
      ├─ admin_desktop/  ⬜ م.6 · Windows      ├─ REST /api/v1 + مزامنة أوف-لاين
      ├─ guardian/       ⬜ م.7 · Android+iOS  │
      └─ student/        ⬜ م.8 · Android+iOS ─┘
@@ -63,8 +63,8 @@ mousqe/
 
 | العميل | المرحلة | نمط الاتصال | أوف-لاين | مخزن محلي |
 |---|---|---|---|---|
-| **اللوحة** (Livewire) | ✅ 0–5.3 | مكوّنات Livewire فوق نفس القاعدة **مباشرة — بلا REST إطلاقاً** | ✗ | ✗ |
-| **الأستاذ** | ✅ م.5.3 | REST `/api/v1` + `sync/push` + `sync/pull` | ✓ كامل | drift/SQLite |
+| **اللوحة** (Livewire) | ✅ 0–5.4 | مكوّنات Livewire فوق نفس القاعدة **مباشرة — بلا REST إطلاقاً** | ✗ | ✗ |
+| **الأستاذ** | ✅ م.5.3–5.4 | REST `/api/v1` + `sync/push` + `sync/pull` | ✓ كامل | drift/SQLite |
 | **الديسكتوب** | ⬜ م.6 | REST `/api/v1` + `sync/push` + `sync/pull` | ✓ كامل | drift/SQLite |
 | **الأهل** | ⬜ م.7 | REST `/api/v1` + `sync/pull` فقط (بلا `sync.push`) | ✓ قراءة | drift/SQLite |
 | **الطالب** | ⬜ م.8 | REST `/api/v1` + `sync/pull` فقط (بلا `sync.push`) | ✓ قراءة | drift/SQLite |
@@ -91,6 +91,11 @@ mousqe/
 | `recitation.save` | `SaveRecitation` | ✅ `livewire::session-student-recitations` |
 | `recitation.delete` | `DeleteRecitation` | ✅ |
 | `points.award` | `AwardStudentPoints` | ✅ |
+| `points.delete` ✅ م.5.4 | `DeleteStudentPoints` | ✅ |
+
+✅ **م.5.4: التصحيح مرَّ بالباب نفسه.** `recitation.save` و`points.award` صارتا تقبلان `uuid`
+يولّده العميل: معرّفٌ قائم ⇒ تصحيحٌ في مكانه، لا نوعَ عمليةٍ ثالثاً ولا فعلاً موازياً
+([API.md §6](API.md)). فالفعلُ الواحد يخدم التسجيلَ والتصحيح من اللوحة ومن الجهاز معاً.
 
 ✅ **م.5.1: الاشتراك اكتمل.** كان المشترك **منطق الكتابة** لا **تسجيل التغيير**: `RecordChange`
 مستدعىً من `SyncPush` وحده، فالمسار نفسه حين يُسلَك من اللوحة يكتب في الجداول ولا يكتب في

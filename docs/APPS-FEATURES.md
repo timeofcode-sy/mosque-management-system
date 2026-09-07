@@ -89,7 +89,8 @@
 ### 3.2 الجدول التقني
 
 المصدر: [apps/teacher/lib/src/](../apps/teacher/lib/src/) ·
-[CHECKPOINT-PHASE-5.3.MD](CHECKPOINT-PHASE-5.3.MD) · [PHASE-5-STAGES.MD §4.1](PHASE-5-STAGES.MD).
+[CHECKPOINT-PHASE-5.3.MD](CHECKPOINT-PHASE-5.3.MD) · [CHECKPOINT-PHASE-5.4.MD](CHECKPOINT-PHASE-5.4.MD) ·
+[PHASE-5-STAGES.MD §4.1](PHASE-5-STAGES.MD).
 
 | # | الميزة | الشاشة | المصدر | عملية `sync/push` | أوف-لاين |
 |---|---|---|---|---|---|
@@ -124,7 +125,7 @@
 ### 3.4 الحالة المؤكَّدة
 
 **69** اختباراً في فلاتر (29 `mousqe_core` + 8 `mousqe_ui` + 32 `apps/teacher`) و**337** في الخادم
-بعد م.5.4 ([PHASE-5-STAGES.MD §5.3](PHASE-5-STAGES.MD)). ومُجرَّبٌ على محاكٍ فعلي: تفقّدُ 13 طالباً
+بعد م.5.4 ([CHECKPOINT-PHASE-5.4.MD §6](CHECKPOINT-PHASE-5.4.MD)). ومُجرَّبٌ على محاكٍ فعلي: تفقّدُ 13 طالباً
 وإقفالُ الجلسة **في وضع الطيران**، ثم دفعُها عند عودة الشبكة بحالاتٍ مطابقة تماماً على الخادم —
 [CHECKPOINT-PHASE-5.3.MD §7](CHECKPOINT-PHASE-5.3.MD).
 

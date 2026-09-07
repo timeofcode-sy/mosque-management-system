@@ -96,27 +96,36 @@
 على لوحة `design-tokens.json` الافتراضية؛ وبضبطها **مرّةً واحدة** تتوحّد ألوانُ اللوحة والتقارير
 المطبوعة وتطبيقات الأستاذ والأهل والطالب والديسكتوب معاً ([API.md §3.4](API.md)).
 
-### ما يكتبه تطبيق الأستاذ وما يقرؤه ✅ م.5.3
+### ما يكتبه تطبيق الأستاذ وما يقرؤه ✅ م.5.3 · 🔄 م.5.4
 
 **لا يكتب صفّاً في جدولٍ متزامَن مباشرةً — أبداً.** كلُّ كتابةٍ عمليةٌ في طابور `pending_operations`
 المحلي، والخادمُ وحده يُنشئ الصفّ. والسببُ أن الجهاز لا يعرف إن كان أحدٌ قد سبقه إلى فتح جلسة
 اليوم (مشرفٌ من اللوحة، أو أستاذٌ ثانٍ)، فلو زرع صفّاً في الجدول المتزامن لَصار عند عودة الشبكة
 **صفّان** لنفس (الحلقة + التاريخ) بمعرّفين مختلفين، أحدهما وهمٌ لا شيء يزيله.
 
-فالمسودّةُ تسكن جدولين محليَّين بحتين (`local_sessions` و`local_attendances`) مفتاحُهما
-(الحلقة + التاريخ) لا المعرّف، ويُبنى العرضُ منها فوق المتزامن فوق الاقتراح الافتراضي:
+فالمسودّةُ تسكن جداول محليّة بحتة — `local_sessions` و`local_attendances` مفتاحُهما
+(الحلقة + التاريخ) لا المعرّف — ويُبنى العرضُ منها فوق المتزامن فوق الاقتراح الافتراضي:
 
 ```
 المسودّة المحلية  ←  فوق  ←  صفوف attendances المتزامنة  ←  فوق  ←  اقتراحٌ افتراضي
    (pending)                        (synced)                        (suggested)
 ```
 
+🔄 **م.5.4: ومسودّتان أخريان للتسميع والمنحة** (`local_recitations` و`local_points`)، مفتاحُهما
+**المعرّف** لا (الحلقة + التاريخ): العميلُ من يولّده، فهو واحدٌ على الجانبين وبه تعلو المسودّةُ
+الصفَّ المتزامن. وفيهما شاهدةُ حذف، وإلا بقي المحذوفُ ظاهراً بين ضغطة الحذف ونجاح الدفع.
+والنقاطُ تُترك **فارغةً** في المسودّة لا صفراً: الخادم من يحسبها، وصفرُ العميل كذبٌ لا انتظار.
+
 وتُمسح المسودّةُ حين يفرغ الطابور بعد دورةٍ كاملة (`push` ثم `pull` حتى الصفحة الفارغة) — أي حين
 يثبت أن الخادم التزم بكل ما كُتب وأعاده مطبَّقاً.
 
 | العمليات التي يدفعها | يقرأ من `sync/pull` |
 |---|---|
-| `attendance.session.open` (بـ`uuid` يولّده) · `attendance.take` · `attendance.session.complete` · `recitation.save` · `points.award` | `institutes` (الثيم) · `circles` · `shifts` · `courses` · `course_circles` · `teachers` · `course_circle_teachers` · `students` · `enrollments` · `attendance_sessions` · `attendances` |
+| `attendance.session.open` (بـ`uuid` يولّده) · `attendance.take` · `attendance.session.complete` · `recitation.save` · `points.award` — وكلتاهما بـ`uuid` يولّده أيضاً 🔄 م.5.4 · `recitation.delete` · `points.delete` 🔄 م.5.4 | `institutes` (الثيم) · `circles` · `shifts` · `courses` · `course_circles` · `teachers` · `course_circle_teachers` · `students` · `enrollments` · `attendance_sessions` · `attendances` · `memorization_logs` · `student_points` · `absence_excuses` |
+
+🔄 **م.5.4: التصحيح ليس نوعَ عمليةٍ ثالثاً.** هو `recitation.save` أو `points.award` **بنفس
+`uuid` وبـ`op_uuid` جديد** — ولذلك يولّد العميلُ معرّفَي الصفّين كما يولّد معرّف الجلسة: بلا يدٍ
+على المعرّف لا يملك أن يشير إلى صفٍّ قد لا يكون أُنشئ على الخادم بعد ([API.md §6](API.md)).
 
 والترشيحُ صريحٌ بـ`user.teacher_uuid` من `/bootstrap`: السحبُ معهدٌ كامل، فتصله حلقاتُ أساتذةٍ
 آخرين ([SYNC-PROTOCOL.md §4](SYNC-PROTOCOL.md)).

@@ -7,7 +7,8 @@
 > [CHECKPOINT-PHASE-3.MD](CHECKPOINT-PHASE-3.MD)، [CHECKPOINT-PHASE-4.MD](CHECKPOINT-PHASE-4.MD)،
 > [CHECKPOINT-PHASE-4.5.MD](CHECKPOINT-PHASE-4.5.MD)، [CHECKPOINT-PHASE-4.6.MD](CHECKPOINT-PHASE-4.6.MD)،
 > [CHECKPOINT-PHASE-4.7.MD](CHECKPOINT-PHASE-4.7.MD)، [CHECKPOINT-PHASE-5.1.MD](CHECKPOINT-PHASE-5.1.MD)،
-> [CHECKPOINT-PHASE-5.2.MD](CHECKPOINT-PHASE-5.2.MD)، و[CHECKPOINT-PHASE-5.3.MD](CHECKPOINT-PHASE-5.3.MD).
+> [CHECKPOINT-PHASE-5.2.MD](CHECKPOINT-PHASE-5.2.MD)، [CHECKPOINT-PHASE-5.3.MD](CHECKPOINT-PHASE-5.3.MD)،
+> و[CHECKPOINT-PHASE-5.4.MD](CHECKPOINT-PHASE-5.4.MD).
 >
 > **توثيق المعمارية والعلاقات بين التطبيقات** — أُنشئ 2026-09-06 قبل بدء المرحلة 5:
 > [ARCHITECTURE.md](ARCHITECTURE.md) الصورة العامة · [API.md](API.md) عقد الـ API لعملاء الأوف-لاين ·
@@ -68,7 +69,7 @@ d:\Development\Laravel\mousqe\
 ├─ backend/                    ✅ Laravel 13 — لوحة التحكم + API
 │  ├─ app/  config/  routes/  database/  resources/  tests/
 ├─ apps/
-│  ├─ teacher/              ✅ Flutter — Android          (المرحلة 5.3)
+│  ├─ teacher/              ✅ Flutter — Android          (المرحلتان 5.3 و5.4)
 │  ├─ admin_desktop/        ⬜ Flutter — Windows          (المرحلة 6)
 │  ├─ guardian/             ⬜ Flutter                    (المرحلة 7)
 │  └─ student/              ⬜ Flutter                    (المرحلة 8)
@@ -79,7 +80,7 @@ d:\Development\Laravel\mousqe\
 │  ├─ logo/                    ملف الشعار الأصلي (⚠️ ما زال مطلوباً من العميل)
 │  └─ design-tokens.json    ✅ مصدر واحد للألوان يُستهلك من Tailwind ومن Flutter
 ├─ docs/                    ✅ PLAN · ERD · ARCHITECTURE · API · SYNC-PROTOCOL · CLIENTS
-│                              · PHASE-5-STAGES · CHECKPOINT-PHASE-1…5.3
+│                              · PHASE-5-STAGES · CHECKPOINT-PHASE-1…5.4
 ├─ pubspec.yaml             ✅ جذرُ مساحة العمل (workspace) وإعدادُ melos
 └─ README.md                ✅
 ```
@@ -509,7 +510,7 @@ RTL كامل (`dir="rtl"`, `lang="ar"`)، خصائص Tailwind المنطقية (
 | 5.1 | **الأساس الخادمي وتوحيد الهوية** | `change_log` بالاتجاهين على مستوى الصفّ، الأدوار في الدخول، ثيم المعهد الثلاثي، حساب دقائق التأخير، سدّ ثغرة العبور بين المعاهد | ٢–٣ أيام | ✅ **منفَّذة** — 311/311 اختباراً |
 | 5.2 | **الحزمتان المشتركتان** | `mousqe_core` (freezed · drift · ApiClient · SyncEngine) و`mousqe_ui` (ثيم المعهد · RTL · مكوّنات) | ٣–٤ أيام | ✅ **منفَّذة** — [CHECKPOINT-PHASE-5.2.MD](CHECKPOINT-PHASE-5.2.MD) |
 | 5.3 | **تطبيق الأستاذ** | ثماني شاشات أوف-لاين كاملة فوق الحزمتين · الجلسة تُفتح بلا شبكة · ردمُ `change_log` | ٣–٤ أيام | ✅ **منفَّذة** — 324 خادماً (يومَها) + 56 فلاتر · مُجرَّبة على محاكٍ — [CHECKPOINT-PHASE-5.3.MD](CHECKPOINT-PHASE-5.3.MD) |
-| 5.4 | **التصحيح والحذف أوف-لاين** | تصحيحُ التسميع والمنحة في مكانهما بمعرّفٍ يولّده العميل، وحذفُهما · `points.delete` · مسودّتان محليّتان (`schemaVersion` 3) | يوم | ✅ **منفَّذة** — 337 خادماً + 69 فلاتر |
+| 5.4 | **التصحيح والحذف أوف-لاين** | تصحيحُ التسميع والمنحة في مكانهما بمعرّفٍ يولّده العميل، وحذفُهما · `points.delete` · مسودّتان محليّتان (`schemaVersion` 3) · مدى التسميع مقيَّداً بالجزء في التطبيق واللوحة | يوم | ✅ **منفَّذة** — 337 خادماً + 69 فلاتر — [CHECKPOINT-PHASE-5.4.MD](CHECKPOINT-PHASE-5.4.MD) |
 | 6 | **تطبيق الديسكتوب** | Windows، إعادة استخدام ≈٧٠٪ من كود الأستاذ + شاشات الإدارة والطباعة | ٦–٨ أيام | ⬜ **التالية** |
 | 7 | **تطبيق الأهل** | مع إشعارات FCM وطلبات الإذن | ٥–٦ أيام | ⬜ |
 | 8 | **تطبيق الطالب** | عرض للقراءة + تحفيز (ترتيب، شارات) | ٣–٤ أيام | ⬜ |
