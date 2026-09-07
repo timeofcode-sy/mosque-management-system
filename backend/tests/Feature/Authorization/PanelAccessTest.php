@@ -48,7 +48,8 @@ class PanelAccessTest extends TestCase
             'المعاهد' => ['institutes.index', ['super_admin', 'developer']],
             'لوحة المعاهد' => ['institutes.overview', ['super_admin', 'developer']],
             'المستخدمون' => ['users.index', ['admin', 'super_admin', 'developer']],
-            'تعارضات المزامنة' => ['system.conflicts', ['developer']],
+            /** 🔄 2026-09-07: خرجت من أدوات المبرمج إلى conflicts.review — يملكها المشرف ومدير المعهد */
+            'تعارضات المزامنة' => ['system.conflicts', ['admin', 'supervisor', 'super_admin', 'developer']],
             'الأجهزة' => ['system.devices', ['developer']],
             'سجل التغييرات' => ['system.change-log', ['developer']],
         ];

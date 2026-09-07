@@ -129,19 +129,24 @@
                     </flux:sidebar.group>
                 @endcan
 
-                @can('system.debug')
+                @canany(['conflicts.review', 'system.debug'])
                     <flux:sidebar.group heading="النظام" class="grid">
-                        <flux:sidebar.item icon="arrows-right-left" :href="route('system.conflicts')" :current="request()->routeIs('system.conflicts')" wire:navigate>
-                            تعارضات المزامنة
-                        </flux:sidebar.item>
-                        <flux:sidebar.item icon="device-phone-mobile" :href="route('system.devices')" :current="request()->routeIs('system.devices')" wire:navigate>
-                            الأجهزة
-                        </flux:sidebar.item>
-                        <flux:sidebar.item icon="list-bullet" :href="route('system.change-log')" :current="request()->routeIs('system.change-log')" wire:navigate>
-                            سجل التغييرات
-                        </flux:sidebar.item>
+                        @can('conflicts.review')
+                            <flux:sidebar.item icon="arrows-right-left" :href="route('system.conflicts')" :current="request()->routeIs('system.conflicts')" wire:navigate>
+                                تعارضات المزامنة
+                            </flux:sidebar.item>
+                        @endcan
+
+                        @can('system.debug')
+                            <flux:sidebar.item icon="device-phone-mobile" :href="route('system.devices')" :current="request()->routeIs('system.devices')" wire:navigate>
+                                الأجهزة
+                            </flux:sidebar.item>
+                            <flux:sidebar.item icon="list-bullet" :href="route('system.change-log')" :current="request()->routeIs('system.change-log')" wire:navigate>
+                                سجل التغييرات
+                            </flux:sidebar.item>
+                        @endcan
                     </flux:sidebar.group>
-                @endcan
+                @endcanany
             </flux:sidebar.nav>
 
             <flux:spacer />

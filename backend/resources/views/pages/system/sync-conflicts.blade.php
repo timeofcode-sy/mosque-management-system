@@ -1,5 +1,7 @@
 <?php
 
+use App\Actions\OverturnSyncConflict;
+use App\Concerns\InteractsWithInstitute;
 use App\Models\SyncConflict;
 use Flux\Flux;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -11,17 +13,21 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 /**
- * تعارضات المزامنة — أداة مبرمج (system.debug).
+ * تعارضات المزامنة — شاشة مدير المعهد والمشرف (conflicts.review).
  *
- * الجدول sync_conflicts مبنيّ منذ المرحلة الرابعة ويكتب فيه ResolveAttendanceConflicts
- * ولا واجهة له. الحلّ الآلي «الخادم يفوز» يُطبَّق وقت الدفع؛ ما يبقى هنا هو المراجعة
- * البشرية: أن يرى المشرف القيمة المرفوضة ويقرّر — ولذلك العرض للقراءة، والفعل الوحيد
- * تعليمُ التعارض مراجَعاً.
+ * الجدول sync_conflicts مبنيّ منذ المرحلة الرابعة ويكتب فيه ResolveAttendanceConflicts.
+ * الحلّ الآلي «الأحدث يفوز» يُطبَّق وقت الدفع لأنه يقع داخل دفعةٍ لا أمام بشر؛ وما هنا
+ * **استئنافٌ بعديّ**: أن يرى صاحبُ القرار القيمتين فيُبقي حكم الخادم أو يقلبه.
  *
- * لا نطاق معهد لهذه الشاشة: التعارض يقع على مستوى الأجهزة لا المعاهد.
+ * 🔄 2026-09-07: كانت خلف system.debug — أي المبرمج وحده — وبلا نطاق معهد، وفعلُها
+ * الوحيد «عُلّم مراجَعاً». صارت خلف conflicts.review (يملكها المشرف ومدير المعهد منذ
+ * المرحلة الأولى بلا مسار يحرسها)، **محصورةً بمعهد المستخدم**، وبفعلٍ يقلب الحكم.
+ *
+ * والمبرمج وحده يرى المعاهد كلَّها: لأنها تبقى أداةَ تشخيصٍ عنده، ولأن صفوف ما قبل
+ * الهجرة بلا معهد فلا يراها غيره.
  */
 new #[Title('تعارضات المزامنة')] class extends Component {
-    use WithPagination;
+    use InteractsWithInstitute, WithPagination;
 
     #[Url(except: 'pending')]
     public string $status = 'pending';
@@ -39,7 +45,7 @@ new #[Title('تعارضات المزامنة')] class extends Component {
     #[Computed]
     public function conflicts(): LengthAwarePaginator
     {
-        return SyncConflict::query()
+        return $this->scoped()
             ->with('reviewedBy:id,first_name,last_name')
             ->when($this->status === 'pending', fn ($query) => $query->whereNull('resolved_at'))
             ->when($this->status === 'reviewed', fn ($query) => $query->whereNotNull('resolved_at'))
@@ -47,33 +53,87 @@ new #[Title('تعارضات المزامنة')] class extends Component {
             ->paginate(20);
     }
 
+    /**
+     * الحصر بالمعهد العامل — والمبرمج يعبره.
+     *
+     * الحصرُ هنا لا في العرض: بدونه يفتح مديرُ معهدٍ تعارضاتِ معهدٍ آخر بتغيير رقم
+     * الصفحة، وهو نفسُ التسريب الذي سُدّ في اللوحة كلّها في المرحلة 4.6.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<SyncConflict>
+     */
+    private function scoped(): \Illuminate\Database\Eloquent\Builder
+    {
+        return SyncConflict::query()
+            ->unless(auth()->user()?->can('system.debug'), fn ($query) => $query->where('institute_id', $this->institute?->id));
+    }
+
     #[Computed]
     public function inspected(): ?SyncConflict
     {
-        return $this->inspecting === null ? null : SyncConflict::find($this->inspecting);
+        return $this->inspecting === null ? null : $this->scoped()->find($this->inspecting);
     }
 
-    public function inspect(SyncConflict $conflict): void
+    public function inspect(string $uuid): void
     {
-        $this->inspecting = $conflict->id;
+        $this->inspecting = $this->find($uuid)->id;
 
         Flux::modal('conflict-payload')->show();
     }
 
-    public function markReviewed(SyncConflict $conflict): void
+    /**
+     * إبقاء حكم الخادم: التعارض يُختم مراجَعاً ولا يُكتب شيء — الصفّ أصلاً يحمل قيمة
+     * الخادم منذ لحظة الدفع.
+     */
+    public function markReviewed(string $uuid): void
     {
-        $conflict->update([
+        $this->find($uuid)->update([
             'reviewed_by' => auth()->id(),
             'resolved_at' => Carbon::now(),
         ]);
 
         unset($this->conflicts);
-        Flux::toast(variant: 'success', text: 'عُلّم التعارض مراجَعاً.');
+        Flux::toast(variant: 'success', text: 'أُبقيت قيمة الخادم، وعُلّم التعارض مراجَعاً.');
+    }
+
+    /**
+     * قلبُ الحكم: اعتماد قيمة الجهاز التي رفضها الخادم.
+     *
+     * الرفضُ الوحيد المتوقَّع هنا جلسةٌ مقفلة — TakeAttendance ترفضها ولو بـ amend،
+     * فتُعرض رسالتُها كما هي بدل خطأ 500 صامت.
+     */
+    public function overturn(string $uuid, OverturnSyncConflict $overturn): void
+    {
+        /**
+         * الحسم خارج try عمداً: ModelNotFoundException يرث RuntimeException، فلو دخل
+         * الكتلةَ لَصار خرقُ النطاق «رسالةً لطيفة» بدل أن يكون 404 كما يجب.
+         */
+        $conflict = $this->find($uuid);
+
+        try {
+            $overturn->handle($conflict, auth()->user());
+        } catch (RuntimeException $exception) {
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
+
+            return;
+        }
+
+        unset($this->conflicts, $this->inspected);
+        Flux::modal('conflict-payload')->close();
+        Flux::toast(variant: 'success', text: 'اعتُمدت قيمة الجهاز، وسجِّل التغيير للأجهزة.');
+    }
+
+    /**
+     * كل فعل يمرّ بالنطاق نفسه: المعرّف يصل من المتصفّح، فلولا ذلك لَعدّل مديرُ معهدٍ
+     * تعارضَ معهدٍ آخر بمعرّفٍ منسوخ — وحارسُ المسار لا يمنع ذلك، فهو صلاحيةٌ لا نطاق.
+     */
+    private function find(string $uuid): SyncConflict
+    {
+        return $this->scoped()->where('uuid', $uuid)->firstOrFail();
     }
 }; ?>
 
 <div class="flex w-full flex-col gap-6">
-    <x-page-header heading="تعارضات المزامنة" subheading="ما رفضه الخادم من دفعات الأجهزة — للمراجعة البشرية" />
+    <x-page-header heading="تعارضات المزامنة" subheading="ما رفضه الخادم من دفعات الأجهزة — لك أن تُبقي حكمه أو تقلبه" />
 
     <flux:radio.group wire:model.live="status" variant="segmented" size="sm">
         <flux:radio value="pending" label="بانتظار المراجعة" />
@@ -113,10 +173,11 @@ new #[Title('تعارضات المزامنة')] class extends Component {
                             </flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex gap-1">
-                                    <flux:button wire:click="inspect('{{ $conflict->uuid }}')" size="sm" variant="subtle" icon="eye" />
+                                    <flux:button wire:click="inspect('{{ $conflict->uuid }}')" size="sm" variant="subtle" icon="eye" title="عرض الحمولتين" />
 
                                     @unless ($conflict->resolved_at)
-                                        <flux:button wire:click="markReviewed('{{ $conflict->uuid }}')" size="sm" variant="subtle" icon="check" />
+                                        <flux:button wire:click="markReviewed('{{ $conflict->uuid }}')" size="sm" variant="subtle" icon="check" title="أبقِ قيمة الخادم" />
+                                        <flux:button wire:click="overturn('{{ $conflict->uuid }}')" wire:confirm="ستُعتمد قيمة الجهاز بدل قيمة الخادم، ويصل التغيير كلَّ الأجهزة. متابعة؟" size="sm" variant="subtle" icon="arrow-uturn-left" title="اعتمِد قيمة الجهاز" />
                                     @endunless
                                 </div>
                             </flux:table.cell>
@@ -144,7 +205,22 @@ new #[Title('تعارضات المزامنة')] class extends Component {
                 </div>
             @endif
 
-            <flux:modal.close><flux:button variant="ghost">إغلاق</flux:button></flux:modal.close>
+            <div class="flex items-center gap-2">
+                @if ($this->inspected && ! $this->inspected->resolved_at)
+                    <flux:button
+                        wire:click="overturn('{{ $this->inspected->uuid }}')"
+                        wire:confirm="ستُعتمد قيمة الجهاز بدل قيمة الخادم، ويصل التغيير كلَّ الأجهزة. متابعة؟"
+                        variant="primary"
+                        icon="arrow-uturn-left"
+                    >اعتمِد قيمة الجهاز</flux:button>
+
+                    <flux:button wire:click="markReviewed('{{ $this->inspected->uuid }}')" icon="check">أبقِ قيمة الخادم</flux:button>
+                @endif
+
+                <flux:spacer />
+
+                <flux:modal.close><flux:button variant="ghost">إغلاق</flux:button></flux:modal.close>
+            </div>
         </div>
     </flux:modal>
 </div>

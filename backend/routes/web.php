@@ -37,8 +37,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('credentials/print', [CredentialExportController::class, 'print'])->name('credentials.print');
     });
 
-    Route::middleware('permission:system.debug')->group(function () {
+    /**
+     * التعارضات ليست أداة مبرمج: صاحبُها من يملك القرار في المعهد — والصلاحية كانت
+     * مبذورة للمشرف ومدير المعهد منذ المرحلة الأولى ولا تحرس شيئاً (SYNC-PROTOCOL §5).
+     */
+    Route::middleware('permission:conflicts.review')->group(function () {
         Route::livewire('system/sync-conflicts', 'pages::system.sync-conflicts')->name('system.conflicts');
+    });
+
+    Route::middleware('permission:system.debug')->group(function () {
         Route::livewire('system/devices', 'pages::system.devices')->name('system.devices');
         Route::livewire('system/change-log', 'pages::system.change-log')->name('system.change-log');
     });

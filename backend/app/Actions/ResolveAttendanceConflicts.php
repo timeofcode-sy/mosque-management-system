@@ -49,7 +49,7 @@ class ResolveAttendanceConflicts
                 && $current->status->value !== ($row['status'] ?? null);
 
             if ($isGenuineConflict) {
-                $this->logConflict($current, $row, $deviceUuid);
+                $this->logConflict($session, $current, $row, $deviceUuid);
 
                 continue;
             }
@@ -92,11 +92,16 @@ class ResolveAttendanceConflicts
     }
 
     /**
+     * المعهد يُكتب في الصفّ لا يُستنتج عند القراءة: شاشة المراجعة صارت لمدير المعهد
+     * والمشرف، كلٌّ على معهده وحده (SYNC-PROTOCOL §5) — والحصر بربط أربعة جداول عند
+     * كل عرض أغلى وأهشّ من عمودٍ يُملأ مرّة.
+     *
      * @param  array<string, mixed>  $incoming
      */
-    private function logConflict(Attendance $serverRow, array $incoming, ?string $deviceUuid): void
+    private function logConflict(AttendanceSession $session, Attendance $serverRow, array $incoming, ?string $deviceUuid): void
     {
         SyncConflict::create([
+            'institute_id' => $session->courseCircle?->circle?->institute_id,
             'table_name' => 'attendances',
             'row_uuid' => $serverRow->uuid,
             'server_payload' => $serverRow->toArray(),
