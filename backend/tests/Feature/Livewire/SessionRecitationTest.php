@@ -40,7 +40,8 @@ class SessionRecitationTest extends TestCase
         $component = $this->recitations()->call('openRecitation');
 
         $this->assertSame(30, $component->get('juz'));
-        $this->assertSame(78, $component->get('surah'));
+        $this->assertSame(78, $component->get('fromSurah'));
+        $this->assertSame(78, $component->get('toSurah'));
         $this->assertSame(1, $component->get('fromAyah'));
         $this->assertSame(40, $component->get('toAyah'));
     }
@@ -57,9 +58,101 @@ class SessionRecitationTest extends TestCase
 
         // آخر تسميع كان في الجزء 29، وأول سوره الملك — وقد سُمّع منها 1–12.
         $this->assertSame(29, $component->get('juz'));
-        $this->assertSame(67, $component->get('surah'));
+        $this->assertSame(67, $component->get('fromSurah'));
         $this->assertSame(13, $component->get('fromAyah'));
         $this->assertSame(30, $component->get('toAyah'));
+    }
+
+    public function test_the_surah_lists_are_bounded_by_the_juz(): void
+    {
+        $component = $this->recitations()->call('openRecitation')->set('juz', 29);
+
+        // الجزء 29 يبدأ بالملك وينتهي بالمرسلات — لا سورة قبله ولا بعده في القائمة.
+        $this->assertSame(range(67, 77), $component->get('surahsOfJuz'));
+
+        // و«إلى سورة» لا تعرض ما قبل السورة المختارة.
+        $component->set('fromSurah', 71);
+
+        $this->assertSame(range(71, 77), $component->get('toSurahsOfJuz'));
+    }
+
+    public function test_moving_the_start_forward_drags_the_end_with_it(): void
+    {
+        $component = $this->recitations()
+            ->call('openRecitation')
+            ->set('juz', 29)
+            ->set('toSurah', 70)
+            ->set('fromSurah', 73);
+
+        // نهايةٌ صارت قبل البداية لا تبقى معروضةً في قائمةٍ لا تحويها.
+        $this->assertSame(73, $component->get('toSurah'));
+    }
+
+    public function test_a_surah_outside_the_juz_is_refused(): void
+    {
+        $this->recitations()
+            ->call('openRecitation')
+            ->set('juz', 29)
+            ->set('fromSurah', 2)
+            ->call('saveRecitation')
+            ->assertHasErrors('fromSurah');
+
+        $this->assertSame(0, MemorizationLog::query()->count());
+    }
+
+    public function test_within_one_surah_the_last_ayah_may_not_precede_the_first(): void
+    {
+        $this->recitations()
+            ->call('openRecitation')
+            ->set('juz', 29)
+            ->set('fromSurah', 67)
+            ->set('toSurah', 67)
+            ->set('fromAyah', 20)
+            ->set('toAyah', 5)
+            ->call('saveRecitation')
+            ->assertHasErrors('toAyah');
+
+        $this->assertSame(0, MemorizationLog::query()->count());
+    }
+
+    public function test_a_range_across_two_surahs_of_the_juz_is_saved_whole(): void
+    {
+        // الآيةُ 20 بعد الآية 5 عدداً، لكنّ سورتَها بعدها ترتيباً — فالمدى صحيح.
+        $this->recitations()
+            ->call('openRecitation')
+            ->set('juz', 29)
+            ->set('fromSurah', 67)
+            ->set('toSurah', 68)
+            ->set('fromAyah', 20)
+            ->set('toAyah', 5)
+            ->set('grade', RecitationGrade::Excellent->value)
+            ->call('saveRecitation')
+            ->assertHasNoErrors();
+
+        $log = MemorizationLog::query()->where('student_id', $this->student->id)->sole();
+
+        $this->assertSame(67, $log->from_surah);
+        $this->assertSame(68, $log->to_surah);
+        $this->assertSame(20, $log->from_ayah);
+        $this->assertSame(5, $log->to_ayah);
+    }
+
+    public function test_a_range_across_two_surahs_is_reopened_on_its_own_form(): void
+    {
+        $log = MemorizationLog::factory()->create([
+            'student_id' => $this->student->id,
+            'attendance_session_id' => $this->todaySession()->id,
+            'juz' => 29,
+            'from_surah' => 67, 'from_ayah' => 20, 'to_surah' => 68, 'to_ayah' => 5,
+        ]);
+
+        $this->recitations()
+            ->call('editRecitation', $log->uuid)
+            ->assertSet('juz', 29)
+            ->assertSet('fromSurah', 67)
+            ->assertSet('toSurah', 68)
+            ->assertSet('fromAyah', 20)
+            ->assertSet('toAyah', 5);
     }
 
     public function test_saving_a_recitation_freezes_lines_and_points(): void
@@ -67,7 +160,8 @@ class SessionRecitationTest extends TestCase
         $this->recitations()
             ->call('openRecitation')
             ->set('juz', 29)
-            ->set('surah', 67)
+            ->set('fromSurah', 67)
+            ->set('toSurah', 67)
             ->set('fromAyah', 1)
             ->set('toAyah', 30)
             ->set('grade', RecitationGrade::Excellent->value)
@@ -88,7 +182,8 @@ class SessionRecitationTest extends TestCase
         $save = fn (int $from, int $to) => $this->recitations()
             ->call('openRecitation')
             ->set('juz', 29)
-            ->set('surah', 67)
+            ->set('fromSurah', 67)
+            ->set('toSurah', 67)
             ->set('fromAyah', $from)
             ->set('toAyah', $to)
             ->set('grade', RecitationGrade::Excellent->value)
@@ -109,7 +204,8 @@ class SessionRecitationTest extends TestCase
         $this->recitations()
             ->call('openRecitation')
             ->set('juz', 29)
-            ->set('surah', 67)
+            ->set('fromSurah', 67)
+            ->set('toSurah', 67)
             ->set('fromAyah', 1)
             ->set('toAyah', 30)
             ->set('grade', RecitationGrade::Good->value)
@@ -143,7 +239,8 @@ class SessionRecitationTest extends TestCase
         $this->recitations()
             ->assertSeeHtml('edit-recitation-'.$log->id)
             ->call('editRecitation', $log->uuid)
-            ->assertSet('surah', 67)
+            ->assertSet('fromSurah', 67)
+            ->assertSet('toSurah', 67)
             ->assertSet('fromAyah', 1)
             ->assertSet('toAyah', 30)
             ->set('toAyah', 12)
@@ -299,7 +396,8 @@ class SessionRecitationTest extends TestCase
         $this->recitations()
             ->call('openRecitation')
             ->set('juz', 29)
-            ->set('surah', 67)
+            ->set('fromSurah', 67)
+            ->set('toSurah', 67)
             ->set('fromAyah', 1)
             ->set('toAyah', 30)
             ->set('grade', RecitationGrade::Excellent->value)
@@ -316,7 +414,8 @@ class SessionRecitationTest extends TestCase
         $this->recitations()
             ->call('openRecitation')
             ->set('juz', 29)
-            ->set('surah', 67)
+            ->set('fromSurah', 67)
+            ->set('toSurah', 67)
             ->set('fromAyah', $from)
             ->set('toAyah', $to)
             ->set('grade', RecitationGrade::Excellent->value)

@@ -46,7 +46,65 @@ enum AttendanceOrigin {
   synced,
 }
 
-/// صفٌّ في كشف التفقّد: الطالب، وحالتُه، ومصدرُ تلك الحالة.
+/// تسميعٌ مسجَّل في الجلسة كما يُعرض ويُصحَّح — متزامناً كان أو مسودّةً محلية.
+///
+/// [uuid] هو ما يُصحَّح به ويُحذف: يولّده هذا الجهاز عند التسجيل، فيبقى المرجع
+/// نفسه قبل المزامنة وبعدها ([API.md §6](../../../../../docs/API.md)).
+class RecitationEntry {
+  const RecitationEntry({
+    required this.uuid,
+    required this.type,
+    required this.grade,
+    required this.fromSurah,
+    required this.fromAyah,
+    required this.toSurah,
+    required this.toAyah,
+    required this.juz,
+    required this.notes,
+    required this.points,
+    required this.pending,
+  });
+
+  final String uuid;
+  final RecitationType type;
+  final RecitationGrade? grade;
+  final int fromSurah;
+  final int fromAyah;
+  final int toSurah;
+  final int toAyah;
+  final int? juz;
+  final String? notes;
+
+  /// النقاط كما جمّدها الخادم — و`null` لمسودّةٍ لم تصله بعد، فهو من يحسبها.
+  final double? points;
+
+  /// مسودّةٌ في الطابور لم يؤكّدها الخادم.
+  final bool pending;
+
+  /// «الملك 1–30» أو «الملك 20 – القلم 5».
+  String get rangeLabel => fromSurah == toSurah
+      ? '${Quran.name(fromSurah)} $fromAyah–$toAyah'
+      : '${Quran.name(fromSurah)} $fromAyah – ${Quran.name(toSurah)} $toAyah';
+}
+
+/// منحةُ نقاطٍ في الجلسة كما تُعرض وتُصحَّح — نظير [RecitationEntry].
+class PointEntry {
+  const PointEntry({
+    required this.uuid,
+    required this.points,
+    required this.reason,
+    required this.note,
+    required this.pending,
+  });
+
+  final String uuid;
+  final double points;
+  final PointsReason reason;
+  final String? note;
+  final bool pending;
+}
+
+/// صفٌّ في كشف التفقّد: الطالب، وحالتُه، ومصدرُ تلك الحالة، وما سُجّل له في الجلسة.
 class RosterEntry {
   const RosterEntry({
     required this.studentId,
@@ -58,6 +116,8 @@ class RosterEntry {
     this.lateMinutesOverride,
     required this.note,
     required this.recordedAt,
+    this.recitations = const [],
+    this.points = const [],
   });
 
   final int studentId;
@@ -81,6 +141,11 @@ class RosterEntry {
   final String? note;
   final DateTime? recordedAt;
 
+  /// تسميعات الطالب ونقاطه في هذه الجلسة — تُعرض تحت اسمه ويُنقر عليها لتصحيحها.
+  final List<RecitationEntry> recitations;
+
+  final List<PointEntry> points;
+
   RosterEntry copyWith({
     AttendanceStatus? status,
     AttendanceOrigin? origin,
@@ -103,6 +168,8 @@ class RosterEntry {
           : (lateMinutesOverride ?? this.lateMinutesOverride),
       note: clearNote ? null : (note ?? this.note),
       recordedAt: recordedAt ?? this.recordedAt,
+      recitations: recitations,
+      points: points,
     );
   }
 }

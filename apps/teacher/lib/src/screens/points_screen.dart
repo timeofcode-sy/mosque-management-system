@@ -1,15 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 
+import '../data/labels.dart';
 import '../data/views.dart';
 import '../di/app_scope.dart';
 
-/// منح نقاطٍ يدوية — `points.award` ([API.md §6](../../../../../docs/API.md)).
+/// منح نقاطٍ يدوية وتصحيحُها — `points.award` ([API.md §6](../../../../../docs/API.md)).
+///
+/// التصحيح إعادةُ إرسالٍ بنفس `uuid` لا منحةٌ ثانية، كما في شاشة التسميع.
 class PointsScreen extends StatefulWidget {
-  const PointsScreen({super.key, required this.session, required this.entry});
+  const PointsScreen({
+    super.key,
+    required this.session,
+    required this.entry,
+    this.award,
+  });
 
   final SessionView session;
   final RosterEntry entry;
+
+  /// منحةٌ مسجَّلة تُفتح لتصحيحها — و`null` تعني منحةً جديدة.
+  final PointEntry? award;
 
   @override
   State<PointsScreen> createState() => _PointsScreenState();
@@ -17,21 +28,29 @@ class PointsScreen extends StatefulWidget {
 
 class _PointsScreenState extends State<PointsScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _points = TextEditingController(text: '1');
-  final _note = TextEditingController();
+  late final TextEditingController _points;
+  late final TextEditingController _note;
 
-  PointsReason _reason = PointsReason.participation;
+  late PointsReason _reason;
   bool _busy = false;
 
-  static const _labels = {
-    PointsReason.behavior: 'سلوك',
-    PointsReason.participation: 'مشاركة',
-    PointsReason.competition: 'مسابقة',
-    PointsReason.reward: 'مكافأة',
-    PointsReason.excellence: 'تميّز',
-    PointsReason.volunteering: 'تطوّع',
-    PointsReason.other: 'أخرى',
-  };
+  bool get _isEditing => widget.award != null;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final existing = widget.award;
+
+    _points = TextEditingController(text: _number(existing?.points ?? 1));
+    _note = TextEditingController(text: existing?.note ?? '');
+    _reason = existing?.reason ?? PointsReason.participation;
+  }
+
+  /// `2.0` ⇒ `2` و`2.5` ⇒ `2.5` — الرقم كما يكتبه الأستاذ لا كما يخزَّن.
+  static String _number(double value) => value == value.roundToDouble()
+      ? '${value.round()}'
+      : '$value';
 
   @override
   void dispose() {
@@ -52,17 +71,24 @@ class _PointsScreenState extends State<PointsScreen> {
 
     try {
       await deps.repository.awardPoints(
+        studentId: widget.entry.studentId,
         studentUuid: widget.entry.studentUuid,
         points: double.parse(_points.text.trim()),
         reason: _reason,
         note: _note.text.trim(),
+        session: widget.session,
         // تُربط بالجلسة إن كانت مفتوحة، وتبقى صالحةً بدونها.
-        session: widget.session.exists ? widget.session : null,
+        linkToSession: widget.session.exists,
+        uuid: widget.award?.uuid,
       );
 
       deps.sync.syncNow();
       messenger.showSnackBar(
-        const SnackBar(content: Text('صُفَّت النقاط للمزامنة.')),
+        SnackBar(
+          content: Text(
+            _isEditing ? 'صُفَّ تعديل النقاط للمزامنة.' : 'صُفَّت النقاط للمزامنة.',
+          ),
+        ),
       );
       navigator.pop();
     } finally {
@@ -75,7 +101,7 @@ class _PointsScreenState extends State<PointsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('منح نقاط')),
+      appBar: AppBar(title: Text(_isEditing ? 'تعديل النقاط' : 'منح نقاط')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -106,7 +132,7 @@ class _PointsScreenState extends State<PointsScreen> {
               initialValue: _reason,
               decoration: const InputDecoration(labelText: 'السبب'),
               items: [
-                for (final entry in _labels.entries)
+                for (final entry in pointsReasonLabels.entries)
                   DropdownMenuItem(value: entry.key, child: Text(entry.value)),
               ],
               onChanged: (value) => setState(() => _reason = value ?? _reason),
@@ -120,7 +146,7 @@ class _PointsScreenState extends State<PointsScreen> {
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _busy ? null : _submit,
-              child: const Text('منح'),
+              child: Text(_isEditing ? 'حفظ التعديل' : 'منح'),
             ),
           ],
         ),

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
+import '../data/labels.dart';
 import '../data/views.dart';
 import '../di/app_scope.dart';
 import '../widgets/sync_bar.dart';
@@ -106,6 +107,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               editable: session.editable,
               onStatus: (status) => _setStatus(session, roster[index], status),
               onMore: () => _showActions(session, roster[index]),
+              onRecitation: (recitation) =>
+                  _openRecitation(session, roster[index], recitation),
+              onDeleteRecitation: (recitation) =>
+                  _deleteRecitation(session, roster[index], recitation),
+              onPoint: (award) => _openPoints(session, roster[index], award),
+              onDeletePoint: (award) =>
+                  _deletePoints(session, roster[index], award),
             ),
           ),
         ),
@@ -269,22 +277,117 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           ),
         );
       case 'recitation':
-        await Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => RecitationScreen(session: session, entry: entry),
-          ),
-        );
+        await _openRecitation(session, entry, null);
       case 'points':
-        await Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => PointsScreen(session: session, entry: entry),
-          ),
-        );
+        await _openPoints(session, entry, null);
       case 'late':
         await _editLateMinutes(entry);
       case 'note':
         await _editNote(entry);
     }
+  }
+
+  /// شاشةُ التسميع واحدة للتسجيل وللتصحيح: [recitation] فارغاً تسجيلٌ جديد،
+  /// ومملوءاً تصحيحُ ما سُجّل — والمعرّف هو ما يفرّق بينهما على الخادم.
+  Future<void> _openRecitation(
+    SessionView session,
+    RosterEntry entry,
+    RecitationEntry? recitation,
+  ) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => RecitationScreen(
+          session: session,
+          entry: entry,
+          recitation: recitation,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openPoints(
+    SessionView session,
+    RosterEntry entry,
+    PointEntry? award,
+  ) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            PointsScreen(session: session, entry: entry, award: award),
+      ),
+    );
+  }
+
+  Future<void> _deleteRecitation(
+    SessionView session,
+    RosterEntry entry,
+    RecitationEntry recitation,
+  ) async {
+    // يُقرآن قبل الحوار: بعده قد يكون السياق زال، وهما لا يتغيّران بانتظاره.
+    final deps = AppScope.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (!await _confirmDelete('حذف التسميع', recitation.rangeLabel)) {
+      return;
+    }
+
+    await deps.repository.deleteRecitation(
+      session: session,
+      studentId: entry.studentId,
+      recitation: recitation,
+    );
+
+    deps.sync.syncNow();
+    messenger.showSnackBar(
+      const SnackBar(content: Text('حُذف التسميع وصُفَّ الحذف للمزامنة.')),
+    );
+  }
+
+  Future<void> _deletePoints(
+    SessionView session,
+    RosterEntry entry,
+    PointEntry award,
+  ) async {
+    final deps = AppScope.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (!await _confirmDelete('حذف النقاط', _pointsLabel(award))) {
+      return;
+    }
+
+    await deps.repository.deletePoints(
+      session: session,
+      studentId: entry.studentId,
+      award: award,
+    );
+
+    deps.sync.syncNow();
+    messenger.showSnackBar(
+      const SnackBar(content: Text('حُذفت النقاط وصُفَّ الحذف للمزامنة.')),
+    );
+  }
+
+  /// الحذف على شاشةٍ صغيرة ضغطةٌ واحدة قريبة من غيرها، فيُسأل عنه قبل وقوعه.
+  Future<bool> _confirmDelete(String title, String what) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text('سيُحذف «$what». لا يمكن التراجع بعد المزامنة.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+
+    return (confirmed ?? false) && mounted;
   }
 
   Future<void> _editLateMinutes(RosterEntry entry) async {
@@ -451,6 +554,16 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     deps.sync.syncNow();
   }
 
+  /// `+2 مشاركة` أو `-1.5 سلوك` — الإشارة جزءٌ من المعنى، فالخصم يُقرأ خصماً.
+  static String _pointsLabel(PointEntry award) {
+    final value = award.points == award.points.roundToDouble()
+        ? '${award.points.round()}'
+        : '${award.points}';
+
+    return '${award.points > 0 ? '+' : ''}$value '
+        '${pointsReasonLabels[award.reason] ?? ''}'.trim();
+  }
+
   static String _originLabel(AttendanceOrigin origin) => switch (origin) {
     AttendanceOrigin.suggested => 'قيمة مقترحة — لم تُسجَّل بعد',
     AttendanceOrigin.pending => 'بانتظار المزامنة',
@@ -571,12 +684,20 @@ class _StudentTile extends StatelessWidget {
     required this.editable,
     required this.onStatus,
     required this.onMore,
+    required this.onRecitation,
+    required this.onDeleteRecitation,
+    required this.onPoint,
+    required this.onDeletePoint,
   });
 
   final RosterEntry entry;
   final bool editable;
   final ValueChanged<AttendanceStatus> onStatus;
   final VoidCallback onMore;
+  final ValueChanged<RecitationEntry> onRecitation;
+  final ValueChanged<RecitationEntry> onDeleteRecitation;
+  final ValueChanged<PointEntry> onPoint;
+  final ValueChanged<PointEntry> onDeletePoint;
 
   @override
   Widget build(BuildContext context) {
@@ -644,8 +765,97 @@ class _StudentTile extends StatelessWidget {
                 style: theme.textTheme.bodySmall,
               ),
             ),
+          // ما سُجّل للطالب في هذه الجلسة، معروضاً تحت اسمه: الأستاذ يرى أثر ما
+          // أدخله قبل أن يُزامَن، وينقر عليه فيصحّحه بدل أن يحذفه ويعيده.
+          if (entry.recitations.isNotEmpty || entry.points.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final recitation in entry.recitations)
+                    _RecordChip(
+                      label: _recitationLabel(recitation),
+                      pending: recitation.pending,
+                      editable: editable,
+                      onTap: () => onRecitation(recitation),
+                      onDelete: () => onDeleteRecitation(recitation),
+                    ),
+                  for (final award in entry.points)
+                    _RecordChip(
+                      label: _awardLabel(award),
+                      pending: award.pending,
+                      editable: editable,
+                      color: award.points < 0
+                          ? theme.colorScheme.error
+                          : null,
+                      onTap: () => onPoint(award),
+                      onDelete: () => onDeletePoint(award),
+                    ),
+                ],
+              ),
+            ),
         ],
       ),
+    );
+  }
+
+  /// «الملك 1–30 · ممتاز · 20.67 نقطة» — والنقاط تُترك لمسودّةٍ لم يحسبها الخادم بعد.
+  static String _recitationLabel(RecitationEntry recitation) {
+    final parts = <String>[
+      recitation.rangeLabel,
+      ?recitationGradeLabels[recitation.grade],
+      if (recitation.points != null) '${_number(recitation.points!)} نقطة',
+    ];
+
+    return parts.join(' · ');
+  }
+
+  static String _awardLabel(PointEntry award) {
+    final reason = pointsReasonLabels[award.reason];
+    final value = '${award.points > 0 ? '+' : ''}${_number(award.points)}';
+
+    return reason == null ? value : '$value $reason';
+  }
+
+  static String _number(double value) =>
+      value == value.roundToDouble() ? '${value.round()}' : '$value';
+}
+
+/// شارةُ ما سُجّل: نقرةٌ تفتحه للتصحيح، وعلامةٌ تحذفه، وساعةٌ تقول إنه لم يُزامَن.
+class _RecordChip extends StatelessWidget {
+  const _RecordChip({
+    required this.label,
+    required this.pending,
+    required this.editable,
+    required this.onTap,
+    required this.onDelete,
+    this.color,
+  });
+
+  final String label;
+  final bool pending;
+  final bool editable;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return InputChip(
+      label: Text(label, style: TextStyle(color: color)),
+      avatar: pending ? const Icon(Icons.schedule, size: 16) : null,
+      visualDensity: VisualDensity.compact,
+      labelStyle: theme.textTheme.bodySmall,
+      // جلسةٌ مقفلة تُعرَض ولا تُحرَّر: الأستاذ لا يملك attendance.amend، وعمليةٌ
+      // مصيرُها الرفض بعد ساعات لا تُصفّ من الأصل.
+      onPressed: editable ? onTap : null,
+      onDeleted: editable ? onDelete : null,
+      deleteIcon: const Icon(Icons.close, size: 16),
+      tooltip: editable ? 'اضغط للتعديل' : null,
     );
   }
 }

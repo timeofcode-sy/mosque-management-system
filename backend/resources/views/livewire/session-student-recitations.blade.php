@@ -3,6 +3,7 @@
 use App\Actions\AwardStudentPoints;
 use App\Actions\BuildStudentCoverageMap;
 use App\Actions\DeleteRecitation;
+use App\Actions\DeleteStudentPoints;
 use App\Actions\SaveRecitation;
 use App\Enums\PointReason;
 use App\Enums\RecitationGrade;
@@ -36,7 +37,14 @@ new class extends Component
 
     public ?int $juz = null;
 
-    public ?int $surah = null;
+    /**
+     * المدى مقيَّدٌ بالجزء: «من سورة» لا تعرض إلا سور الجزء المختار، و«إلى سورة» لا
+     * تعرض إلا ما بعدها منه. وهو ما يطابق ما يفعله الأستاذ فعلاً — يسمّع داخل جزء —
+     * ويُسقط من القائمة مئةً وأربع عشرة سورة إلى أقلّها.
+     */
+    public ?int $fromSurah = null;
+
+    public ?int $toSurah = null;
 
     public ?int $fromAyah = null;
 
@@ -96,12 +104,26 @@ new class extends Component
     }
 
     /**
+     * سور الجزء — مدخل قائمة «من سورة».
+     *
      * @return array<int, int>
      */
     #[Computed]
     public function surahsOfJuz(): array
     {
         return Quran::surahsOfJuz($this->juz ?? 30);
+    }
+
+    /**
+     * سور الجزء ابتداءً من السورة المختارة — مدخل قائمة «إلى سورة»، فالمدى لا يرجع
+     * إلى الوراء ولا يتجاوز نهاية الجزء.
+     *
+     * @return array<int, int>
+     */
+    #[Computed]
+    public function toSurahsOfJuz(): array
+    {
+        return Quran::surahsOfJuzFrom($this->juz ?? 30, (int) $this->fromSurah);
     }
 
     /**
@@ -116,11 +138,11 @@ new class extends Component
             return ['lines' => 0.0, 'new_lines' => 0.0, 'points' => 0.0];
         }
 
-        $lines = Quran::linesForRange($this->surah, $this->fromAyah, $this->surah, $this->toAyah);
+        $lines = Quran::linesForRange($this->fromSurah, $this->fromAyah, $this->toSurah, $this->toAyah);
 
         $newLines = 0.0;
 
-        foreach (BuildStudentCoverageMap::newAyahsIn($this->coverage, $this->surah, $this->fromAyah, $this->surah, $this->toAyah) as $surah => $ayahs) {
+        foreach (BuildStudentCoverageMap::newAyahsIn($this->coverage, $this->fromSurah, $this->fromAyah, $this->toSurah, $this->toAyah) as $surah => $ayahs) {
             $newLines += Quran::linesOfAyahs($surah, $ayahs);
         }
 
@@ -148,24 +170,29 @@ new class extends Component
     }
 
     /**
-     * فتح تسميع مسجَّل على نموذجه لتصحيحه — النموذج يعرف سورةً واحدة، فالمدى العابر
-     * لعدّة سور (لا يأتي إلا من المزامنة) يبقى على حذفه وإعادة تسجيله.
+     * فتح تسميع مسجَّل على نموذجه لتصحيحه — بمداه كما سُجّل، ولو عبر سورتين.
      */
     public function editRecitation(MemorizationLog $log): void
     {
-        if (! $this->editable || ! $this->owns($log) || $log->from_surah !== $log->to_surah) {
+        if (! $this->editable || ! $this->owns($log)) {
             return;
         }
 
         $this->editingRecitationId = $log->id;
-        unset($this->coverage);
+        unset($this->coverage, $this->surahsOfJuz, $this->toSurahsOfJuz);
 
-        $surah = (int) $log->from_surah;
+        $from = (int) $log->from_surah;
+        $to = (int) $log->to_surah;
+        $recorded = Quran::surahsOfJuz((int) $log->juz);
 
-        $this->surah = $surah;
-        $this->juz = in_array($surah, Quran::surahsOfJuz((int) $log->juz), true)
+        // الجزء المسجَّل يُحترم ما دام يسع طرفَي المدى؛ وإلا فُتح على جزء يسعهما —
+        // فالنموذج يقيّد القائمة بالجزء، ولا يجوز أن يُسقط نصفَ مدى سُجّل قبل القيد.
+        $this->juz = in_array($from, $recorded, true) && in_array($to, $recorded, true)
             ? (int) $log->juz
-            : Quran::juzOfSurah($surah);
+            : Quran::juzSpanning($from, $to);
+
+        $this->fromSurah = $from;
+        $this->toSurah = $to;
         $this->fromAyah = $log->from_ayah;
         $this->toAyah = $log->to_ayah;
         $this->grade = $log->grade?->value ?? RecitationGrade::Excellent->value;
@@ -176,12 +203,24 @@ new class extends Component
 
     public function updatedJuz(): void
     {
-        unset($this->surahsOfJuz);
+        unset($this->surahsOfJuz, $this->toSurahsOfJuz);
 
         $this->selectFirstSurahOfJuz();
     }
 
-    public function updatedSurah(): void
+    public function updatedFromSurah(): void
+    {
+        unset($this->toSurahsOfJuz);
+
+        // «إلى سورة» لا تسبق «من سورة»: تغييرُ الأولى يجرّ الثانية معها.
+        if (! in_array((int) $this->toSurah, $this->toSurahsOfJuz, true)) {
+            $this->toSurah = $this->fromSurah;
+        }
+
+        $this->suggestRange();
+    }
+
+    public function updatedToSurah(): void
     {
         $this->suggestRange();
     }
@@ -194,12 +233,19 @@ new class extends Component
 
         $this->validate([
             'juz' => ['required', 'integer', 'between:1,30'],
-            'surah' => ['required', 'integer', 'between:1,114'],
-            'fromAyah' => ['required', 'integer', 'min:1'],
-            'toAyah' => ['required', 'integer', 'min:1', 'gte:fromAyah'],
+            'fromSurah' => ['required', 'integer', Illuminate\Validation\Rule::in($this->surahsOfJuz)],
+            'toSurah' => ['required', 'integer', Illuminate\Validation\Rule::in($this->toSurahsOfJuz)],
+            'fromAyah' => ['required', 'integer', 'min:1', 'max:'.Quran::ayahs((int) $this->fromSurah)],
+            // القيد المركّب: داخل السورة الواحدة لا تسبق «إلى آية» «من آية». وعبر
+            // سورتين لا معنى للمقارنة — الترتيب تحسمه السورتان لا رقما الآيتين.
+            'toAyah' => array_filter([
+                'required', 'integer', 'min:1', 'max:'.Quran::ayahs((int) $this->toSurah),
+                $this->fromSurah === $this->toSurah ? 'gte:fromAyah' : null,
+            ]),
             'grade' => ['required', Illuminate\Validation\Rule::enum(RecitationGrade::class)],
         ], attributes: [
-            'surah' => 'السورة', 'fromAyah' => 'من آية', 'toAyah' => 'إلى آية', 'grade' => 'التقدير',
+            'fromSurah' => 'من سورة', 'toSurah' => 'إلى سورة',
+            'fromAyah' => 'من آية', 'toAyah' => 'إلى آية', 'grade' => 'التقدير',
         ]);
 
         try {
@@ -207,9 +253,9 @@ new class extends Component
                 $this->session,
                 $this->student,
                 [
-                    'from_surah' => $this->surah,
+                    'from_surah' => $this->fromSurah,
                     'from_ayah' => $this->fromAyah,
-                    'to_surah' => $this->surah,
+                    'to_surah' => $this->toSurah,
                     'to_ayah' => $this->toAyah,
                     'grade' => $this->grade,
                     'juz' => $this->juz,
@@ -320,7 +366,13 @@ new class extends Component
             return;
         }
 
-        $studentPoint->delete();
+        try {
+            app(DeleteStudentPoints::class)->handle($studentPoint);
+        } catch (RuntimeException $exception) {
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
+
+            return;
+        }
 
         unset($this->awards);
         Flux::toast(variant: 'success', text: 'حُذفت النقاط.');
@@ -359,30 +411,39 @@ new class extends Component
 
     private function selectFirstSurahOfJuz(): void
     {
-        $this->surah = Quran::surahsOfJuz($this->juz ?? 30)[0] ?? 1;
+        $this->fromSurah = Quran::surahsOfJuz($this->juz ?? 30)[0] ?? 1;
+        $this->toSurah = $this->fromSurah;
+
+        unset($this->toSurahsOfJuz);
 
         $this->suggestRange();
     }
 
     /**
-     * الافتراض: أوّل مقطع غير مغطّى في السورة — الملك 1–12 مسجّلة ⇒ يُقترح 13–30.
+     * الافتراض: أوّل مقطع غير مغطّى في سورة البداية — الملك 1–12 مسجّلة ⇒ يُقترح 13–30.
+     *
+     * وحين يمتدّ المدى إلى سورةٍ أخرى فآخرُها هو النهاية المفترَضة: المقاطع غير المغطّاة
+     * تُحسب داخل سورةٍ واحدة، ولا معنى لها على الطرف البعيد من مدى عابر.
      */
     private function suggestRange(): void
     {
-        [$from, $to] = BuildStudentCoverageMap::firstGapIn($this->coverage, (int) $this->surah);
+        [$from, $to] = BuildStudentCoverageMap::firstGapIn($this->coverage, (int) $this->fromSurah);
 
         $this->fromAyah = $from;
-        $this->toAyah = $to;
+        $this->toAyah = $this->fromSurah === $this->toSurah ? $to : Quran::ayahs((int) $this->toSurah);
     }
 
     private function hasValidRange(): bool
     {
-        return $this->surah !== null
+        return $this->fromSurah !== null
+            && $this->toSurah !== null
             && $this->fromAyah !== null
             && $this->toAyah !== null
             && $this->fromAyah >= 1
-            && $this->toAyah >= $this->fromAyah
-            && $this->toAyah <= Quran::ayahs($this->surah);
+            && $this->fromAyah <= Quran::ayahs($this->fromSurah)
+            && $this->toAyah >= 1
+            && $this->toAyah <= Quran::ayahs($this->toSurah)
+            && [$this->fromSurah, $this->fromAyah] <= [$this->toSurah, $this->toAyah];
     }
 }; ?>
 
@@ -408,17 +469,18 @@ new class extends Component
     {{-- القلم يفتح المسجَّل على نموذجه، فالخطأ في التقدير أو المدى يُصحَّح ولا يُمحى ويُعاد --}}
     @foreach ($this->recitations as $log)
         <flux:badge wire:key="recitation-{{ $log->id }}" size="sm" :color="$log->grade?->color() ?? 'zinc'" class="latin-numerals">
-            {{ Quran::name($log->from_surah) }} {{ $log->from_ayah }}–{{ $log->to_ayah }}
+            @if ($log->from_surah === $log->to_surah)
+                {{ Quran::name($log->from_surah) }} {{ $log->from_ayah }}–{{ $log->to_ayah }}
+            @else
+                {{ Quran::name($log->from_surah) }} {{ $log->from_ayah }} – {{ Quran::name($log->to_surah) }} {{ $log->to_ayah }}
+            @endif
             @if ($log->grade) · {{ $log->grade->label() }} @endif
             · {{ rtrim(rtrim(number_format((float) $log->points, 2, '.', ''), '0'), '.') }} نقطة
             @if ($editable)
-                {{-- المدى العابر لعدّة سور لا يسعه النموذج، فيبقى على الحذف وحده --}}
-                @if ($log->from_surah === $log->to_surah)
-                    <x-badge-edit
-                        wire:click="editRecitation('{{ $log->uuid }}')"
-                        :data-test="'edit-recitation-'.$log->id"
-                    />
-                @endif
+                <x-badge-edit
+                    wire:click="editRecitation('{{ $log->uuid }}')"
+                    :data-test="'edit-recitation-'.$log->id"
+                />
                 <flux:badge.close wire:click="deleteRecitation('{{ $log->uuid }}')" />
             @endif
         </flux:badge>
@@ -442,31 +504,39 @@ new class extends Component
         <form wire:submit="saveRecitation" class="space-y-6">
             <flux:heading size="lg">{{ $editingRecitationId ? 'تعديل تسميع' : 'تسميع' }} {{ $student->full_name }}</flux:heading>
 
-            <div class="grid gap-6 sm:grid-cols-2">
-                <flux:select wire:model.live="juz" label="الجزء" class="latin-numerals" :data-test="'recitation-juz-'.$student->id">
-                    @for ($number = 1; $number <= 30; $number++)
-                        <flux:select.option :value="$number">{{ $number }}</flux:select.option>
-                    @endfor
-                </flux:select>
+            {{-- الجزء أولاً: هو ما يقيّد القائمتين تحته --}}
+            <flux:select wire:model.live="juz" label="الجزء" class="latin-numerals" :data-test="'recitation-juz-'.$student->id">
+                @for ($number = 1; $number <= 30; $number++)
+                    <flux:select.option :value="$number">{{ $number }}</flux:select.option>
+                @endfor
+            </flux:select>
 
-                <flux:select wire:model.live="surah" label="السورة" :data-test="'recitation-surah-'.$student->id">
+            <div class="grid gap-6 sm:grid-cols-2">
+                <flux:select wire:model.live="fromSurah" label="من سورة" :data-test="'recitation-from-surah-'.$student->id">
                     @foreach ($this->surahsOfJuz as $number)
                         <flux:select.option :value="$number">{{ $number }} · {{ Quran::name($number) }}</flux:select.option>
                     @endforeach
                 </flux:select>
-            </div>
 
-            <div class="grid gap-6 sm:grid-cols-2">
                 <flux:input
                     wire:model.live="fromAyah"
-                    type="number" min="1" :max="Quran::ayahs((int) $surah)"
+                    type="number" min="1" :max="Quran::ayahs((int) $fromSurah)"
                     label="من آية"
                     class="latin-numerals"
                     :data-test="'recitation-from-'.$student->id"
                 />
+            </div>
+
+            <div class="grid gap-6 sm:grid-cols-2">
+                <flux:select wire:model.live="toSurah" label="إلى سورة" :data-test="'recitation-to-surah-'.$student->id">
+                    @foreach ($this->toSurahsOfJuz as $number)
+                        <flux:select.option :value="$number">{{ $number }} · {{ Quran::name($number) }}</flux:select.option>
+                    @endforeach
+                </flux:select>
+
                 <flux:input
                     wire:model.live="toAyah"
-                    type="number" min="1" :max="Quran::ayahs((int) $surah)"
+                    type="number" min="1" :max="Quran::ayahs((int) $toSurah)"
                     label="إلى آية"
                     class="latin-numerals"
                     :data-test="'recitation-to-'.$student->id"

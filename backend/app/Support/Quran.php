@@ -216,6 +216,37 @@ class Quran
     }
 
     /**
+     * سور الجزء ابتداءً من سورةٍ بعينها — مدخل قائمة «إلى سورة»: المدى لا يرجع إلى
+     * الوراء ولا يتجاوز نهاية الجزء.
+     *
+     * @return array<int, int>
+     */
+    public static function surahsOfJuzFrom(int $juz, int $surah): array
+    {
+        $surahs = self::surahsOfJuz($juz);
+        $start = array_search($surah, $surahs, true);
+
+        return $start === false ? $surahs : array_values(array_slice($surahs, $start));
+    }
+
+    /**
+     * الجزء الذي يسع السورتين معاً — وإلا فجزء الأولى.
+     *
+     * تسميعٌ عابرٌ لحدّ الجزء (سُجّل قبل هذا القيد، أو جاء من المزامنة) يُفتح على جزء
+     * يراه كاملاً إن وُجد، فلا يُفقد نصفُ مداه لمجرّد أن النموذج فتحه على جزءٍ أضيق.
+     */
+    public static function juzSpanning(int $fromSurah, int $toSurah): int
+    {
+        foreach (self::JUZ_SURAHS as $juz => $surahs) {
+            if (in_array($fromSurah, $surahs, true) && in_array($toSurah, $surahs, true)) {
+                return $juz;
+            }
+        }
+
+        return self::juzOfSurah($fromSurah);
+    }
+
+    /**
      * أوّل جزء تقع فيه السورة — يلزم فتح نموذج التسميع على سجلّ لا جزء مسجّلاً له.
      */
     public static function juzOfSurah(int $surah): int

@@ -153,6 +153,8 @@ class TeacherRepository {
     };
 
     final excused = await _excusedStudentIds(day);
+    final recitations = await _recitationsOf(circle, day, session?.id);
+    final points = await _pointsOf(circle, day, session?.id);
     final roster = <RosterEntry>[];
 
     for (final enrollment in await _rosterOn(circle.id, day)) {
@@ -166,6 +168,8 @@ class TeacherRepository {
             studentId: student.id,
             studentUuid: student.uuid,
             fullName: _fullName(student),
+            recitations: recitations[student.id] ?? const [],
+            points: points[student.id] ?? const [],
             status: _status(draft.status),
             origin: AttendanceOrigin.pending,
             lateMinutes:
@@ -191,6 +195,8 @@ class TeacherRepository {
             studentId: student.id,
             studentUuid: student.uuid,
             fullName: _fullName(student),
+            recitations: recitations[student.id] ?? const [],
+            points: points[student.id] ?? const [],
             status: _status(confirmed.status),
             origin: AttendanceOrigin.synced,
             lateMinutes: confirmed.lateMinutes,
@@ -208,6 +214,8 @@ class TeacherRepository {
           studentId: student.id,
           studentUuid: student.uuid,
           fullName: _fullName(student),
+          recitations: recitations[student.id] ?? const [],
+          points: points[student.id] ?? const [],
           status: excused.contains(student.id)
               ? AttendanceStatus.excused
               : AttendanceStatus.present,
@@ -278,6 +286,166 @@ class TeacherRepository {
             .get();
 
     return {for (final row in rows) row.studentId};
+  }
+
+  /// تسميعات الجلسة مفهرسةً بالطالب: المتزامنُ من الخادم، تعلوه مسودّةُ هذا الجهاز.
+  ///
+  /// المسودّة تغلب المتزامن بمطابقة [uuid] — وهو معرّفٌ **واحد** على الجانبين لأن
+  /// العميل من يولّده. فتصحيحٌ لم يُدفَع بعد يُرى مصحَّحاً، والمحذوفُ لا يُرى.
+  Future<Map<int, List<RecitationEntry>>> _recitationsOf(
+    CircleView circle,
+    DateTime day,
+    int? sessionId,
+  ) async {
+    final synced = sessionId == null
+        ? <RecitationRow>[]
+        : await (_db.select(_db.recitations)
+                ..where((t) => t.attendanceSessionId.equals(sessionId))
+                ..orderBy([(t) => OrderingTerm.asc(t.id)]))
+              .get();
+
+    final drafts =
+        await (_db.select(_db.localRecitations)..where(
+              (t) =>
+                  t.courseCircleId.equals(circle.id) &
+                  t.sessionDate.equals(day),
+            ))
+            .get();
+
+    final draftsByUuid = {for (final row in drafts) row.uuid: row};
+    final byStudent = <int, List<RecitationEntry>>{};
+
+    void add(int studentId, RecitationEntry entry) =>
+        byStudent.putIfAbsent(studentId, () => []).add(entry);
+
+    for (final row in synced) {
+      final draft = draftsByUuid.remove(row.uuid);
+
+      if (draft != null) {
+        if (!draft.deleted) {
+          add(draft.studentId, _draftRecitation(draft));
+        }
+        continue;
+      }
+
+      add(
+        row.studentId,
+        RecitationEntry(
+          uuid: row.uuid,
+          type: _recitationType(row.type),
+          grade: _recitationGrade(row.grade),
+          fromSurah: row.fromSurah ?? 1,
+          fromAyah: row.fromAyah ?? 1,
+          toSurah: row.toSurah ?? row.fromSurah ?? 1,
+          toAyah: row.toAyah ?? row.fromAyah ?? 1,
+          juz: row.juz,
+          notes: row.notes,
+          points: row.points,
+          pending: false,
+        ),
+      );
+    }
+
+    // ما بقي من المسودّات لم يصل الخادمَ بعد — تسميعاتٌ جديدة، أو حذفٌ لصفٍّ
+    // لم يُسحب أصلاً فلا شيء يُعرض له.
+    for (final draft in draftsByUuid.values.where((row) => !row.deleted)) {
+      add(draft.studentId, _draftRecitation(draft));
+    }
+
+    return byStudent;
+  }
+
+  /// نقاط الجلسة مفهرسةً بالطالب — نظير [_recitationsOf] وبنفس قاعدة الغلبة.
+  Future<Map<int, List<PointEntry>>> _pointsOf(
+    CircleView circle,
+    DateTime day,
+    int? sessionId,
+  ) async {
+    // منحةٌ مُنحت قبل فتح الجلسة تُسجَّل بلا جلسة وتبقى صالحة (API.md §6)، فلو
+    // رُشّحت بالجلسة وحدها لَاختفت من الشاشة فور مزامنتها — وهي نُسبت إلى يومها
+    // وحلقتها، فبهما تُلتقط.
+    final synced =
+        await (_db.select(_db.studentPoints)
+              ..where(
+                (t) =>
+                    (sessionId == null
+                        ? const Constant(false)
+                        : t.attendanceSessionId.equals(sessionId)) |
+                    (t.attendanceSessionId.isNull() &
+                        t.courseCircleId.equals(circle.id) &
+                        t.awardedOn.equals(day)),
+              )
+              ..orderBy([(t) => OrderingTerm.asc(t.id)]))
+            .get();
+
+    final drafts =
+        await (_db.select(_db.localPoints)..where(
+              (t) =>
+                  t.courseCircleId.equals(circle.id) &
+                  t.sessionDate.equals(day),
+            ))
+            .get();
+
+    final draftsByUuid = {for (final row in drafts) row.uuid: row};
+    final byStudent = <int, List<PointEntry>>{};
+
+    void add(int studentId, PointEntry entry) =>
+        byStudent.putIfAbsent(studentId, () => []).add(entry);
+
+    for (final row in synced) {
+      final draft = draftsByUuid.remove(row.uuid);
+
+      if (draft != null) {
+        if (!draft.deleted) {
+          add(draft.studentId, _draftPoint(draft));
+        }
+        continue;
+      }
+
+      add(
+        row.studentId,
+        PointEntry(
+          uuid: row.uuid,
+          points: row.points,
+          reason: _pointsReason(row.reason),
+          note: row.note,
+          pending: false,
+        ),
+      );
+    }
+
+    for (final draft in draftsByUuid.values.where((row) => !row.deleted)) {
+      add(draft.studentId, _draftPoint(draft));
+    }
+
+    return byStudent;
+  }
+
+  static RecitationEntry _draftRecitation(LocalRecitationRow row) {
+    return RecitationEntry(
+      uuid: row.uuid,
+      type: _recitationType(row.type),
+      grade: _recitationGrade(row.grade),
+      fromSurah: row.fromSurah,
+      fromAyah: row.fromAyah,
+      toSurah: row.toSurah,
+      toAyah: row.toAyah,
+      juz: row.juz,
+      notes: row.notes,
+      // لا نقاط لمسودّة: الخادم يحسبها ويجمّدها، وعرضُ صفرٍ مكانها كذبٌ لا انتظار.
+      points: null,
+      pending: true,
+    );
+  }
+
+  static PointEntry _draftPoint(LocalPointRow row) {
+    return PointEntry(
+      uuid: row.uuid,
+      points: row.points,
+      reason: _pointsReason(row.reason),
+      note: row.note,
+      pending: true,
+    );
   }
 
   // ---------------------------------------------------------------- الكتابة
@@ -393,8 +561,13 @@ class TeacherRepository {
 
   /// الأسطر والنقاط **لا تُحسب هنا**: الخادم يحسبها ويجمّدها وقت التسجيل
   /// ([API.md §6](../../../../../docs/API.md)).
+  ///
+  /// و[uuid] فارغاً يعني تسميعاً جديداً يولّد هذا الجهاز معرّفه؛ ومملوءاً يعني
+  /// تصحيحَ تسميعٍ قائم بإعادة إرساله بنفس المعرّف. الحالتان عمليةٌ واحدة على
+  /// السلك (`recitation.save`)، والخادم يفرّق بينهما بالمعرّف وحده.
   Future<void> saveRecitation({
     required SessionView session,
+    required int studentId,
     required String studentUuid,
     required RecitationType type,
     required int fromSurah,
@@ -404,13 +577,39 @@ class TeacherRepository {
     RecitationGrade? grade,
     int? juz,
     String? notes,
-  }) {
-    return _syncEngine.enqueue('recitation.save', {
+    String? uuid,
+  }) async {
+    final rowUuid = uuid ?? _uuid.v4();
+    final trimmed = notes?.trim();
+
+    await _db
+        .into(_db.localRecitations)
+        .insertOnConflictUpdate(
+          LocalRecitationRow(
+            uuid: rowUuid,
+            studentId: studentId,
+            courseCircleId: session.circle.id,
+            sessionDate: session.date,
+            type: type.name,
+            grade: grade == null ? null : _gradeValue(grade),
+            fromSurah: fromSurah,
+            fromAyah: fromAyah,
+            toSurah: toSurah,
+            toAyah: toAyah,
+            juz: juz,
+            notes: trimmed == null || trimmed.isEmpty ? null : trimmed,
+            deleted: false,
+            recordedAt: DateTime.now(),
+          ),
+        );
+
+    await _syncEngine.enqueue('recitation.save', {
       'session_uuid': session.serverUuid ?? session.localUuid,
       'course_circle_uuid': session.circle.uuid,
       'session_date': _isoDate(session.date),
       'student_uuid': studentUuid,
       'recitation': {
+        'uuid': rowUuid,
         'type': type.name,
         'from_surah': fromSurah,
         'from_ayah': fromAyah,
@@ -418,28 +617,117 @@ class TeacherRepository {
         'to_ayah': toAyah,
         if (grade != null) 'grade': _gradeValue(grade),
         'juz': ?juz,
-        if (notes != null && notes.isNotEmpty) 'notes': notes,
+        if (trimmed != null && trimmed.isNotEmpty) 'notes': trimmed,
       },
       'recorded_at': DateTime.now().toUtc().toIso8601String(),
     });
   }
 
+  /// حذفُ تسميع: شاهدةٌ محلية تُخفيه فوراً، وعمليةٌ تُنفّذ الحذف على الخادم.
+  ///
+  /// الشاهدة ليست ترفاً: بدونها يبقى الصفُّ المتزامن ظاهراً بين ضغطة الحذف
+  /// ونجاح الدفع — وقد تكون ساعات على جهازٍ بلا شبكة.
+  Future<void> deleteRecitation({
+    required SessionView session,
+    required int studentId,
+    required RecitationEntry recitation,
+  }) async {
+    await _db
+        .into(_db.localRecitations)
+        .insertOnConflictUpdate(
+          LocalRecitationRow(
+            uuid: recitation.uuid,
+            studentId: studentId,
+            courseCircleId: session.circle.id,
+            sessionDate: session.date,
+            type: recitation.type.name,
+            grade: recitation.grade == null
+                ? null
+                : _gradeValue(recitation.grade!),
+            fromSurah: recitation.fromSurah,
+            fromAyah: recitation.fromAyah,
+            toSurah: recitation.toSurah,
+            toAyah: recitation.toAyah,
+            juz: recitation.juz,
+            notes: recitation.notes,
+            deleted: true,
+            recordedAt: DateTime.now(),
+          ),
+        );
+
+    await _syncEngine.enqueue('recitation.delete', {
+      'recitation_uuid': recitation.uuid,
+    });
+  }
+
+  /// [uuid] كنظيره في [saveRecitation]: فارغاً منحةٌ جديدة، ومملوءاً تصحيحُ منحة.
   Future<void> awardPoints({
+    required int studentId,
     required String studentUuid,
     required double points,
     required PointsReason reason,
+    required SessionView session,
     String? note,
-    SessionView? session,
-  }) {
-    return _syncEngine.enqueue('points.award', {
+    String? uuid,
+    bool linkToSession = true,
+  }) async {
+    final rowUuid = uuid ?? _uuid.v4();
+    final trimmed = note?.trim();
+
+    await _db
+        .into(_db.localPoints)
+        .insertOnConflictUpdate(
+          LocalPointRow(
+            uuid: rowUuid,
+            studentId: studentId,
+            courseCircleId: session.circle.id,
+            sessionDate: session.date,
+            points: points,
+            reason: reason.name,
+            note: trimmed == null || trimmed.isEmpty ? null : trimmed,
+            deleted: false,
+            recordedAt: DateTime.now(),
+          ),
+        );
+
+    await _syncEngine.enqueue('points.award', {
+      'uuid': rowUuid,
       'student_uuid': studentUuid,
       'points': points,
       'reason': reason.name,
-      if (note != null && note.isNotEmpty) 'note': note,
-      'awarded_on': _isoDate(DateTime.now()),
-      if (session != null)
+      if (trimmed != null && trimmed.isNotEmpty) 'note': trimmed,
+      'awarded_on': _isoDate(session.date),
+      // تُربط بالجلسة إن كانت مفتوحة، وتبقى صالحةً بدونها.
+      if (linkToSession) ...{
         'session_uuid': session.serverUuid ?? session.localUuid,
+        'course_circle_uuid': session.circle.uuid,
+        'session_date': _isoDate(session.date),
+      },
     });
+  }
+
+  Future<void> deletePoints({
+    required SessionView session,
+    required int studentId,
+    required PointEntry award,
+  }) async {
+    await _db
+        .into(_db.localPoints)
+        .insertOnConflictUpdate(
+          LocalPointRow(
+            uuid: award.uuid,
+            studentId: studentId,
+            courseCircleId: session.circle.id,
+            sessionDate: session.date,
+            points: award.points,
+            reason: award.reason.name,
+            note: award.note,
+            deleted: true,
+            recordedAt: DateTime.now(),
+          ),
+        );
+
+    await _syncEngine.enqueue('points.delete', {'point_uuid': award.uuid});
   }
 
   /// تُستدعى بعد كل مزامنة ناجحة: طابورٌ فارغ يعني أن الخادم التزم بكل ما كتبناه
@@ -455,6 +743,8 @@ class TeacherRepository {
     await _db.transaction(() async {
       await _db.delete(_db.localAttendances).go();
       await _db.delete(_db.localSessions).go();
+      await _db.delete(_db.localRecitations).go();
+      await _db.delete(_db.localPoints).go();
     });
   }
 
@@ -606,6 +896,27 @@ class TeacherRepository {
   /// `RecitationGrade.veryGood` ⇒ `very_good` — الخادم يقرأ snake_case.
   static String _gradeValue(RecitationGrade grade) =>
       grade == RecitationGrade.veryGood ? 'very_good' : grade.name;
+
+  /// `very_good` ⇒ `RecitationGrade.veryGood` — عكسُ [_gradeValue]، و`null` لتسميعٍ
+  /// بلا تقدير (وهو خيارٌ صريح في النموذج لا قيمةٌ ناقصة).
+  static RecitationGrade? _recitationGrade(String? value) => switch (value) {
+    'excellent' => RecitationGrade.excellent,
+    'very_good' => RecitationGrade.veryGood,
+    'good' => RecitationGrade.good,
+    _ => null,
+  };
+
+  static RecitationType _recitationType(String value) =>
+      RecitationType.values.firstWhere(
+        (type) => type.name == value,
+        orElse: () => RecitationType.hifz,
+      );
+
+  static PointsReason _pointsReason(String value) =>
+      PointsReason.values.firstWhere(
+        (reason) => reason.name == value,
+        orElse: () => PointsReason.other,
+      );
 
   static DateTime _dateOnly(DateTime value) =>
       DateTime(value.year, value.month, value.day);

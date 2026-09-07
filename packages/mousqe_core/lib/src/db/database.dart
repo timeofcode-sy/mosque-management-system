@@ -16,6 +16,8 @@ import 'tables/courses_table.dart';
 import 'tables/enrollments_table.dart';
 import 'tables/institutes_table.dart';
 import 'tables/local_attendances_table.dart';
+import 'tables/local_points_table.dart';
+import 'tables/local_recitations_table.dart';
 import 'tables/local_sessions_table.dart';
 import 'tables/pending_operations_table.dart';
 import 'tables/recitations_table.dart';
@@ -52,6 +54,8 @@ QueryExecutor _openConnection() {
   StudentPoints,
   LocalSessions,
   LocalAttendances,
+  LocalRecitations,
+  LocalPoints,
   PendingOperations,
   SyncState,
   AppState,
@@ -60,8 +64,11 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
+  /// 2 ⇒ 3 (م.5.4): مسودّتا التسميع والنقاط — بهما يرى الأستاذ ما سجّله قبل أن
+  /// يؤكّده الخادم، فيملك تصحيحَه وحذفَه أوف-لاين.
+  ///
   /// 1 ⇒ 2 (م.5.3): الجداول الخمسة التي كان `sync/pull` يُسقطها على الأرض —
   /// `circles` و`shifts` و`teachers` و`course_circle_teachers` و`enrollments` —
   /// زائداً `app_state` للقطة `/bootstrap`، وجدولَي المسودّة المحلية، وعمودَ
@@ -81,6 +88,11 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(localAttendances);
             await m.addColumn(pendingOperations, pendingOperations.sequence);
             await m.addColumn(syncState, syncState.lastPulledAt);
+          }
+
+          if (from < 3) {
+            await m.createTable(localRecitations);
+            await m.createTable(localPoints);
           }
         },
       );

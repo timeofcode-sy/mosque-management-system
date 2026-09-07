@@ -25,8 +25,9 @@ class SaveRecitation
     public function __construct(private readonly BuildStudentCoverageMap $coverageMap) {}
 
     /**
-     * @param  array{from_surah: int|string, from_ayah: int|string, to_surah: int|string, to_ayah: int|string, grade?: string|null, juz?: int|string|null, type?: string|null, curriculum_item_id?: int|null, notes?: string|null}  $data
+     * @param  array{uuid?: string|null, from_surah: int|string, from_ayah: int|string, to_surah: int|string, to_ayah: int|string, grade?: string|null, juz?: int|string|null, type?: string|null, curriculum_item_id?: int|null, notes?: string|null}  $data
      * @param  string|null  $recordedAt  زمن الحدث كما وقع على الجهاز — يمرّره الدفع أوف-لاين
+     * @param  int|null  $editingId  سجلّ تُصحّحه اللوحة بمفتاحه الأساسي
      */
     public function handle(
         AttendanceSession $session,
@@ -37,6 +38,12 @@ class SaveRecitation
         ?int $editingId = null,
     ): MemorizationLog {
         $this->guardSession($session);
+
+        // 🔄 العميل أوف-لاين يولّد `uuid` التسميع ويصفّ به التسجيل والتصحيح معاً:
+        // لا يملك مفتاحاً أساسياً يشير به إلى سجلٍّ لم يُنشأ على الخادم بعد. فإن
+        // وصل معرّفٌ يطابق سجلاً قائماً كان الدفعُ تصحيحاً، وإلا كان تسجيلاً بمعرّفه.
+        $log = $this->resolve($data['uuid'] ?? null, $editingId);
+        $editingId = $log->exists ? $log->getKey() : null;
 
         $fromSurah = (int) $data['from_surah'];
         $fromAyah = (int) $data['from_ayah'];
@@ -52,9 +59,8 @@ class SaveRecitation
         $newLines = $this->newLines($student, $fromSurah, $fromAyah, $toSurah, $toAyah, $editingId);
         $points = PointsSettings::for($institute)->quranPoints($newLines, $grade);
 
-        return DB::transaction(fn (): MemorizationLog => MemorizationLog::updateOrCreate(
-            ['id' => $editingId],
-            [
+        return DB::transaction(function () use ($log, $student, $session, $data, $recordedAt, $fromSurah, $fromAyah, $toSurah, $toAyah, $grade, $lines, $newLines, $points, $actor): MemorizationLog {
+            $log->fill([
                 'student_id' => $student->id,
                 'course_circle_id' => $session->course_circle_id,
                 'attendance_session_id' => $session->id,
@@ -72,8 +78,41 @@ class SaveRecitation
                 'points' => $points,
                 'teacher_id' => $actor?->teacher?->id,
                 'notes' => blank($data['notes'] ?? null) ? null : $data['notes'],
-            ],
-        ));
+            ])->save();
+
+            return $log;
+        });
+    }
+
+    /**
+     * السجلّ الذي يقصده الحفظ: القائم بمعرّفه أو بمفتاحه، أو سجلٌّ جديد يحمل
+     * المعرّف الذي ولّده العميل — وإلّا لَتغيّر المعرّفُ بين الجهاز والخادم فصار
+     * التصحيحُ من الجهاز نفسه تسجيلاً ثانياً.
+     */
+    private function resolve(?string $uuid, ?int $editingId): MemorizationLog
+    {
+        if ($editingId !== null) {
+            return MemorizationLog::findOrFail($editingId);
+        }
+
+        if (blank($uuid)) {
+            return new MemorizationLog;
+        }
+
+        // `withTrashed`: التسميع محذوفٌ حذفاً ناعماً، وقيدُ `unique(uuid)` يشمل
+        // المحذوف. فإعادةُ إرسال المعرّف نفسه تُحيي الصفَّ ولا تصطدم بالقيد.
+        $log = MemorizationLog::withTrashed()->where('uuid', $uuid)->first();
+
+        if ($log !== null) {
+            $log->restore();
+
+            return $log;
+        }
+
+        $fresh = new MemorizationLog;
+        $fresh->uuid = $uuid;
+
+        return $fresh;
     }
 
     private function guardSession(AttendanceSession $session): void

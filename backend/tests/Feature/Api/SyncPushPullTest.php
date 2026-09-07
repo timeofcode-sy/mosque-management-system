@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\RecitationGrade;
 use App\Enums\TeacherRole;
 use App\Models\ChangeLog;
 use App\Models\CourseCircle;
@@ -219,6 +220,100 @@ class SyncPushPullTest extends TestCase
 
         $this->assertSoftDeleted($log);
         $this->assertSame(1, ChangeLog::query()->where('table_name', 'memorization_logs')->where('operation', 'delete')->count());
+    }
+
+    public function test_a_client_generated_uuid_turns_the_second_push_into_a_correction(): void
+    {
+        $student = Student::factory()->create(['institute_id' => $this->institute->id]);
+        Enrollment::factory()->create(['course_circle_id' => $this->courseCircle->id, 'student_id' => $student->id]);
+
+        $teacher = $this->actingAsTeacher($this->institute);
+        CourseCircleTeacher::create(['course_circle_id' => $this->courseCircle->id, 'teacher_id' => $teacher->id, 'role' => TeacherRole::Main]);
+
+        $this->postJson('/api/v1/sync/push', [
+            'operations' => [[
+                'op_uuid' => (string) Str::uuid7(),
+                'type' => 'attendance.session.open',
+                'course_circle_uuid' => $this->courseCircle->uuid,
+                'session_date' => '2026-09-06',
+            ]],
+        ])->assertOk();
+
+        $sessionUuid = $this->courseCircle->attendanceSessions()->first()->uuid;
+        $recitationUuid = (string) Str::uuid7();
+        $pointUuid = (string) Str::uuid7();
+
+        $push = fn (array $operations) => $this->postJson('/api/v1/sync/push', [
+            'operations' => $operations,
+        ])->assertOk();
+
+        $recitation = fn (int $toAyah, string $grade) => [
+            'op_uuid' => (string) Str::uuid7(),
+            'type' => 'recitation.save',
+            'session_uuid' => $sessionUuid,
+            'student_uuid' => $student->uuid,
+            'recitation' => [
+                'uuid' => $recitationUuid,
+                'from_surah' => 67, 'from_ayah' => 1,
+                'to_surah' => 67, 'to_ayah' => $toAyah,
+                'grade' => $grade, 'juz' => 29,
+            ],
+        ];
+
+        $award = fn (float $points) => [
+            'op_uuid' => (string) Str::uuid7(),
+            'type' => 'points.award',
+            'session_uuid' => $sessionUuid,
+            'student_uuid' => $student->uuid,
+            'uuid' => $pointUuid,
+            'points' => $points,
+            'reason' => 'behavior',
+        ];
+
+        $push([$recitation(30, 'excellent'), $award(-2)]);
+        $push([$recitation(12, 'good'), $award(-5)]);
+
+        // صفٌّ واحد لا صفّان: العميل أعاد إرسال معرّفه، فالثانيةُ تصحيحٌ لا تسجيلٌ ثانٍ.
+        $log = MemorizationLog::query()->where('student_id', $student->id)->sole();
+        $point = StudentPoint::query()->where('student_id', $student->id)->sole();
+
+        $this->assertSame($recitationUuid, $log->uuid);
+        $this->assertSame(12, $log->to_ayah);
+        $this->assertSame(RecitationGrade::Good, $log->grade);
+        $this->assertEqualsWithDelta(-5.0, (float) $point->points, 0.01);
+
+        // ولا تُحسب الأسطر مكرّرةً لنفسها حين يُصحَّح السجلّ نفسه.
+        $this->assertEqualsWithDelta(12.4, (float) $log->new_lines, 0.01);
+
+        $push([
+            [
+                'op_uuid' => (string) Str::uuid7(),
+                'type' => 'points.delete',
+                'point_uuid' => $pointUuid,
+            ],
+        ]);
+
+        $this->assertSoftDeleted($point);
+        $this->assertSame(1, ChangeLog::query()->where('table_name', 'student_points')->where('operation', 'delete')->count());
+    }
+
+    public function test_deleting_what_is_already_gone_is_applied_not_refused(): void
+    {
+        $teacher = $this->actingAsTeacher($this->institute);
+        CourseCircleTeacher::create(['course_circle_id' => $this->courseCircle->id, 'teacher_id' => $teacher->id, 'role' => TeacherRole::Main]);
+
+        $opUuid = (string) Str::uuid7();
+
+        // لو رُدّ هذا بـ404 لَعلق الطابورُ كلُّه خلف عمليةٍ لن تنجح أبداً — والنتيجة
+        // المطلوبة منها (ألّا يبقى الصفّ) محقَّقةٌ أصلاً.
+        $this->postJson('/api/v1/sync/push', [
+            'operations' => [
+                ['op_uuid' => $opUuid, 'type' => 'recitation.delete', 'recitation_uuid' => (string) Str::uuid7()],
+                ['op_uuid' => (string) Str::uuid7(), 'type' => 'points.delete', 'point_uuid' => (string) Str::uuid7()],
+            ],
+        ])
+            ->assertOk()
+            ->assertJsonPath('applied.0', $opUuid);
     }
 
     public function test_pull_never_returns_changes_from_another_institute(): void

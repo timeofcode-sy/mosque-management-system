@@ -134,10 +134,89 @@ class Quran {
     114: Surah(114, 'الناس', 6),
   };
 
+  /// سور كل جزء — نقلٌ حرفي لـ`App\Support\Quran::JUZ_SURAHS`.
+  ///
+  /// سورةٌ تمتدّ على أكثر من جزء تظهر في كل جزء تمرّ به، ولو جزئياً. وهذا هو
+  /// مدخل استمارة التسميع: الأستاذ يختار الجزء أولاً فتنحصر السور فيه، بدل أن
+  /// يبحث عن سورته بين مئةٍ وأربع عشرة.
+  static const Map<int, List<int>> juzSurahs = {
+    1: [1, 2],
+    2: [2],
+    3: [2, 3],
+    4: [3, 4],
+    5: [4],
+    6: [4, 5],
+    7: [5, 6],
+    8: [6, 7],
+    9: [7, 8],
+    10: [8, 9],
+    11: [9, 10, 11],
+    12: [11, 12],
+    13: [12, 13, 14],
+    14: [15, 16],
+    15: [17, 18],
+    16: [18, 19, 20],
+    17: [21, 22],
+    18: [23, 24, 25],
+    19: [25, 26, 27],
+    20: [27, 28, 29],
+    21: [29, 30, 31, 32, 33],
+    22: [33, 34, 35, 36],
+    23: [36, 37, 38, 39],
+    24: [39, 40, 41],
+    25: [41, 42, 43, 44, 45],
+    26: [46, 47, 48, 49, 50, 51],
+    27: [51, 52, 53, 54, 55, 56, 57],
+    28: [58, 59, 60, 61, 62, 63, 64, 65, 66],
+    29: [67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77],
+    30: [
+      78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95,
+      96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110,
+      111, 112, 113, 114,
+    ],
+  };
+
   /// السور بترتيب المصحف — ما تعرضه قائمةُ الاختيار في استمارة التسميع.
   static List<Surah> get all => surahs.values.toList(growable: false);
 
   static String name(int surah) => surahs[surah]?.name ?? '$surah';
 
   static int ayahs(int surah) => surahs[surah]?.ayahs ?? 0;
+
+  /// سور جزءٍ واحد — مدخل حقل «من سورة».
+  static List<int> surahsOfJuz(int juz) => juzSurahs[juz] ?? const [];
+
+  /// سور الجزء ابتداءً من سورةٍ بعينها — مدخل حقل «إلى سورة»، فالمدى لا يرجع
+  /// إلى الوراء ولا يتجاوز نهاية الجزء.
+  static List<int> surahsOfJuzFrom(int juz, int surah) {
+    final all = surahsOfJuz(juz);
+    final start = all.indexOf(surah);
+
+    return start < 0 ? all : all.sublist(start);
+  }
+
+  /// أوّل جزء تقع فيه السورة — يلزم فتح استمارة التسميع على تسميعٍ لا جزء مسجّلاً له.
+  static int juzOfSurah(int surah) {
+    for (final entry in juzSurahs.entries) {
+      if (entry.value.contains(surah)) {
+        return entry.key;
+      }
+    }
+
+    return 30;
+  }
+
+  /// الجزء الذي يسع السورتين معاً — وإلّا فجزءُ السورة الأولى.
+  ///
+  /// تسميعٌ عابرٌ لحدّ الجزء (سُجّل قبل هذا القيد، أو من عميلٍ آخر) يُفتح على
+  /// جزءٍ يراه كاملاً إن وُجد، ولا يُرفض فتحُه.
+  static int juzSpanning(int fromSurah, int toSurah) {
+    for (final entry in juzSurahs.entries) {
+      if (entry.value.contains(fromSurah) && entry.value.contains(toSurah)) {
+        return entry.key;
+      }
+    }
+
+    return juzOfSurah(fromSurah);
+  }
 }

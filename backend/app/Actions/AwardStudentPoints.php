@@ -19,7 +19,7 @@ use RuntimeException;
 class AwardStudentPoints
 {
     /**
-     * @param  array{points: float|int|string, reason: string, note?: string|null, awarded_on?: string|null, course_circle_id?: int|null}  $data
+     * @param  array{uuid?: string|null, points: float|int|string, reason: string, note?: string|null, awarded_on?: string|null, course_circle_id?: int|null}  $data
      * @param  int|null  $editingId  منحة قائمة تُصحَّح بدل أن تُضاف ثانية
      */
     public function handle(Student $student, array $data, ?User $actor = null, ?AttendanceSession $session = null, ?int $editingId = null): StudentPoint
@@ -40,6 +40,10 @@ class AwardStudentPoints
             throw new RuntimeException('لا معنى لمنح صفر نقطة.');
         }
 
+        // 🔄 نظير ما في SaveRecitation: العميل أوف-لاين يولّد `uuid` المنحة، فيصحّحها
+        // بإعادة إرسالها بنفس المعرّف — لا مفتاحَ أساسياً عنده يشير به إليها.
+        $award = $this->resolve($data['uuid'] ?? null, $editingId);
+
         $attributes = [
             'student_id' => $student->id,
             'course_circle_id' => $data['course_circle_id'] ?? $session?->course_circle_id,
@@ -53,10 +57,41 @@ class AwardStudentPoints
         ];
 
         // المانح يُثبَّت لحظة المنح: من صحّح القيمة لاحقاً لا يرث نسبتها إليه.
-        if ($editingId === null) {
+        if (! $award->exists) {
             $attributes['awarded_by'] = $actor?->id;
         }
 
-        return StudentPoint::updateOrCreate(['id' => $editingId], $attributes);
+        $award->fill($attributes)->save();
+
+        return $award;
+    }
+
+    /**
+     * المنحة التي يقصدها الحفظ: القائمة بمفتاحها أو بمعرّفها، أو منحةٌ جديدة تحمل
+     * المعرّف الذي ولّده العميل.
+     */
+    private function resolve(?string $uuid, ?int $editingId): StudentPoint
+    {
+        if ($editingId !== null) {
+            return StudentPoint::findOrFail($editingId);
+        }
+
+        if (blank($uuid)) {
+            return new StudentPoint;
+        }
+
+        // `withTrashed`: قيد `unique(uuid)` يشمل المحذوف حذفاً ناعماً.
+        $award = StudentPoint::withTrashed()->where('uuid', $uuid)->first();
+
+        if ($award !== null) {
+            $award->restore();
+
+            return $award;
+        }
+
+        $fresh = new StudentPoint;
+        $fresh->uuid = $uuid;
+
+        return $fresh;
     }
 }

@@ -8,11 +8,14 @@ use App\Models\ChangeLog;
 use App\Models\CourseCircle;
 use App\Models\MemorizationLog;
 use App\Models\Student;
+use App\Models\StudentPoint;
 use App\Models\SyncDevice;
 use App\Models\Teacher;
 use App\Models\User;
 use App\Support\ApiScope;
 use App\Support\SyncRecorder;
+use App\Support\SyncScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +44,7 @@ class SyncPush
         private readonly SaveRecitation $saveRecitation,
         private readonly DeleteRecitation $deleteRecitation,
         private readonly AwardStudentPoints $awardPoints,
+        private readonly DeleteStudentPoints $deletePoints,
         private readonly RecordChange $recordChange,
         private readonly ResolveAttendanceConflicts $resolveConflicts,
         private readonly SyncRecorder $recorder,
@@ -75,7 +79,9 @@ class SyncPush
                     $target = $this->apply($op, $user, $institute->id, $deviceUuid);
                 });
 
-                if (! $recorded) {
+                // صفٌّ دالّ لعمليةٍ لم تغيّر شيئاً — إلا حين لا يوجد صفّ أصلاً (حذفُ
+                // ما سبق حذفُه): تلك تُعدّ مطبَّقة فيُنظَّف الطابور، بلا صفٍّ تسجّله.
+                if (! $recorded && $target !== null) {
                     $this->recordChange->handle($target, SyncOperation::Update, $scopeKey, $user, $deviceUuid, $opUuid);
                 }
             });
@@ -89,11 +95,12 @@ class SyncPush
     }
 
     /**
-     * الصفّ الذي مسّته العملية — يُستعمل صفّاً دالاً حين لا تغيّر العملية شيئاً.
+     * الصفّ الذي مسّته العملية — يُستعمل صفّاً دالاً حين لا تغيّر العملية شيئاً،
+     * و`null` حين لا صفَّ لها أصلاً (حذفُ ما سبق حذفُه).
      *
      * @param  array<string, mixed>  $op
      */
-    private function apply(array $op, User $user, int $instituteId, ?string $deviceUuid): Model
+    private function apply(array $op, User $user, int $instituteId, ?string $deviceUuid): ?Model
     {
         return match ($op['type'] ?? null) {
             'attendance.session.open' => $this->applyOpenSession($op, $user, $instituteId),
@@ -104,6 +111,7 @@ class SyncPush
             'recitation.save' => $this->applySaveRecitation($op, $user, $instituteId),
             'recitation.delete' => $this->applyDeleteRecitation($op, $instituteId),
             'points.award' => $this->applyAwardPoints($op, $user, $instituteId),
+            'points.delete' => $this->applyDeletePoints($op, $instituteId),
             default => throw new RuntimeException("نوع عملية غير معروف: {$op['type']}"),
         };
     }
@@ -210,15 +218,61 @@ class SyncPush
     /**
      * @param  array<string, mixed>  $op
      */
-    private function applyDeleteRecitation(array $op, int $instituteId): MemorizationLog
+    private function applyDeleteRecitation(array $op, int $instituteId): ?MemorizationLog
     {
-        $log = MemorizationLog::where('uuid', $op['recitation_uuid'])
-            ->whereHas('student', fn ($query) => $query->where('institute_id', $instituteId))
-            ->firstOrFail();
+        $log = $this->deletable(MemorizationLog::query(), $op['recitation_uuid'], $instituteId);
+
+        if ($log === null) {
+            return null;
+        }
 
         $this->deleteRecitation->handle($log);
 
         return $log;
+    }
+
+    /**
+     * @param  array<string, mixed>  $op
+     */
+    private function applyDeletePoints(array $op, int $instituteId): ?StudentPoint
+    {
+        $award = $this->deletable(StudentPoint::query(), $op['point_uuid'], $instituteId);
+
+        if ($award === null) {
+            return null;
+        }
+
+        $this->deletePoints->handle($award);
+
+        return $award;
+    }
+
+    /**
+     * الصفّ المقصود بالحذف، أو `null` إن لم يعد له وجود — و404 إن كان لمعهد آخر.
+     *
+     * 🔄 م.5.4: الحالتان تبدوان واحدة («لم يُعثر عليه») وهما نقيضان. حذفُ ما لا وجود
+     * له **نتيجةٌ محقَّقة**: العميلُ قد يصفّ الحذف مرّتين، أو يحذف ما حذفه غيرُه، ولو
+     * رُدّ بـ404 لَعلق الطابورُ كلُّه خلف عمليةٍ لن تنجح أبداً. أمّا معرّفٌ من معهدٍ آخر
+     * فمحاولةُ عبور حاجز المعهد، وردُّها 404 كما كان.
+     *
+     * @param  Builder<TModel>  $query
+     * @return TModel|null
+     *
+     * @template TModel of Model
+     */
+    private function deletable($query, string $uuid, int $instituteId): ?Model
+    {
+        $row = $query->where('uuid', $uuid)->first();
+
+        if ($row === null) {
+            return null;
+        }
+
+        if (SyncScope::via(Student::class, $row->student_id) !== $instituteId) {
+            throw (new ModelNotFoundException)->setModel($row::class, [$uuid]);
+        }
+
+        return $row;
     }
 
     /**
@@ -233,6 +287,7 @@ class SyncPush
             : $this->attendanceSession($op, $instituteId);
 
         return $this->awardPoints->handle($student, [
+            'uuid' => $op['uuid'] ?? null,
             'points' => $op['points'],
             'reason' => $op['reason'],
             'note' => $op['note'] ?? null,

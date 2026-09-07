@@ -515,19 +515,37 @@ void main() {
   });
 
   group('recitation and points', () {
+    Future<SessionView> openSession() async {
+      final circle = await myCircle();
+      await fixture.syncSession(id: 1, uuid: 'ses-1', day: day);
+
+      return repository.loadSession(
+        circle: circle,
+        date: day,
+        graceMinutes: 0,
+      );
+    }
+
+    Future<RosterEntry> aliIn(SessionView session) async {
+      final reloaded = await repository.loadSession(
+        circle: session.circle,
+        date: session.date,
+        graceMinutes: 0,
+      );
+
+      return reloaded.roster.firstWhere(
+        (entry) => entry.studentId == TestInstitute.ali,
+      );
+    }
+
     test(
       'a recitation is queued with the range and no computed lines',
       () async {
-        final circle = await myCircle();
-        await fixture.syncSession(id: 1, uuid: 'ses-1', day: day);
-        final session = await repository.loadSession(
-          circle: circle,
-          date: day,
-          graceMinutes: 0,
-        );
+        final session = await openSession();
 
         await repository.saveRecitation(
           session: session,
+          studentId: TestInstitute.ali,
           studentUuid: 'stu-ali',
           type: RecitationType.hifz,
           fromSurah: 78,
@@ -535,6 +553,7 @@ void main() {
           toSurah: 78,
           toAyah: 40,
           grade: RecitationGrade.veryGood,
+          juz: 30,
         );
 
         final operation = (await queue()).single;
@@ -548,11 +567,150 @@ void main() {
         // الأسطر والنقاط يحسبها الخادم ويجمّدها — إرسالُها من هنا يخلق حقيقةً ثانية.
         expect(recitation.containsKey('lines'), isFalse);
         expect(recitation.containsKey('points'), isFalse);
+        // والمعرّف يولّده العميل: بلا يدٍ عليه لا يملك تصحيحَ ما سجّله أوف-لاين.
+        expect(recitation['uuid'], isA<String>());
       },
     );
 
+    test('a queued recitation shows on the roster before it syncs', () async {
+      final session = await openSession();
+
+      await repository.saveRecitation(
+        session: session,
+        studentId: TestInstitute.ali,
+        studentUuid: 'stu-ali',
+        type: RecitationType.hifz,
+        fromSurah: 78,
+        fromAyah: 1,
+        toSurah: 78,
+        toAyah: 40,
+        grade: RecitationGrade.veryGood,
+        juz: 30,
+      );
+
+      final recitation = (await aliIn(session)).recitations.single;
+
+      expect(recitation.rangeLabel, 'النبأ 1–40');
+      expect(recitation.pending, isTrue);
+      // النقاط تُترك فارغةً لا صفراً: الخادم من يحسبها، وصفرُ العميل كذبٌ لا انتظار.
+      expect(recitation.points, isNull);
+    });
+
+    test('correcting a recitation keeps one row and one uuid', () async {
+      final session = await openSession();
+
+      await repository.saveRecitation(
+        session: session,
+        studentId: TestInstitute.ali,
+        studentUuid: 'stu-ali',
+        type: RecitationType.hifz,
+        fromSurah: 78,
+        fromAyah: 1,
+        toSurah: 78,
+        toAyah: 40,
+        grade: RecitationGrade.veryGood,
+        juz: 30,
+      );
+
+      final first = (await aliIn(session)).recitations.single;
+
+      await repository.saveRecitation(
+        session: session,
+        studentId: TestInstitute.ali,
+        studentUuid: 'stu-ali',
+        type: RecitationType.hifz,
+        fromSurah: 78,
+        fromAyah: 1,
+        toSurah: 78,
+        toAyah: 20,
+        grade: RecitationGrade.good,
+        juz: 30,
+        uuid: first.uuid,
+      );
+
+      final corrected = (await aliIn(session)).recitations.single;
+
+      expect(corrected.uuid, first.uuid);
+      expect(corrected.toAyah, 20);
+      expect(corrected.grade, RecitationGrade.good);
+
+      // عمليتان في الطابور بنفس المعرّف: الخادم يطبّق الثانية تصحيحاً للأولى.
+      final operations = await queue();
+
+      expect(operations, hasLength(2));
+      expect(
+        operations.map((op) => (op['recitation'] as Map)['uuid']),
+        everyElement(first.uuid),
+      );
+    });
+
+    test('a synced recitation is corrected in place too', () async {
+      final session = await openSession();
+
+      await fixture.syncRecitation(
+        uuid: 'rec-1',
+        studentId: TestInstitute.ali,
+        sessionId: 1,
+      );
+
+      final synced = (await aliIn(session)).recitations.single;
+
+      expect(synced.pending, isFalse);
+      expect(synced.points, 12.5);
+
+      await repository.saveRecitation(
+        session: session,
+        studentId: TestInstitute.ali,
+        studentUuid: 'stu-ali',
+        type: RecitationType.hifz,
+        fromSurah: 78,
+        fromAyah: 1,
+        toSurah: 78,
+        toAyah: 20,
+        grade: RecitationGrade.good,
+        juz: 30,
+        uuid: synced.uuid,
+      );
+
+      // صفٌّ واحد لا صفّان: المسودّة تغلب المتزامن بمطابقة المعرّف.
+      final corrected = (await aliIn(session)).recitations.single;
+
+      expect(corrected.toAyah, 20);
+      expect(corrected.pending, isTrue);
+    });
+
+    test('a deleted recitation disappears before the push', () async {
+      final session = await openSession();
+
+      await fixture.syncRecitation(
+        uuid: 'rec-1',
+        studentId: TestInstitute.ali,
+        sessionId: 1,
+      );
+
+      final synced = (await aliIn(session)).recitations.single;
+
+      await repository.deleteRecitation(
+        session: session,
+        studentId: TestInstitute.ali,
+        recitation: synced,
+      );
+
+      // الشاهدة تُخفيه فوراً — وبدونها يبقى ظاهراً حتى ينجح الدفع، وقد يطول.
+      expect((await aliIn(session)).recitations, isEmpty);
+
+      final operation = (await queue()).single;
+
+      expect(operation['type'], 'recitation.delete');
+      expect(operation['recitation_uuid'], 'rec-1');
+    });
+
     test('points are queued with reason and date', () async {
+      final session = await openSession();
+
       await repository.awardPoints(
+        session: session,
+        studentId: TestInstitute.badr,
         studentUuid: 'stu-badr',
         points: 2.5,
         reason: PointsReason.participation,
@@ -565,6 +723,75 @@ void main() {
       expect(operation['points'], 2.5);
       expect(operation['reason'], 'participation');
       expect(operation['note'], 'إجابة ممتازة');
+      expect(operation['uuid'], isA<String>());
+    });
+
+    test('a queued award is corrected then deleted offline', () async {
+      final session = await openSession();
+
+      await repository.awardPoints(
+        session: session,
+        studentId: TestInstitute.ali,
+        studentUuid: 'stu-ali',
+        points: 2,
+        reason: PointsReason.participation,
+      );
+
+      final award = (await aliIn(session)).points.single;
+
+      expect(award.pending, isTrue);
+      expect(award.points, 2);
+
+      await repository.awardPoints(
+        session: session,
+        studentId: TestInstitute.ali,
+        studentUuid: 'stu-ali',
+        points: -1,
+        reason: PointsReason.behavior,
+        uuid: award.uuid,
+      );
+
+      final corrected = (await aliIn(session)).points.single;
+
+      expect(corrected.uuid, award.uuid);
+      expect(corrected.points, -1);
+      expect(corrected.reason, PointsReason.behavior);
+
+      await repository.deletePoints(
+        session: session,
+        studentId: TestInstitute.ali,
+        award: corrected,
+      );
+
+      expect((await aliIn(session)).points, isEmpty);
+      expect((await queue()).last['type'], 'points.delete');
+    });
+
+    test('settled drafts are cleared when the queue empties', () async {
+      final session = await openSession();
+
+      await repository.saveRecitation(
+        session: session,
+        studentId: TestInstitute.ali,
+        studentUuid: 'stu-ali',
+        type: RecitationType.hifz,
+        fromSurah: 78,
+        fromAyah: 1,
+        toSurah: 78,
+        toAyah: 40,
+        juz: 30,
+      );
+
+      // طابورٌ عامر ⇒ المسودّة تبقى، فهي أحدثُ ما يعرفه الجهاز.
+      await repository.clearSettledDrafts();
+
+      expect((await aliIn(session)).recitations, hasLength(1));
+
+      await db.delete(db.pendingOperations).go();
+      await repository.clearSettledDrafts();
+
+      // وطابورٌ فارغ ⇒ الخادم التزم بكل ما كتبناه، فلا تبقى للمسودّة وظيفة.
+      expect((await aliIn(session)).recitations, isEmpty);
     });
   });
 }

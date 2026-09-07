@@ -261,6 +261,37 @@ class TestInstitute {
         );
   }
 
+  /// تسميعٌ وصل من الخادم بأسطره ونقاطه مجمَّدةً — هو من يحسبها لا العميل.
+  Future<void> syncRecitation({
+    required String uuid,
+    required int studentId,
+    required int sessionId,
+    int fromSurah = 78,
+    int fromAyah = 1,
+    int toSurah = 78,
+    int toAyah = 40,
+    double points = 12.5,
+  }) {
+    return db
+        .into(db.recitations)
+        .insert(
+          RecitationsCompanion.insert(
+            uuid: uuid,
+            studentId: studentId,
+            courseCircleId: const Value(1),
+            attendanceSessionId: Value(sessionId),
+            date: DateTime(2026, 9, 15),
+            grade: const Value('excellent'),
+            fromSurah: Value(fromSurah),
+            fromAyah: Value(fromAyah),
+            toSurah: Value(toSurah),
+            toAyah: Value(toAyah),
+            juz: const Value(30),
+            points: Value(points),
+          ),
+        );
+  }
+
   Future<void> syncAttendance({
     required String uuid,
     required int sessionId,
