@@ -14,4 +14,8 @@ class AppConfig {
   /// يُرسَل في `POST /devices/register` وفي `GET /sync/pull?app=` — نفس القيمة
   /// في الاثنين، وهي ما يظهر في شاشة `system/devices` باللوحة.
   static const String app = 'teacher';
+
+  /// اسمُ التطبيق كما يظهر لصاحبه — على شاشة الدخول، وفي `device_name` الذي
+  /// يقرؤه المشرف في `system/devices`.
+  static const String label = 'تطبيق الأستاذ';
 }

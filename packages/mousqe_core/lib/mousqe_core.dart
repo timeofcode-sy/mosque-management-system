@@ -2,6 +2,8 @@ library mousqe_core;
 
 export 'src/models/absence_excuse.dart';
 export 'src/models/admin_user.dart';
+export 'src/models/bootstrap_snapshot.dart';
+export 'src/models/institute_option.dart';
 export 'src/models/attendance.dart';
 export 'src/models/attendance_session.dart';
 export 'src/models/attendance_settings.dart';
@@ -17,8 +19,12 @@ export 'src/models/student_point.dart';
 export 'src/db/database.dart';
 
 export 'src/api/api_client.dart';
+export 'src/api/api_errors.dart';
 export 'src/api/api_exception.dart';
 export 'src/api/token_store.dart';
+
+export 'src/state/session_controller.dart';
+export 'src/state/sync_controller.dart';
 
 export 'src/sync/sync_engine.dart';
 export 'src/sync/sync_payload_applier.dart';

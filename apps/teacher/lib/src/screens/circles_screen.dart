@@ -45,7 +45,7 @@ class CirclesScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          const SyncBar(),
+          const AppSyncBar(),
           const Divider(height: 1),
           Expanded(child: _body(context, teacherUuid, snapshot?.courseName)),
         ],

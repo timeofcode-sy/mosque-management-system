@@ -22,7 +22,7 @@ class SessionsLogScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('سجل الجلسات')),
       body: Column(
         children: [
-          const SyncBar(),
+          const AppSyncBar(),
           const Divider(height: 1),
           Expanded(
             child: teacherUuid == null

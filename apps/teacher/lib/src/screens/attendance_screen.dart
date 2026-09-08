@@ -56,7 +56,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       ),
       body: Column(
         children: [
-          const SyncBar(),
+          const AppSyncBar(),
           const Divider(height: 1),
           Expanded(
             child: StreamBuilder<SessionView>(

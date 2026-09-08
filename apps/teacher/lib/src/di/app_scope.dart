@@ -3,8 +3,6 @@ import 'package:mousqe_core/mousqe_core.dart';
 
 import '../config.dart';
 import '../data/teacher_repository.dart';
-import '../state/session_controller.dart';
-import '../state/sync_controller.dart';
 
 /// اعتماديات التطبيق، مبنيّةً مرّةً عند الإقلاع.
 ///
@@ -58,6 +56,8 @@ class AppDependencies {
       apiClient: apiClient,
       tokenStore: tokenStore,
       deviceUuid: deviceUuid,
+      app: AppConfig.app,
+      appLabel: AppConfig.label,
     );
 
     return AppDependencies(
@@ -69,8 +69,9 @@ class AppDependencies {
       session: session,
       sync: SyncController(
         engine: syncEngine,
-        repository: repository,
         session: session,
+        // مسودّةُ الأستاذ تُنظَّف بعد كل دورةٍ تستقرّ — خطافٌ لا يعرفه المحرّك.
+        onSettled: repository.clearSettledDrafts,
       ),
     );
   }

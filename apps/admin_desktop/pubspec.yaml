@@ -1,0 +1,35 @@
+name: mousqe_admin_desktop
+description: >
+  تطبيق المشرف ومدير المعهد لويندوز — سطحٌ مكافئٌ للوحة، يعمل أوف-لاين
+  ويتزامن عبر mousqe_core.
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.27.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  mousqe_core: ^0.1.0
+  mousqe_ui: ^0.1.0
+  drift: ^2.22.1
+  path: ^1.9.0
+  path_provider: ^2.1.5
+  window_manager: ^0.5.1
+  intl: ^0.20.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  # حمولاتُ العميل المُقلَّد في الاختبارات تُبنى بأنواع dio/retrofit مباشرةً.
+  dio: ^5.7.0
+  retrofit: ^4.4.1
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true

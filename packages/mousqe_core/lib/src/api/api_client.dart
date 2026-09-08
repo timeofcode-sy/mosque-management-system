@@ -6,12 +6,24 @@ import 'token_store.dart';
 
 part 'api_client.g.dart';
 
+/// ترويسةُ مبدّل المعاهد — نظير `App\Support\ApiScope::HEADER`.
+///
+/// الخادمُ بلا جلسة، فالمعهدُ العامل يُحمَل في كل طلب لا يُثبَّت مرّةً عنده: جهازان
+/// لنفس الحساب يعملان في معهدين في آنٍ واحد بلا أن يزيح أحدُهما الآخر
+/// ([API.md §4](../../../../../docs/API.md)).
+const String instituteHeader = 'X-Institute';
+
+/// يقرأ uuid المعهد العامل لحظةَ الطلب — دالّةٌ لا قيمةٌ ثابتة، فمبدّلُ المعاهد
+/// يبدّل وجهةَ الطلبات التالية بلا إعادةِ بناء العميل ومعترضاته.
+typedef InstituteUuidReader = String? Function();
+
 /// يحقن التوكن من [TokenStore] في كل طلب، ويترجم استجابات الخطأ إلى
 /// [ApiException] مصنَّفة — [API.md §5](../../../../docs/API.md).
 class _AuthInterceptor extends Interceptor {
-  _AuthInterceptor(this._tokenStore);
+  _AuthInterceptor(this._tokenStore, this._instituteUuid);
 
   final TokenStore _tokenStore;
+  final InstituteUuidReader? _instituteUuid;
 
   @override
   Future<void> onRequest(
@@ -22,6 +34,14 @@ class _AuthInterceptor extends Interceptor {
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
     }
+
+    // تُحذف الترويسةُ ولا تُرسَل فارغة: ترويسةٌ فارغة تعني «معهدٌ لم يُعثر عليه»
+    // فيردّ الخادمُ 403، بينما غيابُها يعني «معهدي الأصلي» وهو المقصود.
+    final instituteUuid = _instituteUuid?.call();
+    if (instituteUuid != null && instituteUuid.isNotEmpty) {
+      options.headers[instituteHeader] = instituteUuid;
+    }
+
     handler.next(options);
   }
 
@@ -75,10 +95,11 @@ abstract class ApiClient {
     required TokenStore tokenStore,
     required String baseUrl,
     Dio? dio,
+    InstituteUuidReader? instituteUuid,
   }) {
     final client = dio ?? Dio();
     client.options.baseUrl = baseUrl;
-    client.interceptors.add(_AuthInterceptor(tokenStore));
+    client.interceptors.add(_AuthInterceptor(tokenStore, instituteUuid));
     return ApiClient(client, baseUrl: baseUrl);
   }
 

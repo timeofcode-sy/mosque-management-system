@@ -116,6 +116,57 @@ class MousqeTheme {
     );
   }
 
+  /// من ثلاثة ألوان **قد تكون غائبة** — لقطةٌ لم تصل بعد، أو معهدٌ بلا ألوان.
+  ///
+  /// الغائبُ يسقط إلى لوحة `design-tokens.json` لوناً لوناً لا دفعةً واحدة، فمعهدٌ
+  /// ضبط لونين وترك ثالثاً يبقى بلونيه.
+  static ThemeData fromHexes({
+    String? primary,
+    String? secondary,
+    String? surface,
+  }) {
+    return fromColors(
+      primary: primary ?? defaultPrimary,
+      secondary: secondary ?? defaultSecondary,
+      surface: surface ?? defaultSurface,
+    );
+  }
+
+  /// نفسُ الهوية بمقاسات مكتب: الفأرةُ أدقّ من الإصبع، والشاشةُ أعرض.
+  ///
+  /// الأزرارُ 52 بكسل ارتفاعاً مقاسُ إبهام على هاتف؛ على شاشةٍ فيها عشرون حقلاً
+  /// تصير جداراً. وما عدا المقاسات يبقى كما هو — اللونُ والخطُّ والحدُّ واحدٌ في
+  /// السطحين، فلا يبدو البرنامجان من بيتين.
+  static ThemeData forDesktop(ThemeData base) {
+    return base.copyWith(
+      visualDensity: VisualDensity.compact,
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(0, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          textStyle: const TextStyle(
+            fontFamily: 'IBM Plex Sans Arabic',
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(0, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          side: BorderSide(color: base.colorScheme.outline),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      ),
+    );
+  }
+
   static ThemeData _build(ColorScheme colorScheme) {
     return ThemeData(
       useMaterial3: true,
