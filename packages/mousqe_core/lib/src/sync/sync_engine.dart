@@ -59,8 +59,15 @@ class SyncEngine {
   /// بند 2 و5 — الدفع: يرسل كل المعلَّق، ويحذف من الطابور ما ورد في `applied`
   /// أو `skipped` فقط. استثناء الشبكة أثناء الاستجابة **لا يمسح شيئاً** —
   /// الباقي يُعاد إرساله في المحاولة التالية بنفس `op_uuid`.
+  ///
+  /// 🔄 م.6.2 — **المرفوضةُ تُعزَل ولا تُرسَل ثانيةً.** الخادم صار يردّ ما رفضه في
+  /// `failed[]` بدل أن يُسقط الدفعة كلَّها (م.6.1)، وكان العميل يتجاهل الحقل
+  /// فيعيد إرسالها كلَّ دورة بلا أن يعرف بها صاحبُ الجهاز. صارت تُوسَم برسالتها
+  /// وتخرج من الإرسال، فلا هي كتابةٌ ضائعة ولا ضجيجٌ لن ينجح
+  /// ([SYNC-PROTOCOL.md §3] البند 4).
   Future<void> push() async {
     final pending = await (_db.select(_db.pendingOperations)
+          ..where((t) => t.failedReason.isNull())
           ..orderBy([(t) => OrderingTerm.asc(t.sequence)]))
         .get();
 
@@ -96,13 +103,56 @@ class SyncEngine {
 
     final applied = (body['applied'] as List<dynamic>? ?? []).cast<String>();
     final skipped = (body['skipped'] as List<dynamic>? ?? []).cast<String>();
+    final failed = (body['failed'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
     final confirmed = {...applied, ...skipped};
 
-    if (confirmed.isEmpty) {
-      return;
-    }
+    await _db.transaction(() async {
+      if (confirmed.isNotEmpty) {
+        await (_db.delete(_db.pendingOperations)..where((t) => t.opUuid.isIn(confirmed))).go();
+      }
 
-    await (_db.delete(_db.pendingOperations)..where((t) => t.opUuid.isIn(confirmed))).go();
+      for (final row in failed) {
+        final opUuid = row['op_uuid'] as String?;
+        if (opUuid == null) {
+          continue;
+        }
+
+        await (_db.update(_db.pendingOperations)..where((t) => t.opUuid.equals(opUuid))).write(
+          PendingOperationsCompanion(
+            failedReason: Value(row['message'] as String? ?? 'رفض الخادم هذه العملية.'),
+            failedAt: Value(DateTime.now()),
+          ),
+        );
+      }
+    });
+  }
+
+  /// العملياتُ المعزولة — يقرؤها شريطُ المزامنة ليعرضها لصاحب الجهاز، متدفّقةً.
+  Stream<List<PendingOperation>> watchFailedOperations() {
+    return (_db.select(_db.pendingOperations)
+          ..where((t) => t.failedReason.isNotNull())
+          ..orderBy([(t) => OrderingTerm.asc(t.sequence)]))
+        .watch();
+  }
+
+  /// إعادةُ محاولةٍ **بقرار صاحب الجهاز** — يرفع العزلَ فتعود العملية إلى الدفع
+  /// بنفس `op_uuid`، وموضعُها في الطابور محفوظٌ بـ`sequence` فلا تسبق ما بُني
+  /// عليها. تُستعمل بعد أن يُصلَح سببُ الرفض من سطحٍ آخر (حلقةٌ أُنشئت، دورٌ أُسند).
+  Future<void> retryFailed([String? opUuid]) async {
+    final query = _db.update(_db.pendingOperations)
+      ..where((t) => opUuid == null ? t.failedReason.isNotNull() : t.opUuid.equals(opUuid));
+
+    await query.write(const PendingOperationsCompanion(
+      failedReason: Value(null),
+      failedAt: Value(null),
+    ));
+  }
+
+  /// التخلّي عن عمليةٍ معزولة — **الطريق الوحيد لحذفها**، وهو قرارٌ بشري صريح.
+  Future<void> discardFailed(String opUuid) async {
+    await (_db.delete(_db.pendingOperations)
+          ..where((t) => t.opUuid.equals(opUuid) & t.failedReason.isNotNull()))
+        .go();
   }
 
   /// بند 3 و6 — السحب: يكرّر `sync/pull` حتى تعود `changes` فارغة، ويطبّق كل
@@ -142,10 +192,16 @@ class SyncEngine {
     await pull();
   }
 
-  /// عددُ العمليات المعلَّقة، متدفّقاً — يغذّي مؤشّر المزامنة في الشاشات.
+  /// عددُ العمليات المنتظرة الإرسال، متدفّقاً — يغذّي مؤشّر المزامنة في الشاشات.
+  ///
+  /// 🔄 م.6.2: **بلا المعزولة.** «٣ عمليات بانتظار المزامنة» رقمٌ ينتظر صاحبُه أن
+  /// يبلغ صفراً؛ ولو حُسبت فيه المعزولةُ لَبقي عالقاً بلا سبب ظاهر — وهي لها
+  /// عدّادُها ورسالتُها ([watchFailedOperations]).
   Stream<int> watchPendingCount() {
     final total = _db.pendingOperations.opUuid.count();
-    final query = _db.selectOnly(_db.pendingOperations)..addColumns([total]);
+    final query = _db.selectOnly(_db.pendingOperations)
+      ..addColumns([total])
+      ..where(_db.pendingOperations.failedReason.isNull());
 
     return query.watchSingle().map((row) => row.read(total) ?? 0);
   }

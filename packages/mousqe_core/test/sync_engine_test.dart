@@ -100,6 +100,95 @@ void main() {
     });
   });
 
+  // ── عزلُ العملية المرفوضة ✅ م.6.2 — [SYNC-PROTOCOL.md §3] البند 4 ───────────
+  group('failed[]', () {
+    test('a rejected operation is quarantined, not deleted and not resent', () async {
+      final poison = await engine.enqueue('attendance.session.complete', {'session_uuid': 's-gone'});
+      final good = await engine.enqueue('points.award', {'student_uuid': 'stu-1'});
+
+      when(() => api.syncPush(any())).thenAnswer(
+        (_) async => _response({
+          'applied': [good],
+          'skipped': <String>[],
+          'failed': [
+            {'op_uuid': poison, 'message': 'صفٌّ تقصده العملية غير موجود في هذا المعهد.'},
+          ],
+        }),
+      );
+
+      await engine.push();
+
+      // لا تُحذف: حذفُها ضياعُ كتابةٍ لم يعرف بها صاحبُها.
+      final row = await (db.select(db.pendingOperations)..where((t) => t.opUuid.equals(poison))).getSingle();
+      expect(row.failedReason, 'صفٌّ تقصده العملية غير موجود في هذا المعهد.');
+      expect(row.failedAt, isNotNull);
+
+      // ولا تُرسَل ثانيةً: دفعةٌ تالية بلا معلَّقٍ سليم لا تلمس الشبكة أصلاً.
+      await engine.push();
+      verify(() => api.syncPush(any())).called(1);
+    });
+
+    test('the pending counter ignores what is quarantined', () async {
+      final poison = await engine.enqueue('attendance.take', {'session_uuid': 's-gone'});
+
+      when(() => api.syncPush(any())).thenAnswer(
+        (_) async => _response({
+          'applied': <String>[],
+          'skipped': <String>[],
+          'failed': [
+            {'op_uuid': poison, 'message': 'الجلسة مقفلة.'},
+          ],
+        }),
+      );
+
+      await engine.push();
+
+      // «٣ عمليات بانتظار المزامنة» رقمٌ ينتظر صاحبُه أن يبلغ صفراً — والمعزولةُ
+      // لها عدّادُها ورسالتُها.
+      expect(await engine.watchPendingCount().first, 0);
+      expect(await engine.watchFailedOperations().first, hasLength(1));
+    });
+
+    test('a human decision either retries it or throws it away', () async {
+      final poison = await engine.enqueue('student.save', {'uuid': 'stu-9'});
+
+      when(() => api.syncPush(any())).thenAnswer(
+        (_) async => _response({
+          'applied': <String>[],
+          'skipped': <String>[],
+          'failed': [
+            {'op_uuid': poison, 'message': 'لا تملك صلاحية «students.manage».'},
+          ],
+        }),
+      );
+      await engine.push();
+
+      // إعادةُ المحاولة ترفع العزل — بنفس op_uuid، فالخادم يبقى مانعاً للتكرار.
+      await engine.retryFailed(poison);
+      expect(await engine.watchPendingCount().first, 1);
+      expect(await engine.watchFailedOperations().first, isEmpty);
+
+      await engine.push();
+      final row = await (db.select(db.pendingOperations)..where((t) => t.opUuid.equals(poison))).getSingle();
+      expect(row.failedReason, isNotNull);
+
+      // والتخلّي عنها هو الطريق الوحيد لحذفها.
+      await engine.discardFailed(poison);
+      expect(await db.select(db.pendingOperations).get(), isEmpty);
+    });
+
+    test('an old server that never sends failed[] keeps working unchanged', () async {
+      final opUuid = await engine.enqueue('points.award', {'student_uuid': 'stu-1'});
+
+      when(() => api.syncPush(any()))
+          .thenAnswer((_) async => _response({'applied': [opUuid], 'skipped': <String>[]}));
+
+      await engine.push();
+
+      expect(await db.select(db.pendingOperations).get(), isEmpty);
+    });
+  });
+
   group('pull', () {
     test('repeats until an empty page is returned', () async {
       var call = 0;

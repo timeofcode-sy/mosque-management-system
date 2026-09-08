@@ -2,11 +2,18 @@
 
 namespace App\Actions;
 
+use App\Enums\ExcuseStatus;
 use App\Enums\SyncOperation;
+use App\Models\AbsenceExcuse;
 use App\Models\AttendanceSession;
 use App\Models\ChangeLog;
 use App\Models\CourseCircle;
+use App\Models\CurriculumItem;
+use App\Models\CustomField;
+use App\Models\Enrollment;
+use App\Models\Institute;
 use App\Models\MemorizationLog;
+use App\Models\PersonalTrait;
 use App\Models\Student;
 use App\Models\StudentPoint;
 use App\Models\SyncDevice;
@@ -19,6 +26,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\UnauthorizedException;
 use RuntimeException;
 use Throwable;
 
@@ -53,10 +61,29 @@ class SyncPush
         private readonly DeleteRecitation $deleteRecitation,
         private readonly AwardStudentPoints $awardPoints,
         private readonly DeleteStudentPoints $deletePoints,
+        private readonly SaveStudentRegistration $saveStudent,
+        private readonly EnrollStudent $enrollStudent,
+        private readonly TransferStudent $transferStudent,
+        private readonly ReviewAbsenceExcuse $reviewExcuse,
         private readonly RecordChange $recordChange,
         private readonly ResolveAttendanceConflicts $resolveConflicts,
         private readonly SyncRecorder $recorder,
     ) {}
+
+    /**
+     * أعمدةُ استمارة الطالب التي يقبلها `student.save` — نفسُ ما ترسله شاشةُ
+     * الاستمارة، مكتوبةً هنا لأن الحمولة تصل من جهازٍ لا من نموذجٍ مُتحقَّق منه:
+     * ما ليس في هذه القائمة لا يُسنَد.
+     *
+     * @var array<int, string>
+     */
+    private const STUDENT_ATTRIBUTES = [
+        'registration_no', 'registration_date', 'registration_date_hijri', 'status',
+        'first_name', 'father_name', 'family_name', 'birth_date', 'birth_place', 'gender',
+        'national_id', 'grade_level', 'student_job', 'phone',
+        'permanent_address', 'current_address', 'family_members_count',
+        'student_health_status', 'family_health_status', 'notes',
+    ];
 
     /**
      * @param  array<int, array{op_uuid: string, type: string, course_circle_uuid?: string, session_date?: string, attendances?: array<int, array{student_uuid: string, status: string, late_minutes?: int|null, note?: string|null}>, student_uuid?: string, from_date?: string, to_date?: string, reason?: string}>  $operations
@@ -132,18 +159,55 @@ class SyncPush
      */
     private function apply(array $op, User $user, int $instituteId, ?string $deviceUuid): ?Model
     {
+        $this->assertPermitted($op, $user);
+
         return match ($op['type'] ?? null) {
             'attendance.session.open' => $this->applyOpenSession($op, $user, $instituteId),
             'attendance.take' => $this->applyTakeAttendance($op, $user, $instituteId, $deviceUuid),
             'attendance.teacher.take' => $this->applyTakeTeacherAttendance($op, $user, $instituteId),
             'attendance.session.complete' => $this->applyCompleteSession($op, $user, $instituteId),
             'excuse.submit' => $this->applySubmitExcuse($op, $user, $instituteId),
+            'excuse.review' => $this->applyReviewExcuse($op, $user, $instituteId),
             'recitation.save' => $this->applySaveRecitation($op, $user, $instituteId),
             'recitation.delete' => $this->applyDeleteRecitation($op, $instituteId),
             'points.award' => $this->applyAwardPoints($op, $user, $instituteId),
             'points.delete' => $this->applyDeletePoints($op, $instituteId),
+            'student.save' => $this->applySaveStudent($op, $instituteId),
+            'enrollment.save' => $this->applyEnrollStudent($op, $instituteId),
+            'student.transfer' => $this->applyTransferStudent($op, $user, $instituteId),
             default => throw new RuntimeException("نوع عملية غير معروف: {$op['type']}"),
         };
+    }
+
+    /**
+     * الصلاحية التي يتطلّبها نوعُ العملية — ✅ م.6.2.
+     *
+     * كان الطابور مفتوحاً لكل حاملِ `sync.push`: الأستاذ يملكها ليتفقّد، فكان
+     * يملك بها — نظرياً — أن يصفّ تسجيلَ طالب لو عرف اسم النوع. وحراسةُ اللوحة
+     * على الشاشات وحدها لا تُغني: الطلبُ يصل الخادم كيفما بُنيت الواجهة (نفسُ
+     * حجّة AssignUserRole).
+     *
+     * والرفضُ يقع في `failed[]` لا 403 على الدفعة: عمليةٌ واحدة لا يحقّها صاحبُ
+     * الجهاز لا تُسقط تفقُّدَ يومٍ معها (§3 البند 4 في [SYNC-PROTOCOL.md]).
+     *
+     * @param  array<string, mixed>  $op
+     */
+    private function assertPermitted(array $op, User $user): void
+    {
+        $required = match ($op['type'] ?? null) {
+            // التصحيحُ الرجعي فعلٌ مقصود لا سهو، وهو ما يميّز الديسكتوب من تطبيق
+            // الأستاذ ([APPS-FEATURES.md §4.2] البند 1) — فيُحرَس على الخادم أيضاً.
+            'attendance.take' => ($op['amend'] ?? false) ? 'attendance.amend' : null,
+            'student.save' => 'students.manage',
+            'enrollment.save' => 'enrollments.manage',
+            'student.transfer' => 'transfers.manage',
+            'excuse.review' => 'excuses.review',
+            default => null,
+        };
+
+        if ($required !== null && ! $user->can($required)) {
+            throw new UnauthorizedException("لا تملك صلاحية «{$required}» التي تتطلّبها هذه العملية.");
+        }
     }
 
     /**
@@ -323,6 +387,195 @@ class SyncPush
             'note' => $op['note'] ?? null,
             'awarded_on' => $op['awarded_on'] ?? null,
         ], $user, $session);
+    }
+
+    /**
+     * تسجيلُ طالبٍ أو تحريرُ استمارته من جهازٍ أوف-لاين — ✅ م.6.2.
+     *
+     * المعرّفُ مفتاحُ الحسم كما في م.5.4: `uuid` يولّده العميل، فصفٌّ قائم في
+     * المعهد ⇒ تحريرٌ في مكانه، ولا صفَّ ⇒ إنشاءٌ **يحمل معرّفَ العميل**. وبهذا
+     * يصفّ الجهازُ تسجيلَ الطالب ثم تسجيلَه في حلقةٍ في **نفس الدفعة**، بلا انتظار
+     * معرّفٍ من الخادم.
+     *
+     * والمراجعُ كلُّها بالـ`uuid` لا بالمفتاح الأساسي: الصفاتُ وبنودُ المناهج
+     * والواصفاتُ تصل الجهازَ في `sync/pull` بمعرّفاتها العالمية وحدها، ولا يعرف
+     * أرقامَها الداخلية أصلاً.
+     *
+     * @param  array<string, mixed>  $op
+     */
+    private function applySaveStudent(array $op, int $instituteId): Student
+    {
+        $institute = Institute::findOrFail($instituteId);
+        $uuid = $op['uuid'] ?? null;
+        $existing = $this->studentByUuid($uuid, $instituteId);
+
+        $student = $existing ?? (blank($uuid) ? null : (new Student)->forceFill(['uuid' => $uuid]));
+
+        $attributes = array_intersect_key(
+            (array) ($op['student'] ?? []),
+            array_flip(self::STUDENT_ATTRIBUTES),
+        );
+
+        return $this->saveStudent->handle(
+            institute: $institute,
+            attributes: $attributes,
+            student: $student,
+            guardians: (array) ($op['guardians'] ?? []),
+            traitIds: $this->traitIds((array) ($op['trait_uuids'] ?? []), $instituteId),
+            memorizedItemIds: $this->curriculumItemIds((array) ($op['memorized_item_uuids'] ?? []), $instituteId),
+            customFieldValues: $this->customFieldValues((array) ($op['custom_fields'] ?? []), $instituteId),
+            courseCircleId: blank($op['course_circle_uuid'] ?? null)
+                ? null
+                : $this->courseCircle($op['course_circle_uuid'], $instituteId)->id,
+        );
+    }
+
+    /**
+     * تسجيلُ طالبٍ في حلقةٍ ضمن الدورة — ✅ م.6.2، فوق EnrollStudent نفسِه الذي
+     * تستدعيه اللوحة (تسجيلٌ واحد لكل دورة، والطاقةُ الاستيعابية تُحترم).
+     *
+     * @param  array<string, mixed>  $op
+     */
+    private function applyEnrollStudent(array $op, int $instituteId): Enrollment
+    {
+        return $this->enrollStudent->handle(
+            $this->student($op['student_uuid'], $instituteId),
+            $this->courseCircle($op['course_circle_uuid'], $instituteId),
+            $op['enrolled_on'] ?? null,
+        );
+    }
+
+    /**
+     * نقلُ طالبٍ بين حلقتين في الدورة نفسها — ✅ م.6.2. التسجيلُ القديم يُغلق
+     * «منقولاً» ولا يُحذف، فيبقى حضورُه مقروءاً (TransferStudent).
+     *
+     * @param  array<string, mixed>  $op
+     */
+    private function applyTransferStudent(array $op, User $user, int $instituteId): Enrollment
+    {
+        return $this->transferStudent->handle(
+            $this->student($op['student_uuid'], $instituteId),
+            $this->courseCircle($op['to_course_circle_uuid'], $instituteId),
+            $op['reason'] ?? null,
+            $user,
+            $op['transferred_on'] ?? null,
+        );
+    }
+
+    /**
+     * البتُّ في إذن غياب — ✅ م.6.2، وهي الفجوةُ المسمّاة في
+     * [APPS-FEATURES.md §4.2] البند 4: كان في الأنواع `excuse.submit` (تقديمٌ) بلا
+     * مراجعة، فكان على المشرف أن يفتح المتصفّح ليقبل إذناً.
+     *
+     * وقبولُ الإذن يحوّل غيابَ الجلسات غيرِ المقفلة إلى «مأذون» — أثرٌ في الفعل
+     * نفسِه يستوي فيه السطحان.
+     *
+     * @param  array<string, mixed>  $op
+     */
+    private function applyReviewExcuse(array $op, User $user, int $instituteId): AbsenceExcuse
+    {
+        $excuse = AbsenceExcuse::query()
+            ->where('uuid', $op['excuse_uuid'])
+            ->whereHas('student', fn ($query) => $query->where('institute_id', $instituteId))
+            ->firstOrFail();
+
+        $decision = ExcuseStatus::tryFrom((string) ($op['decision'] ?? ''));
+
+        if ($decision === null || $decision === ExcuseStatus::Pending) {
+            throw new RuntimeException('قرارُ المراجعة يجب أن يكون قبولاً أو رفضاً.');
+        }
+
+        return $this->reviewExcuse->handle($excuse, $decision, $user, $op['note'] ?? null);
+    }
+
+    /**
+     * الطالبُ المقصود بـ`student.save`: صفٌّ قائم، أو `null` لمعرّفٍ جديد — و404
+     * لمعرّفٍ يشير إلى طالبٍ في معهدٍ آخر (محاولةُ عبور حاجز، كما في `deletable`).
+     */
+    private function studentByUuid(?string $uuid, int $instituteId): ?Student
+    {
+        if (blank($uuid)) {
+            return null;
+        }
+
+        $student = Student::query()->withTrashed()->where('uuid', $uuid)->first();
+
+        if ($student === null) {
+            return null;
+        }
+
+        if ($student->institute_id !== $instituteId) {
+            throw (new ModelNotFoundException)->setModel(Student::class, [$uuid]);
+        }
+
+        return $student;
+    }
+
+    /**
+     * الصفاتُ الشخصية بمعرّفاتها العالمية — والصفاتُ العامة (بلا معهد) متاحةٌ
+     * للجميع كما في شاشة الاستمارة.
+     *
+     * @param  array<int, string>  $uuids
+     * @return array<int, int>
+     */
+    private function traitIds(array $uuids, int $instituteId): array
+    {
+        if ($uuids === []) {
+            return [];
+        }
+
+        return PersonalTrait::query()
+            ->whereIn('uuid', $uuids)
+            ->where(fn ($query) => $query->whereNull('institute_id')->orWhere('institute_id', $instituteId))
+            ->pluck('id')
+            ->all();
+    }
+
+    /**
+     * @param  array<int, string>  $uuids
+     * @return array<int, int>
+     */
+    private function curriculumItemIds(array $uuids, int $instituteId): array
+    {
+        if ($uuids === []) {
+            return [];
+        }
+
+        return CurriculumItem::query()
+            ->whereIn('uuid', $uuids)
+            ->whereHas('curriculum', fn ($query) => $query
+                ->where(fn ($inner) => $inner->whereNull('institute_id')->orWhere('institute_id', $instituteId)))
+            ->pluck('id')
+            ->all();
+    }
+
+    /**
+     * قيمُ الواصفات المخصّصة: مفتاحُها في الحمولة `uuid` الواصفة، ومفتاحُها في
+     * الفعل معرّفُها الداخلي.
+     *
+     * @param  array<string, mixed>  $values
+     * @return array<int, mixed>
+     */
+    private function customFieldValues(array $values, int $instituteId): array
+    {
+        if ($values === []) {
+            return [];
+        }
+
+        $ids = CustomField::query()
+            ->whereIn('uuid', array_keys($values))
+            ->where('institute_id', $instituteId)
+            ->pluck('id', 'uuid');
+
+        $resolved = [];
+
+        foreach ($values as $uuid => $value) {
+            if ($ids->has($uuid)) {
+                $resolved[$ids->get($uuid)] = $value;
+            }
+        }
+
+        return $resolved;
     }
 
     /**

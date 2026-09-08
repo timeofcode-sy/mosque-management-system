@@ -1,8 +1,10 @@
 <?php
 
+use App\Actions\RunCircleInCourse;
+use App\Actions\SaveCircle;
 use App\Concerns\InteractsWithInstitute;
 use App\Models\Circle;
-use App\Models\CourseCircle;
+use App\Models\Shift;
 use App\Queries\CircleQuery;
 use Flux\Flux;
 use Illuminate\Support\Collection;
@@ -95,9 +97,10 @@ new #[Title('الحلقات')] class extends Component {
             'is_active' => ['boolean'],
         ]);
 
-        Circle::updateOrCreate(
-            ['id' => $this->editingId],
-            [...$validated, 'institute_id' => $this->institute->id],
+        app(SaveCircle::class)->handle(
+            $this->institute,
+            $validated,
+            $this->editingId === null ? null : Circle::find($this->editingId),
         );
 
         unset($this->circles);
@@ -124,13 +127,19 @@ new #[Title('الحلقات')] class extends Component {
             'capacity' => ['nullable', 'integer', 'min:1', 'max:500'],
         ], attributes: ['shift_id' => 'الدوام']);
 
-        CourseCircle::create([
-            'course_id' => $this->currentCourse->id,
-            'circle_id' => $this->runningCircleId,
-            'shift_id' => $validated['shift_id'],
-            'room' => $validated['room'] ?: null,
-            'capacity' => $validated['capacity'] ?: null,
-        ]);
+        try {
+            app(RunCircleInCourse::class)->handle(
+                $this->currentCourse,
+                Circle::findOrFail($this->runningCircleId),
+                Shift::findOrFail($validated['shift_id']),
+                $validated['room'] ?: null,
+                $validated['capacity'] ?: null,
+            );
+        } catch (RuntimeException $exception) {
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
+
+            return;
+        }
 
         unset($this->circles);
         Flux::modal('run-circle')->close();

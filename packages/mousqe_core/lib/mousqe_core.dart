@@ -1,6 +1,7 @@
 library mousqe_core;
 
 export 'src/models/absence_excuse.dart';
+export 'src/models/admin_user.dart';
 export 'src/models/attendance.dart';
 export 'src/models/attendance_session.dart';
 export 'src/models/attendance_settings.dart';

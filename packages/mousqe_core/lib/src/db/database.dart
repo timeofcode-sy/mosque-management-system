@@ -64,8 +64,13 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
+  /// 3 ⇒ 4 (م.6.2): عمودا عزل العملية المرفوضة — `failed_reason` و`failed_at`.
+  /// الخادم صار يردّ المرفوضةَ في `failed[]` بدل أن تُسقط الدفعة معها (م.6.1)،
+  /// وهذا شقُّها في العميل: تُعزَل في الطابور بلا حذفٍ ولا إعادةِ إرسال، وتُعرض
+  /// لصاحب الجهاز — [SYNC-PROTOCOL.md §10] البند 10.
+  ///
   /// 2 ⇒ 3 (م.5.4): مسودّتا التسميع والنقاط — بهما يرى الأستاذ ما سجّله قبل أن
   /// يؤكّده الخادم، فيملك تصحيحَه وحذفَه أوف-لاين.
   ///
@@ -93,6 +98,11 @@ class AppDatabase extends _$AppDatabase {
           if (from < 3) {
             await m.createTable(localRecitations);
             await m.createTable(localPoints);
+          }
+
+          if (from < 4) {
+            await m.addColumn(pendingOperations, pendingOperations.failedReason);
+            await m.addColumn(pendingOperations, pendingOperations.failedAt);
           }
         },
       );

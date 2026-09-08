@@ -2,6 +2,7 @@
 
 use App\Actions\ActivateCourse;
 use App\Actions\CloneCourseCircles;
+use App\Actions\SaveCourse;
 use App\Concerns\InteractsWithInstitute;
 use App\Enums\CourseStatus;
 use App\Models\Course;
@@ -79,9 +80,12 @@ new #[Title('الدورات')] class extends Component {
         ]);
 
         $validated['ends_on'] = $validated['ends_on'] ?: null;
-        $validated['institute_id'] = $this->institute->id;
 
-        Course::updateOrCreate(['id' => $this->editingId], $validated);
+        app(SaveCourse::class)->handle(
+            $this->institute,
+            $validated,
+            $this->editingId === null ? null : Course::find($this->editingId),
+        );
 
         unset($this->courses);
         Flux::modal('course-form')->close();

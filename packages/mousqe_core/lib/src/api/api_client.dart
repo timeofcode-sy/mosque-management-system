@@ -64,7 +64,8 @@ class _AuthInterceptor extends Interceptor {
   }
 }
 
-/// عميل REST على `/api/v1` — نقاط 5.2 الكافية لنطاق تطبيق الأستاذ في 5.3
+/// عميل REST على `/api/v1` — نقاط 5.2 الكافية لنطاق تطبيق الأستاذ في 5.3،
+/// وسطحُ إدارة الديسكتوب مضافاً في م.6.2
 /// ([mousqe_core plan §2.3](../../../../.claude/plans/reactive-sauteeing-island.md)).
 @RestApi()
 abstract class ApiClient {
@@ -105,6 +106,115 @@ abstract class ApiClient {
 
   @POST('/sync/push')
   Future<HttpResponse<dynamic>> syncPush(@Body() Map<String, dynamic> body);
+
+  @GET('/institutes')
+  Future<HttpResponse<dynamic>> institutes();
+
+  @GET('/sync/conflicts')
+  Future<HttpResponse<dynamic>> syncConflicts(@Query('status') String status);
+
+  @POST('/sync/conflicts/{uuid}/resolve')
+  Future<HttpResponse<dynamic>> resolveSyncConflict(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  // ── سطحُ الإدارة ✅ م.6.2 — [API.md §3.10] ───────────────────────────────────
+  // كلُّها REST مباشر لا أنواعَ عملياتٍ في الطابور: حسابٌ ودورٌ وكلمةُ مرور، وبنيةُ
+  // دورةٍ تُهيَّأ مرّةً في الفصل — كتاباتٌ متّصلةٌ بطبعها ([PHASE-6-STAGES.MD §3.1]).
+  // وما يُكتب في المسجد بلا شبكة (تسجيلُ طالب، والتسجيلُ في حلقة، والنقل، ومراجعةُ
+  // الأعذار) يمرّ بـ[SyncEngine.enqueue] لا هنا.
+
+  @PUT('/admin/institute')
+  Future<HttpResponse<dynamic>> updateInstitute(@Body() Map<String, dynamic> body);
+
+  @POST('/admin/institutes')
+  Future<HttpResponse<dynamic>> createInstitute(@Body() Map<String, dynamic> body);
+
+  @PUT('/admin/institutes/{uuid}')
+  Future<HttpResponse<dynamic>> updateInstituteByUuid(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @GET('/admin/roles')
+  Future<HttpResponse<dynamic>> adminRoles();
+
+  @GET('/admin/users')
+  Future<HttpResponse<dynamic>> adminUsers(
+    @Query('q') String? search,
+    @Query('role') String? role,
+    @Query('scope') String? scope,
+  );
+
+  @POST('/admin/users')
+  Future<HttpResponse<dynamic>> inviteUser(@Body() Map<String, dynamic> body);
+
+  @POST('/admin/users/{id}/roles')
+  Future<HttpResponse<dynamic>> assignUserRole(
+    @Path('id') int id,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @DELETE('/admin/users/{id}/roles')
+  Future<HttpResponse<dynamic>> revokeUserRole(
+    @Path('id') int id,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST('/admin/users/{id}/password')
+  Future<HttpResponse<dynamic>> resetUserPassword(
+    @Path('id') int id,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST('/admin/users/{id}/activation')
+  Future<HttpResponse<dynamic>> setUserActivation(
+    @Path('id') int id,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @GET('/admin/credentials')
+  Future<HttpResponse<dynamic>> adminCredentials(
+    @Query('role') String? role,
+    @Query('q') String? search,
+  );
+
+  @POST('/admin/courses')
+  Future<HttpResponse<dynamic>> createCourse(@Body() Map<String, dynamic> body);
+
+  @PUT('/admin/courses/{uuid}')
+  Future<HttpResponse<dynamic>> updateCourse(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST('/admin/courses/{uuid}/activate')
+  Future<HttpResponse<dynamic>> activateCourse(@Path('uuid') String uuid);
+
+  @POST('/admin/shifts')
+  Future<HttpResponse<dynamic>> createShift(@Body() Map<String, dynamic> body);
+
+  @PUT('/admin/shifts/{uuid}')
+  Future<HttpResponse<dynamic>> updateShift(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST('/admin/circles')
+  Future<HttpResponse<dynamic>> createCircle(@Body() Map<String, dynamic> body);
+
+  @PUT('/admin/circles/{uuid}')
+  Future<HttpResponse<dynamic>> updateCircle(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST('/admin/circles/{uuid}/run')
+  Future<HttpResponse<dynamic>> runCircleInCourse(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
 
   @GET('/teacher/circles')
   Future<HttpResponse<dynamic>> teacherCircles();

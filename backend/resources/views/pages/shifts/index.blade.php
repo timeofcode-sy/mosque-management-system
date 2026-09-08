@@ -1,13 +1,12 @@
 <?php
 
+use App\Actions\SaveShift;
 use App\Concerns\InteractsWithInstitute;
 use App\Enums\Weekday;
 use App\Models\Shift;
 use App\Queries\InstituteCatalogQuery;
-use App\Models\ShiftDay;
 use Flux\Flux;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -84,18 +83,12 @@ new #[Title('الدوامات')] class extends Component {
             'weekdays.*' => ['integer', 'between:0,6'],
         ], attributes: ['weekdays' => 'أيام الدوام']);
 
-        DB::transaction(function () use ($validated): void {
-            $shift = Shift::updateOrCreate(
-                ['id' => $this->editingId],
-                [...collect($validated)->except('weekdays')->all(), 'course_id' => $this->currentCourse->id],
-            );
-
-            $shift->days()->delete();
-
-            foreach ($validated['weekdays'] as $weekday) {
-                ShiftDay::create(['shift_id' => $shift->id, 'weekday' => (int) $weekday]);
-            }
-        });
+        app(SaveShift::class)->handle(
+            $this->currentCourse,
+            collect($validated)->except('weekdays')->all(),
+            array_map('intval', $validated['weekdays']),
+            $this->editingId === null ? null : Shift::find($this->editingId),
+        );
 
         unset($this->shifts);
         Flux::modal('shift-form')->close();

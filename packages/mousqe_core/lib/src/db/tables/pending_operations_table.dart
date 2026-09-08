@@ -17,6 +17,18 @@ class PendingOperations extends Table {
   DateTimeColumn get createdAt => dateTime()();
   IntColumn get attempts => integer().withDefault(const Constant(0))();
 
+  /// سببُ رفض الخادم للعملية، أو `null` ما دامت في الطابور — ✅ م.6.2.
+  ///
+  /// العمليةُ التي تعود في `failed[]` **تُعزَل ولا تُحذف ولا يُعاد إرسالُها آلياً**
+  /// ([SYNC-PROTOCOL.md §3](../../../../../docs/SYNC-PROTOCOL.md) البند 4): حذفُها
+  /// ضياعُ كتابةٍ لم يعرف بها صاحبُها، وإعادةُ إرسالها كلَّ دورةٍ ضجيجٌ لن ينجح
+  /// أبداً — نوعٌ مجهول أو صفٌّ من معهدٍ آخر لا يصير مقبولاً بالتكرار. فالحكمُ
+  /// فيها لصاحب الجهاز: يراها برسالتها في شريط المزامنة، ثم يعيد المحاولة أو
+  /// يتخلّى عنها.
+  TextColumn get failedReason => text().nullable()();
+
+  DateTimeColumn get failedAt => dateTime().nullable()();
+
   @override
   Set<Column> get primaryKey => {opUuid};
 }

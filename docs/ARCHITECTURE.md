@@ -93,6 +93,18 @@ mousqe/
 | `recitation.delete` | `DeleteRecitation` | ✅ |
 | `points.award` | `AwardStudentPoints` | ✅ |
 | `points.delete` ✅ م.5.4 | `DeleteStudentPoints` | ✅ |
+| `excuse.review` ✅ م.6.2 | `ReviewAbsenceExcuse` | ✅ `pages::excuses.index` |
+| `student.save` ✅ م.6.2 | `SaveStudentRegistration` | ✅ `pages::students.form` |
+| `enrollment.save` ✅ م.6.2 | `EnrollStudent` | ✅ `pages::circles.show` |
+| `student.transfer` ✅ م.6.2 | `TransferStudent` | ✅ |
+
+✅ **م.6.2: سطحُ الإدارة مرَّ بالباب نفسه — REST هذه المرّة.** نقاطُ `/admin/*`
+([API.md §3.10](API.md)) أغلفةٌ فوق أفعالٍ قائمة (`InviteUser` · `AssignUserRole` · `RevokeUserRole` ·
+`ChangeUserPassword` · `ToggleUserActivation` · `CreateInstitute`) بلا سطرِ منطقٍ جديد. وأربعةُ
+أفعالٍ **أُخرجت** من شاشات اللوحة التي كانت تكتب النماذجَ مباشرةً — `SaveCourse` · `SaveShift` ·
+`SaveCircle` · `RunCircleInCourse` — **فصارت الشاشاتُ تستدعيها هي أيضاً**، وإلا كان للدورة الواحدة
+كاتبان يفترقان عند أوّل تعديل. وهو الفرعُ الثالث في الرسم أدناه («REST مباشر») مشتغلاً لأوّل مرّة
+بحجمٍ يُذكر.
 
 ✅ **م.5.4: التصحيح مرَّ بالباب نفسه.** `recitation.save` و`points.award` صارتا تقبلان `uuid`
 يولّده العميل: معرّفٌ قائم ⇒ تصحيحٌ في مكانه، لا نوعَ عمليةٍ ثالثاً ولا فعلاً موازياً
