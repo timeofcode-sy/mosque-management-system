@@ -11,6 +11,7 @@ use App\Queries\TeacherCircleQuery;
 use App\Support\ApiScope;
 use App\Support\AttendanceSettings;
 use App\Support\InstituteTheme;
+use App\Support\PointsSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -52,6 +53,14 @@ class BootstrapController extends Controller
                 'theme' => InstituteTheme::for($institute)->toArray(),
                 // ما يحتاجه العميل ليحسب دقائق التأخير محلياً قبل أن يؤكّدها الخادم.
                 'attendance' => AttendanceSettings::for($institute)->toArray(),
+                // 🔄 م.6.6: وما يحتاجه ليحسب **نقاط الحضور** في تقرير النقاط.
+                //
+                // نفسُ حجّة الحقل الذي فوقه حرفياً: الإحصاءات المشتقّة يحسبها العميل
+                // محلياً ([SYNC-PROTOCOL.md §7])، وثوابتُ الحساب في institutes.settings
+                // وهو جدولٌ **لا يُزامَن**. فكانت أعمدةُ الحضور في تقرير النقاط تُحسب
+                // بافتراضيّ الحزمة لا بقيم المعهد، فيختلف رقمُ التقرير المطبوع من
+                // الديسكتوب عن رقم اللوحة في معهدٍ عدّل نقاطَه — وهو اختلافٌ صامت.
+                'points' => PointsSettings::for($institute)->toArray(),
             ],
             'course' => $course === null ? null : [
                 'uuid' => $course->uuid,

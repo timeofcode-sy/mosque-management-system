@@ -76,6 +76,8 @@ void main() {
       students: StudentRepository(db: db, syncEngine: engine),
       catalog: CatalogRepository(db: db, apiClient: api),
       admin: AdminRepository(apiClient: api),
+      stats: StatsRepository(db: db),
+      conflicts: ConflictRepository(apiClient: api),
     );
 
     await session.restore();

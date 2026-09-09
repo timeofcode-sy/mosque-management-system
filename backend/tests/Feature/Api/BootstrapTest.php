@@ -41,6 +41,34 @@ class BootstrapTest extends TestCase
         $this->assertContains($courseCircle->uuid, collect($response->json('circles'))->pluck('uuid')->all());
     }
 
+    /**
+     * ✅ م.6.6 — ثوابتُ حساب النقاط تصل في اللقطة.
+     *
+     * institutes.settings جدولٌ **لا يُزامَن** (SYNC-PROTOCOL.md §7)، والإحصاءُ
+     * المشتقُّ يحسبه العميل. فتقريرُ النقاط في الديسكتوب يجمع أعمدةَ الحضور
+     * بقيمِ المعهد — ولولا حملُها هنا لَحسبها بافتراضيّات الحزمة، فاختلف الرقمُ
+     * المطبوع من الجهاز عن رقم اللوحة في كل معهدٍ عدّل نقاطَه. وهو اختلافٌ
+     * **صامت**: لا خطأ يُرمى، ولا يعرف القارئُ أيَّ الرقمين يصدّق.
+     */
+    public function test_bootstrap_carries_the_institutes_points_settings(): void
+    {
+        $this->institute->update(['settings' => ['points' => ['attendance' => ['present' => 7, 'late' => 3]]]]);
+
+        $this->actingAsTeacher($this->institute);
+
+        $response = $this->getJson('/api/v1/bootstrap');
+
+        $response->assertOk();
+        // والأرقامُ الصحيحة تخرج في JSON بلا كسر (json_encode(7.0) === '7')،
+        // ولذلك يقرأ العميلُ `num` لا `double` — [PointsSettings.fromJson].
+        $response->assertJsonPath('institute.points.attendance.present', 7);
+        $response->assertJsonPath('institute.points.attendance.late', 3);
+        // وما لم يضبطه المعهد يعود بافتراضيّ PointsSettings::DEFAULTS لا بصفر:
+        // القيمةُ الغائبة «لم تُعدَّل» لا «أُلغيت».
+        $response->assertJsonPath('institute.points.attendance.absent', 0);
+        $response->assertJsonPath('institute.points.quran_per_15_lines', 10);
+    }
+
     public function test_bootstrap_returns_no_circles_for_a_non_teacher_account(): void
     {
         $user = User::factory()->create();

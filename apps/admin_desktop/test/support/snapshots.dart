@@ -67,6 +67,9 @@ Map<String, dynamic> bootstrapBody({
   String role = 'supervisor',
   String instituteUuid = 'ins-1',
   String instituteName = 'معهد النور',
+  // ✅ م.6.6 — ثوابتُ حساب النقاط. `institutes.settings` جدولٌ لا يُزامَن،
+  // فقيمُه تصل في اللقطة وحدها ويحسب بها الجهازُ أعمدةَ الحضور في تقرير النقاط.
+  Map<String, dynamic>? points,
 }) => {
       'user': {
         'name': 'سعيد بن أحمد',
@@ -84,6 +87,7 @@ Map<String, dynamic> bootstrapBody({
           'surface': '#F7F3EA',
         },
         'attendance': {'late_grace_minutes': 5},
+        'points': ?points,
       },
       'course': {'uuid': 'crs-1', 'name': 'دورة 1447'},
       'circles': <Map<String, dynamic>>[],

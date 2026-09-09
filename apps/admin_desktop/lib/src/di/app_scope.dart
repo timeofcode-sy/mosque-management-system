@@ -27,6 +27,8 @@ class AppDependencies {
     required this.students,
     required this.catalog,
     required this.admin,
+    required this.stats,
+    required this.conflicts,
   });
 
   final AppDatabase db;
@@ -55,6 +57,21 @@ class AppDependencies {
   final CatalogRepository catalog;
 
   final AdminRepository admin;
+
+  /// ✅ م.6.6 — والقناتان الأخيرتان في جدول القراءة والكتابة:
+  ///
+  /// | | يقرأ | يكتب | أوف-لاين |
+  /// |---|---|---|---|
+  /// | [stats] | drift | **لا يكتب** | ✓ |
+  /// | [conflicts] | الشبكة | REST | ✗ |
+  ///
+  /// و[stats] كائنُ قراءةٍ صرف: الإحصاءُ **مشتقٌّ يُحسب** لا صفٌّ يُنقَل
+  /// ([SYNC-PROTOCOL.md §7](../../../../../docs/SYNC-PROTOCOL.md))، فليس له ما
+  /// يكتبه أصلاً. و[conflicts] نظيرُ [admin] في أنه لا مخزنَ له: `sync_conflicts`
+  /// جدولٌ لا يُزامَن، فما لا يصل في `sync/pull` يُقرأ من الشبكة.
+  final StatsRepository stats;
+
+  final ConflictRepository conflicts;
 
   static Future<AppDependencies> create({
     AppDatabase? database,
@@ -119,6 +136,8 @@ class AppDependencies {
       students: students,
       catalog: CatalogRepository(db: db, apiClient: apiClient),
       admin: AdminRepository(apiClient: apiClient),
+      stats: StatsRepository(db: db),
+      conflicts: ConflictRepository(apiClient: apiClient),
     );
   }
 

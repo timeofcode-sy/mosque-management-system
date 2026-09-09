@@ -21,6 +21,11 @@ dependencies:
   path_provider: ^2.1.5
   window_manager: ^0.5.1
   intl: ^0.20.3
+  # ✅ م.6.6 — التقارير تُبنى وتُطبع **من الجهاز** لا من الخادم، فتخرج والشبكةُ
+  # مقطوعة ([CLIENTS.md §4]). و`pdf` دارتٌ صرف يبني المستند، و`printing` وصلةُ
+  # ويندوز إلى حوار الطباعة والحفظ.
+  pdf: ^3.11.1
+  printing: ^5.13.4
 
 dev_dependencies:
   flutter_test:
@@ -30,6 +35,9 @@ dev_dependencies:
   dio: ^5.7.0
   retrofit: ^4.4.1
   mocktail: ^1.0.4
+  # شاشةُ النسخ الاحتياطي تسأل عن مجلّد المستندات، وتنفيذُه على ويندوز دارتٌ
+  # صرف (win32 FFI) لا قناةَ طرائقَ تُقلَّد — فيُبدَّل الكائنُ نفسُه في الاختبار.
+  path_provider_platform_interface: ^2.1.2
 
 flutter:
   uses-material-design: true

@@ -14,16 +14,22 @@ export 'src/models/institute.dart';
 export 'src/models/institute_theme.dart';
 export 'src/models/recitation.dart';
 export 'src/models/student.dart';
+export 'src/models/points_settings.dart';
 export 'src/models/student_point.dart';
+export 'src/models/sync_conflict.dart';
 
 export 'src/db/database.dart';
+export 'src/db/database_backup.dart';
 
 export 'src/data/admin_repository.dart';
 export 'src/data/admin_views.dart';
 export 'src/data/catalog_repository.dart';
 export 'src/data/circle_repository.dart';
 export 'src/data/circle_views.dart';
+export 'src/data/conflict_repository.dart';
 export 'src/data/labels.dart';
+export 'src/data/stats_repository.dart';
+export 'src/data/stats_views.dart';
 export 'src/data/student_repository.dart';
 
 export 'src/api/api_client.dart';
@@ -37,6 +43,7 @@ export 'src/state/sync_controller.dart';
 export 'src/sync/sync_engine.dart';
 export 'src/sync/sync_payload_applier.dart';
 
+export 'src/support/attendance_rate.dart';
 export 'src/support/late_minutes.dart';
 export 'src/support/quran.dart';
 export 'src/support/recitation_draft.dart';

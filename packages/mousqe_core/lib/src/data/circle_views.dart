@@ -1,5 +1,6 @@
 import '../models/enums.dart';
 import '../db/database.dart';
+import '../support/attendance_rate.dart';
 import '../support/quran.dart';
 
 /// أستاذٌ مسنَدٌ إلى حلقةٍ في الدورة الجارية — يُعرَض في كشف الحلقات، وهو صفٌّ في
@@ -382,17 +383,24 @@ class StudentProfile {
       points.fold<double>(0, (sum, row) => sum + row.points) +
       recitations.fold<double>(0, (sum, row) => sum + row.points);
 
-  /// نظير `App\Support\AttendanceRate`: المأذون خارج المقام، والحاضر والمتأخر في البسط.
+  /// نسبةُ حضوره — و🔄 **م.6.6: صارت تستدعي [AttendanceRate] بدل نسخةٍ ثانية
+  /// من المعادلة**. كانت مكتوبةً هنا بيدها منذ م.5.3، وكانت م.6.6 ستضيف ثلاث
+  /// نسخٍ أخرى (الداشبورد وتقريرُ اليوم وترتيبُ الدوام) — وهو نفسُ ما دفع
+  /// `App\Support\AttendanceRate` إلى الوجود خادمياً حين بلغت ثلاثةَ مواضع.
+  ///
+  /// و`null` تبقى هنا حين **لا شيءَ يُقاس** (كشفٌ فارغ، أو كلُّهم مأذونون):
+  /// التمييزُ بين ذلك و«قِيس فكان صفراً» يقع عند المستدعي لا في المعادلة.
   double? get attendanceRate {
-    final counted = attendance.length - countOf(AttendanceStatus.excused);
-    if (counted <= 0) {
+    if (attendance.length - countOf(AttendanceStatus.excused) <= 0) {
       return null;
     }
 
-    final attended =
-        countOf(AttendanceStatus.present) + countOf(AttendanceStatus.late);
-
-    return attended / counted * 100;
+    return AttendanceRate.percent(
+      present: countOf(AttendanceStatus.present),
+      late: countOf(AttendanceStatus.late),
+      excused: countOf(AttendanceStatus.excused),
+      total: attendance.length,
+    );
   }
 }
 

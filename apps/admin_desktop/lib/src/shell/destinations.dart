@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 
 import '../screens/attendance_hub_screen.dart';
+import '../screens/backup_screen.dart';
 import '../screens/catalog_screen.dart';
+import '../screens/conflicts_screen.dart';
 import '../screens/circles_screen.dart';
 import '../screens/credentials_screen.dart';
 import '../screens/curricula_screen.dart';
+import '../screens/dashboard_screen.dart';
 import '../screens/enrollments_screen.dart';
 import '../screens/excuses_screen.dart';
 import '../screens/institute_settings_screen.dart';
 import '../screens/institutes_screen.dart';
-import '../screens/placeholder_screen.dart';
+import '../screens/reports_screen.dart';
 import '../screens/students_screen.dart';
 import '../screens/users_screen.dart';
 
@@ -61,8 +64,10 @@ class DesktopSection {
 
 /// كتالوجُ الأبواب كاملاً — وترتيبُه هو ترتيبُ القائمة الجانبية.
 ///
-/// الشاشاتُ نفسُها تُبنى في م.6.4–6.6؛ وما يُحسم هنا هو **الهيكل**: أيُّ بابٍ
-/// موجود، وأيُّ صلاحيةٍ تفتحه. وبناءُ ذلك على `user.permissions` من `/bootstrap`
+/// أُعلنت الأبوابُ كلُّها في م.6.3 وشاشاتُها placeholder، **ومُلئت آخرُها في
+/// م.6.6**. ولماذا أُعلنت قبل شاشاتها؟ لأن هذه القائمة هي **عقدُ الصلاحيات**
+/// نفسُه: أن يرى المشرفُ ما يخصّه ولا يرى ما لا يخصّه. ولو أُخّرت إلى شاشاتها
+/// لَما اختُبر ترشيحُها قبل أن يكتمل نصفُ المرحلة. وبناءُ ذلك على `user.permissions` من `/bootstrap`
 /// لا على اسم الدور هو القرار 3 في [PHASE-6-STAGES.MD §0] — نسخةٌ واحدة من
 /// البرنامج، وواجهتُها تفترق بما يملكه فاتحُها.
 const List<DesktopSection> desktopSections = [
@@ -201,17 +206,11 @@ List<DesktopSection> visibleSections(BootstrapSnapshot? snapshot) {
   ];
 }
 
-Widget _dashboard(BuildContext context) => const PlaceholderScreen(
-      title: 'الداشبورد',
-      phase: 'م.6.6',
-      note: 'إحصاءاتُ المعهد — تُحسب محلياً من الصفوف المتزامنة لا من الخادم.',
-    );
+// ✅ م.6.6 — الأربعةُ الأخيرة: فصار الخمسةَ عشرَ باباً كلُّها مفتوحةً، **ولم يبقَ
+// بابٌ واحد على `PlaceholderScreen`**.
+Widget _dashboard(BuildContext context) => const DashboardScreen();
 
-Widget _reports(BuildContext context) => const PlaceholderScreen(
-      title: 'التقارير والطباعة',
-      phase: 'م.6.6',
-      note: 'تقاريرُ الحلقات والطلاب مطبوعةً من الجهاز، فتُطبع والشبكةُ مقطوعة.',
-    );
+Widget _reports(BuildContext context) => const ReportsScreen();
 
 // ✅ م.6.4 — أوّلُ بابين تُملأ شاشاتُهما.
 Widget _attendance(BuildContext context) => const AttendanceHubScreen();
@@ -237,14 +236,6 @@ Widget _settings(BuildContext context) => const InstituteSettingsScreen();
 
 Widget _institutes(BuildContext context) => const InstitutesScreen();
 
-Widget _conflicts(BuildContext context) => const PlaceholderScreen(
-      title: 'التعارضات',
-      phase: 'م.6.6',
-      note: 'رؤيةُ القيمتين المتنازعتين وقلبُ الحكم — غلافٌ فوق نقطتَي م.6.1.',
-    );
+Widget _conflicts(BuildContext context) => const ConflictsScreen();
 
-Widget _backup(BuildContext context) => const PlaceholderScreen(
-      title: 'نسخٌ احتياطي',
-      phase: 'م.6.6',
-      note: 'نسخةٌ محلية من ملفّ drift.',
-    );
+Widget _backup(BuildContext context) => const BackupScreen();
