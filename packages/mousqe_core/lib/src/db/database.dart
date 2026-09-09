@@ -19,12 +19,14 @@ import 'tables/local_attendances_table.dart';
 import 'tables/local_points_table.dart';
 import 'tables/local_recitations_table.dart';
 import 'tables/local_sessions_table.dart';
+import 'tables/local_teacher_attendances_table.dart';
 import 'tables/pending_operations_table.dart';
 import 'tables/recitations_table.dart';
 import 'tables/shifts_table.dart';
 import 'tables/student_points_table.dart';
 import 'tables/students_table.dart';
 import 'tables/sync_state_table.dart';
+import 'tables/teacher_attendances_table.dart';
 import 'tables/teachers_table.dart';
 
 part 'database.g.dart';
@@ -49,11 +51,13 @@ QueryExecutor _openConnection() {
   Enrollments,
   AttendanceSessions,
   Attendances,
+  TeacherAttendances,
   Recitations,
   AbsenceExcusesTable,
   StudentPoints,
   LocalSessions,
   LocalAttendances,
+  LocalTeacherAttendances,
   LocalRecitations,
   LocalPoints,
   PendingOperations,
@@ -64,8 +68,13 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
+  /// 4 ⇒ 5 (م.6.4): تفقّدُ الأساتذة — `teacher_attendances` المتزامن ومسودّتُه
+  /// المحلية، وعمودُ `locked` على المسودّة. الجدولُ الخادمي يُبثّ في `change_log`
+  /// منذ م.4 وكان `SyncPayloadApplier` **يُسقطه على الأرض** لأن لا صفَّ يستقبله؛
+  /// والديسكتوبُ أوّلُ عميلٍ يتفقّد الأساتذة، فهو أوّلُ من يحتاجه.
+  ///
   /// 3 ⇒ 4 (م.6.2): عمودا عزل العملية المرفوضة — `failed_reason` و`failed_at`.
   /// الخادم صار يردّ المرفوضةَ في `failed[]` بدل أن تُسقط الدفعة معها (م.6.1)،
   /// وهذا شقُّها في العميل: تُعزَل في الطابور بلا حذفٍ ولا إعادةِ إرسال، وتُعرض
@@ -103,6 +112,12 @@ class AppDatabase extends _$AppDatabase {
           if (from < 4) {
             await m.addColumn(pendingOperations, pendingOperations.failedReason);
             await m.addColumn(pendingOperations, pendingOperations.failedAt);
+          }
+
+          if (from < 5) {
+            await m.createTable(teacherAttendances);
+            await m.createTable(localTeacherAttendances);
+            await m.addColumn(localSessions, localSessions.locked);
           }
         },
       );

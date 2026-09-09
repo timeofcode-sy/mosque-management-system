@@ -56,6 +56,7 @@ class SyncPush
         private readonly TakeAttendance $takeAttendance,
         private readonly TakeTeacherAttendance $takeTeacherAttendance,
         private readonly CompleteAttendanceSession $completeSession,
+        private readonly LockAttendanceSession $lockSession,
         private readonly SubmitAbsenceExcuse $submitExcuse,
         private readonly SaveRecitation $saveRecitation,
         private readonly DeleteRecitation $deleteRecitation,
@@ -166,6 +167,7 @@ class SyncPush
             'attendance.take' => $this->applyTakeAttendance($op, $user, $instituteId, $deviceUuid),
             'attendance.teacher.take' => $this->applyTakeTeacherAttendance($op, $user, $instituteId),
             'attendance.session.complete' => $this->applyCompleteSession($op, $user, $instituteId),
+            'attendance.session.lock' => $this->applyLockSession($op, $instituteId),
             'excuse.submit' => $this->applySubmitExcuse($op, $user, $instituteId),
             'excuse.review' => $this->applyReviewExcuse($op, $user, $instituteId),
             'recitation.save' => $this->applySaveRecitation($op, $user, $instituteId),
@@ -198,6 +200,19 @@ class SyncPush
             // التصحيحُ الرجعي فعلٌ مقصود لا سهو، وهو ما يميّز الديسكتوب من تطبيق
             // الأستاذ ([APPS-FEATURES.md §4.2] البند 1) — فيُحرَس على الخادم أيضاً.
             'attendance.take' => ($op['amend'] ?? false) ? 'attendance.amend' : null,
+
+            // القفلُ نهائيّ: بعده لا تعديلَ ولا إعادةَ فتح. وهو نظيرُ الإكمال في
+            // الشكل ونقيضُه في الحكم — فالإكمالُ يفعله الأستاذُ كلَّ يوم بلا
+            // صلاحيةٍ زائدة، وهذا لا يفعله إلا حاملُ attendance.lock.
+            'attendance.session.lock' => 'attendance.lock',
+
+            // من يتفقّد الأساتذة لا بدّ أن يراهم أوّلاً — و`teachers.view` هي
+            // بالضبط ما يفصل جمهورَ هذه العملية عن غيره: المسارُ يشترط
+            // `sync.push` أصلاً، ولا يحملها إلا الأستاذُ والمشرفُ ومن فوقه،
+            // والأستاذُ وحده منهم لا يملك `teachers.view`. فلا يتفقّد الأستاذُ
+            // نفسَه ولا زملاءه من تطبيقه.
+            'attendance.teacher.take' => 'teachers.view',
+
             'student.save' => 'students.manage',
             'enrollment.save' => 'enrollments.manage',
             'student.transfer' => 'transfers.manage',
@@ -281,6 +296,20 @@ class SyncPush
     private function applyCompleteSession(array $op, User $user, int $instituteId): AttendanceSession
     {
         return $this->completeSession->handle($this->attendanceSession($op, $instituteId), $user);
+    }
+
+    /**
+     * القفل النهائي — نوعٌ فُتح في م.6.4 لأن `LockAttendanceSession` كان بلا طريق
+     * إلى الطابور: يُستدعى من اللوحة وحدها، فكان الديسكتوبُ يقفل بفتح المتصفّح.
+     *
+     * ولا يقفل إلا المكتملة (حكمُ الفعل نفسِه)، والجلسةُ المسودّة تصل مكتملةً لأن
+     * العميل يصفّ `attendance.session.complete` قبله في الدفعة نفسها.
+     *
+     * @param  array<string, mixed>  $op
+     */
+    private function applyLockSession(array $op, int $instituteId): AttendanceSession
+    {
+        return $this->lockSession->handle($this->attendanceSession($op, $instituteId));
     }
 
     /**

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
-import '../data/views.dart';
 import '../di/app_scope.dart';
 import '../widgets/sync_bar.dart';
 

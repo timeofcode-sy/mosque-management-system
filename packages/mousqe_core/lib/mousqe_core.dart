@@ -18,6 +18,10 @@ export 'src/models/student_point.dart';
 
 export 'src/db/database.dart';
 
+export 'src/data/circle_repository.dart';
+export 'src/data/circle_views.dart';
+export 'src/data/labels.dart';
+
 export 'src/api/api_client.dart';
 export 'src/api/api_errors.dart';
 export 'src/api/api_exception.dart';
@@ -31,3 +35,4 @@ export 'src/sync/sync_payload_applier.dart';
 
 export 'src/support/late_minutes.dart';
 export 'src/support/quran.dart';
+export 'src/support/recitation_draft.dart';

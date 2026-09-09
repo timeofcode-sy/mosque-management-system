@@ -162,6 +162,17 @@ class SyncPayloadApplier {
           notePolarity: Value(payload['note_polarity'] as String?),
           recordedAt: _date(payload['recorded_at'])!,
         ));
+      case 'teacher_attendances':
+        await _put(_db.teacherAttendances, TeacherAttendancesCompanion.insert(
+          id: _id(payload),
+          uuid: payload['uuid'] as String,
+          attendanceSessionId: _int(payload['attendance_session_id'])!,
+          teacherId: _int(payload['teacher_id'])!,
+          status: Value(payload['status'] as String? ?? 'present'),
+          lateMinutes: Value(_int(payload['late_minutes'])),
+          note: Value(payload['note'] as String?),
+          recordedAt: _date(payload['recorded_at'])!,
+        ));
       case 'memorization_logs':
         await _put(_db.recitations, RecitationsCompanion.insert(
           id: _id(payload),
@@ -255,6 +266,7 @@ class SyncPayloadApplier {
       'enrollments' => _db.enrollments,
       'attendance_sessions' => _db.attendanceSessions,
       'attendances' => _db.attendances,
+      'teacher_attendances' => _db.teacherAttendances,
       'memorization_logs' => _db.recitations,
       'absence_excuses' => _db.absenceExcusesTable,
       'student_points' => _db.studentPoints,

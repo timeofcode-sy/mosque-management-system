@@ -1,10 +1,14 @@
 import 'package:drift/drift.dart';
-import 'package:mousqe_core/mousqe_core.dart';
 import 'package:uuid/uuid.dart';
 
-import 'views.dart';
+import '../db/database.dart';
+import '../models/enums.dart';
+import '../support/late_minutes.dart';
+import '../sync/sync_engine.dart';
+import 'circle_views.dart';
 
-/// كل قراءةٍ وكتابةٍ يحتاجها تطبيق الأستاذ، مجموعةً في مكانٍ واحد.
+/// كل قراءةٍ وكتابةٍ في عمل الحلقة — تفقّداً وتسميعاً ونقاطاً وسجلّاً — مجموعةً في
+/// مكانٍ واحد يستدعيه **السطحان**: تطبيقُ الأستاذ وديسكتوبُ المشرف.
 ///
 /// **القراءة من drift لا من الشبكة.** نقاطُ REST تُستدعى مرّتين فقط في عمر
 /// الجلسة: `/auth/login` و`/bootstrap`. وما عدا ذلك يصل عبر `sync/pull` ويُقرأ
@@ -13,8 +17,25 @@ import 'views.dart';
 /// **والكتابة طابورٌ لا طلب.** كل فعلٍ يُترجَم إلى عملية `sync/push` تُثبَّت في
 /// `pending_operations` **قبل** أي محاولة إرسال
 /// ([SYNC-PROTOCOL.md §8](../../../../../docs/SYNC-PROTOCOL.md) البند 1).
-class TeacherRepository {
-  TeacherRepository({required AppDatabase db, required SyncEngine syncEngine})
+///
+/// ### 🔑 م.6.4: رُفع من `apps/teacher/` ولم يُنسخ إليه
+///
+/// كان `TeacherRepository` في تطبيق الأستاذ، فلمّا احتاجه الديسكتوبُ رُفع إلى هنا
+/// بحسب القرار 4 في [PHASE-6-STAGES.MD §0](../../../../../docs/PHASE-6-STAGES.MD):
+/// «ما يُعاد استخدامه يُرفع إلى `packages/` حين يحتاجه الاثنان». وما تغيّر في
+/// الرفع **ثلاثةُ فروقٍ بين السطحين، كلُّها معاملٌ لا فرعٌ في الشيفرة**:
+///
+/// 1. **الترشيح** — `teacherUuid` صار اختيارياً: الأستاذُ يمرّر معرّفه فيرى
+///    حلقاتِه، والديسكتوبُ يتركه فارغاً فيرى حلقاتِ المعهد كلَّها. والجهازان
+///    يخزّنان الشيءَ نفسَه أصلاً — السحبُ معهدٌ كامل
+///    ([SYNC-PROTOCOL.md §4](../../../../../docs/SYNC-PROTOCOL.md)).
+/// 2. **سلطةُ التصحيح** — `amend` في [saveAttendance]، و[SessionView.editableBy]
+///    تقرأ `attendance.amend` من اللقطة بدل أن تُحرَّم الجلسةُ المكتملة على
+///    الجميع. فالأستاذُ لا يعدّلها لأنه **لا يملك الصلاحية** لا لأن الشيفرة
+///    تمنعه، وهو الفرق نفسُه الذي يحرسه الخادم في `SyncPush::assertPermitted`.
+/// 3. **[lockSession] و[saveTeacherAttendance]** — بابان لا يفتحهما الأستاذ.
+class CircleRepository {
+  CircleRepository({required AppDatabase db, required SyncEngine syncEngine})
     : _db = db,
       _syncEngine = syncEngine;
 
@@ -26,44 +47,53 @@ class TeacherRepository {
 
   // ---------------------------------------------------------------- الحلقات
 
-  /// حلقات الأستاذ في الدورة الجارية.
+  /// حلقات الدورة الجارية — كلُّها، أو حلقاتُ [teacherUuid] وحده.
   ///
-  /// الترشيح صريحٌ بـ[teacherUuid] لا مفترَض: السحب معهدٌ كامل، فالجهاز يخزّن
-  /// حلقاتٍ ليست له ([SYNC-PROTOCOL.md §4](../../../../../docs/SYNC-PROTOCOL.md)).
-  Future<List<CircleView>> loadCircles(String teacherUuid) async {
-    final query =
-        _db.select(_db.courseCircles).join([
-            innerJoin(
-              _db.circles,
-              _db.circles.id.equalsExp(_db.courseCircles.circleId),
-            ),
-            innerJoin(
-              _db.shifts,
-              _db.shifts.id.equalsExp(_db.courseCircles.shiftId),
-            ),
-            innerJoin(
-              _db.courses,
-              _db.courses.id.equalsExp(_db.courseCircles.courseId),
-            ),
-            innerJoin(
-              _db.courseCircleTeachers,
-              _db.courseCircleTeachers.courseCircleId.equalsExp(
-                _db.courseCircles.id,
-              ),
-            ),
-            innerJoin(
-              _db.teachers,
-              _db.teachers.id.equalsExp(_db.courseCircleTeachers.teacherId),
-            ),
-          ])
-          ..where(
-            _db.teachers.uuid.equals(teacherUuid) &
-                _db.courses.isCurrent.equals(true),
-          )
-          ..orderBy([
-            OrderingTerm.asc(_db.shifts.sortOrder),
-            OrderingTerm.asc(_db.circles.name),
-          ]);
+  /// الترشيح صريحٌ لا مفترَض: السحب معهدٌ كامل، فالجهاز يخزّن حلقاتٍ ليست لصاحبه
+  /// ([SYNC-PROTOCOL.md §4](../../../../../docs/SYNC-PROTOCOL.md)). وتركُه فارغاً
+  /// هو **حالةُ الديسكتوب**: المشرفُ يتفقّد أيَّ حلقةٍ في معهده لا حلقاتِه هو.
+  Future<List<CircleView>> loadCircles([String? teacherUuid]) async {
+    // وصلُ الأستاذ يُقحَم للترشيح وحده. ولو بقي دائماً لَكلّف كشفَ المشرف ثمنين:
+    // حلقةٌ بأستاذين تظهر مرّتين، وحلقةٌ لم يُسنَد إليها أستاذٌ بعد لا تظهر أصلاً —
+    // وهي أوّلُ ما يعنيه، فهو من يسند إليها.
+    final query = _db.select(_db.courseCircles).join([
+      innerJoin(
+        _db.circles,
+        _db.circles.id.equalsExp(_db.courseCircles.circleId),
+      ),
+      innerJoin(
+        _db.shifts,
+        _db.shifts.id.equalsExp(_db.courseCircles.shiftId),
+      ),
+      innerJoin(
+        _db.courses,
+        _db.courses.id.equalsExp(_db.courseCircles.courseId),
+      ),
+      if (teacherUuid != null) ...[
+        innerJoin(
+          _db.courseCircleTeachers,
+          _db.courseCircleTeachers.courseCircleId.equalsExp(
+            _db.courseCircles.id,
+          ),
+        ),
+        innerJoin(
+          _db.teachers,
+          _db.teachers.id.equalsExp(_db.courseCircleTeachers.teacherId),
+        ),
+      ],
+    ]);
+
+    query
+      ..where(
+        teacherUuid == null
+            ? _db.courses.isCurrent.equals(true)
+            : _db.teachers.uuid.equals(teacherUuid) &
+                  _db.courses.isCurrent.equals(true),
+      )
+      ..orderBy([
+        OrderingTerm.asc(_db.shifts.sortOrder),
+        OrderingTerm.asc(_db.circles.name),
+      ]);
 
     final rows = await query.get();
     final circles = <CircleView>[];
@@ -82,6 +112,7 @@ class TeacherRepository {
           capacity: courseCircle.capacity,
           status: courseCircle.status,
           studentsCount: await _activeEnrollmentCount(courseCircle.id),
+          teachers: await loadCircleTeachers(courseCircle.id),
         ),
       );
     }
@@ -89,8 +120,72 @@ class TeacherRepository {
     return circles;
   }
 
-  Stream<List<CircleView>> watchCircles(String teacherUuid) =>
+  Stream<List<CircleView>> watchCircles([String? teacherUuid]) =>
       _watch(() => loadCircles(teacherUuid));
+
+  /// أساتذةُ الحلقة — يعرضهم كشفُ المشرف، وهم كشفُ **تفقّد الأساتذة** نفسُه.
+  Future<List<TeacherView>> loadCircleTeachers(int courseCircleId) async {
+    final query =
+        _db.select(_db.courseCircleTeachers).join([
+            innerJoin(
+              _db.teachers,
+              _db.teachers.id.equalsExp(_db.courseCircleTeachers.teacherId),
+            ),
+          ])
+          ..where(
+            _db.courseCircleTeachers.courseCircleId.equals(courseCircleId),
+          )
+          ..orderBy([OrderingTerm.asc(_db.teachers.displayName)]);
+
+    return [
+      for (final row in await query.get())
+        TeacherView(
+          id: row.readTable(_db.teachers).id,
+          uuid: row.readTable(_db.teachers).uuid,
+          fullName: row.readTable(_db.teachers).displayName,
+          role: row.readTable(_db.courseCircleTeachers).role,
+        ),
+    ];
+  }
+
+  /// حالةُ جلسةِ يومٍ واحد لكل حلقة — مفهرسةً بمعرّف الحلقة، وغيابُ المفتاح يعني
+  /// **لم تُفتح بعد**.
+  ///
+  /// استعلامان لا استعلامٌ لكل حلقة: شاشةُ التفقّد تعرض عشرين حلقة، وقراءةُ
+  /// جلسةٍ كاملةٍ لكلٍّ منها لِتُعرَف حالتُها وحدَها كانت تلمس خمسة جداول عشرين
+  /// مرّة. والمسودّةُ المحلية تعلو المتزامن كما في [loadSession].
+  Future<Map<int, String>> loadDayStatuses(DateTime date) async {
+    final day = _dateOnly(date);
+
+    final statuses = {
+      for (final row
+          in await (_db.select(
+            _db.attendanceSessions,
+          )..where((t) => t.sessionDate.equals(day))).get())
+        row.courseCircleId: row.status,
+    };
+
+    for (final row in await (_db.select(
+      _db.localSessions,
+    )..where((t) => t.sessionDate.equals(day))).get()) {
+      final local = row.locked
+          ? 'locked'
+          : (row.completed ? 'completed' : 'draft');
+
+      // المحليُّ يعلو المتزامن حين يكون **أبعدَ في الطريق**: مسوّدةٌ محلية فوق
+      // جلسةٍ أقفلها غيرُنا ليست تحديثاً بل تخلّفاً عن دورة سحبٍ لم تصل.
+      final rank = {'draft': 0, 'completed': 1, 'locked': 2};
+
+      if ((rank[local] ?? 0) >= (rank[statuses[row.courseCircleId]] ?? -1)) {
+        statuses[row.courseCircleId] = local;
+      }
+    }
+
+    return statuses;
+  }
+
+  Stream<Map<int, String>> watchDayStatuses(DateTime date) =>
+      _watch(() => loadDayStatuses(date));
 
   Future<int> _activeEnrollmentCount(int courseCircleId) async {
     final total = _db.enrollments.id.count();
@@ -113,6 +208,7 @@ class TeacherRepository {
     required CircleView circle,
     required DateTime date,
     required int graceMinutes,
+    bool withTeachers = false,
   }) async {
     final day = _dateOnly(date);
 
@@ -234,10 +330,21 @@ class TeacherRepository {
       date: day,
       serverUuid: session?.uuid,
       localUuid: local?.uuid,
-      status:
-          session?.status ??
-          (local == null ? null : (local.completed ? 'completed' : 'draft')),
+      // القفلُ المحلي يعلو حالةَ الخادم لأنه **أحدثُ منها دائماً**: صاحبُ الجهاز
+      // هو من ضغط، ودورةُ السحب التي تؤكّده لم تصل بعد. والعكسُ ليس صحيحاً —
+      // جلسةٌ قفلها غيرُه تصل مقفلةً في `attendance_sessions` بلا مسودّة.
+      status: switch ((session?.status, local)) {
+        (final String status, final local?) when local.locked && status != 'locked' => 'locked',
+        (final String status, _) => status,
+        (null, final local?) => local.locked
+            ? 'locked'
+            : (local.completed ? 'completed' : 'draft'),
+        (null, null) => null,
+      },
       roster: roster,
+      teacherRoster: withTeachers
+          ? await _teacherRoster(circle, day, session?.id)
+          : const [],
     );
   }
 
@@ -245,9 +352,90 @@ class TeacherRepository {
     required CircleView circle,
     required DateTime date,
     required int graceMinutes,
+    bool withTeachers = false,
   }) => _watch(
-    () => loadSession(circle: circle, date: date, graceMinutes: graceMinutes),
+    () => loadSession(
+      circle: circle,
+      date: date,
+      graceMinutes: graceMinutes,
+      withTeachers: withTeachers,
+    ),
   );
+
+  /// كشفُ الأساتذة: المتزامنُ من الخادم، تعلوه مسودّةُ هذا الجهاز — بنفس قاعدة
+  /// غلبة [loadSession] للطلاب.
+  ///
+  /// والأستاذُ الذي لم يُسجَّل له شيء يظهر بـ`recorded: false`: صفٌّ في النموذج
+  /// ينتظر من يملؤه، لا حضورٌ مفترَض. وهذا خلافُ الطالب عمداً — الخادمُ يزرع
+  /// صفوفَ الطلاب «حاضر» عند فتح الجلسة ولا يزرع للأساتذة شيئاً، فادّعاءُ حضورٍ
+  /// لم يقله أحد كان سيجعل غيابَ الأستاذ **حضوراً بالسكوت**.
+  Future<List<TeacherRosterEntry>> _teacherRoster(
+    CircleView circle,
+    DateTime day,
+    int? sessionId,
+  ) async {
+    final teachers = circle.teachers.isNotEmpty
+        ? circle.teachers
+        : await loadCircleTeachers(circle.id);
+
+    final synced = sessionId == null
+        ? <int, TeacherAttendanceRow>{}
+        : {
+            for (final row in await (_db.select(
+              _db.teacherAttendances,
+            )..where((t) => t.attendanceSessionId.equals(sessionId))).get())
+              row.teacherId: row,
+          };
+
+    final drafts = {
+      for (final row
+          in await (_db.select(_db.localTeacherAttendances)..where(
+                (t) =>
+                    t.courseCircleId.equals(circle.id) &
+                    t.sessionDate.equals(day),
+              ))
+              .get())
+        row.teacherId: row,
+    };
+
+    return [
+      for (final teacher in teachers)
+        if (drafts[teacher.id] case final draft?)
+          TeacherRosterEntry(
+            teacherId: teacher.id,
+            teacherUuid: teacher.uuid,
+            fullName: teacher.fullName,
+            roleLabel: teacher.roleLabel,
+            status: _status(draft.status),
+            recorded: true,
+            pending: true,
+            lateMinutes: draft.lateMinutes,
+            note: draft.note,
+          )
+        else if (synced[teacher.id] case final row?)
+          TeacherRosterEntry(
+            teacherId: teacher.id,
+            teacherUuid: teacher.uuid,
+            fullName: teacher.fullName,
+            roleLabel: teacher.roleLabel,
+            status: _status(row.status),
+            recorded: true,
+            pending: false,
+            lateMinutes: row.lateMinutes,
+            note: row.note,
+          )
+        else
+          TeacherRosterEntry(
+            teacherId: teacher.id,
+            teacherUuid: teacher.uuid,
+            fullName: teacher.fullName,
+            roleLabel: teacher.roleLabel,
+            status: AttendanceStatus.present,
+            recorded: false,
+            pending: false,
+          ),
+    ];
+  }
 
   /// التسجيلات القائمة في ذلك التاريخ — نقلٌ حرفي لشرطَي
   /// `OpenAttendanceSession::enrollmentsOn`، فالتفقّد الرجعي يرى الحلقة كما كانت يومَها.
@@ -457,6 +645,7 @@ class TeacherRepository {
   Future<void> saveAttendance({
     required SessionView session,
     required List<RosterEntry> entries,
+    bool amend = false,
   }) async {
     final day = session.date;
     final circle = session.circle;
@@ -471,6 +660,7 @@ class TeacherRepository {
               sessionDate: day,
               uuid: sessionUuid,
               completed: false,
+              locked: false,
             ),
           );
 
@@ -510,6 +700,10 @@ class TeacherRepository {
     });
 
     await _syncEngine.enqueue('attendance.take', {
+      // التصحيحُ الرجعي يُعلَن في الحمولة لا يُستنتَج من حالة الخادم: هو ما يقرؤه
+      // `SyncPush::assertPermitted` ليطلب `attendance.amend`، وما يمرّره
+      // `TakeAttendance` ليتجاوز حارسَ الجلسة المكتملة (API.md §6).
+      if (amend) 'amend': true,
       'session_uuid': sessionUuid,
       // المفتاح الطبيعي مرفقٌ دائماً: معرّفُنا المحلي قد لا يوجد على الخادم إن
       // سبقنا أحدٌ إلى فتح جلسة اليوم (SyncPush::attendanceSession).
@@ -549,6 +743,7 @@ class TeacherRepository {
             sessionDate: session.date,
             uuid: sessionUuid,
             completed: true,
+            locked: session.locked,
           ),
         );
 
@@ -556,6 +751,100 @@ class TeacherRepository {
       'session_uuid': sessionUuid,
       'course_circle_uuid': session.circle.uuid,
       'session_date': _isoDate(session.date),
+    });
+  }
+
+  /// القفلُ النهائي — بعده لا تعديلَ ولا إعادةَ فتح، ولا يفعله إلا حاملُ
+  /// `attendance.lock` (م.6.4).
+  ///
+  /// و**يُكمل قبل أن يقفل** إن كانت الجلسةُ مسودّة: `LockAttendanceSession` لا
+  /// يقبل غيرَ المكتملة، فالعمليتان تُصفّان معاً بترتيبهما بدل أن تُعزَل الثانيةُ
+  /// برسالة «لا تُقفل إلا الجلسة المكتملة» بعد ساعات. وهو نفسُ ترتيب
+  /// `attendance.session.open` قبل `attendance.take`
+  /// ([SYNC-PROTOCOL.md §3](../../../../../docs/SYNC-PROTOCOL.md) البند 3).
+  Future<void> lockSession(SessionView session) async {
+    final sessionUuid = session.serverUuid ?? session.localUuid;
+
+    if (sessionUuid == null || session.locked) {
+      return;
+    }
+
+    if (!session.completed) {
+      await completeSession(session);
+    }
+
+    await _db
+        .into(_db.localSessions)
+        .insertOnConflictUpdate(
+          LocalSessionRow(
+            courseCircleId: session.circle.id,
+            sessionDate: session.date,
+            uuid: sessionUuid,
+            completed: true,
+            locked: true,
+          ),
+        );
+
+    await _syncEngine.enqueue('attendance.session.lock', {
+      'session_uuid': sessionUuid,
+      'course_circle_uuid': session.circle.uuid,
+      'session_date': _isoDate(session.date),
+    });
+  }
+
+  /// تفقّدُ الأساتذة — صفوفُه منفصلةٌ عن صفوف الطلاب لأنها لا تدخل في نسبة الحلقة
+  /// ولا ترتيبِها، تماماً كما فصلها `TakeTeacherAttendance` على الخادم.
+  ///
+  /// وبلا `recorded_at`: العقدُ لا يحمله ([API.md §6](../../../../../docs/API.md))،
+  /// فلا حسمَ تعارضٍ لهذه الصفوف — آخرُ من كتب يغلب.
+  Future<void> saveTeacherAttendance({
+    required SessionView session,
+    required List<TeacherRosterEntry> entries,
+  }) async {
+    final changed = entries.where((entry) => entry.pending).toList();
+
+    if (changed.isEmpty) {
+      return;
+    }
+
+    final sessionUuid = session.serverUuid ?? session.localUuid;
+
+    if (sessionUuid == null) {
+      return;
+    }
+
+    await _db.batch((batch) {
+      for (final entry in changed) {
+        batch.insert(
+          _db.localTeacherAttendances,
+          LocalTeacherAttendanceRow(
+            courseCircleId: session.circle.id,
+            sessionDate: session.date,
+            teacherId: entry.teacherId,
+            status: entry.status.name,
+            lateMinutes: entry.lateMinutes,
+            note: entry.note,
+            recordedAt: DateTime.now(),
+          ),
+          mode: InsertMode.insertOrReplace,
+        );
+      }
+    });
+
+    await _syncEngine.enqueue('attendance.teacher.take', {
+      'session_uuid': sessionUuid,
+      'course_circle_uuid': session.circle.uuid,
+      'session_date': _isoDate(session.date),
+      'teacher_attendances': [
+        for (final entry in changed)
+          {
+            'teacher_uuid': entry.teacherUuid,
+            'status': entry.status.name,
+            if (entry.lateMinutes != null) 'late_minutes': entry.lateMinutes,
+            if (entry.note != null && entry.note!.isNotEmpty)
+              'note': entry.note,
+          },
+      ],
     });
   }
 
@@ -750,8 +1039,12 @@ class TeacherRepository {
 
   // ---------------------------------------------------------------- السجلّات
 
-  /// سجل الجلسات — مرشَّحٌ بحلقات الأستاذ لا بكل ما وصل الجهاز.
-  Future<List<SessionLogEntry>> loadSessionLog(String teacherUuid) async {
+  /// سجلُّ الجلسات — مرشَّحٌ بحلقات [teacherUuid]، أو بحلقات المعهد كلِّها.
+  ///
+  /// والترشيحُ صريحٌ في الحالتين: `sync/pull` يجلب معهداً كاملاً، فالجهاز يخزّن
+  /// جلساتِ حلقاتٍ ليست لصاحبه
+  /// ([SYNC-PROTOCOL.md §8](../../../../../docs/SYNC-PROTOCOL.md) البند 7).
+  Future<List<SessionLogEntry>> loadSessionLog([String? teacherUuid]) async {
     final circles = await loadCircles(teacherUuid);
 
     if (circles.isEmpty) {
@@ -793,7 +1086,7 @@ class TeacherRepository {
     return log;
   }
 
-  Stream<List<SessionLogEntry>> watchSessionLog(String teacherUuid) =>
+  Stream<List<SessionLogEntry>> watchSessionLog([String? teacherUuid]) =>
       _watch(() => loadSessionLog(teacherUuid));
 
   Future<StudentProfile?> loadStudentProfile(int studentId) async {

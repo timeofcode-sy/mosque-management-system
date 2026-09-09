@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 
+import '../screens/attendance_hub_screen.dart';
+import '../screens/circles_screen.dart';
 import '../screens/placeholder_screen.dart';
 
 /// عائلاتُ الأبواب في القائمة الجانبية — عناوينُ تجميعٍ لا شاشات.
@@ -202,17 +204,10 @@ Widget _reports(BuildContext context) => const PlaceholderScreen(
       note: 'تقاريرُ الحلقات والطلاب مطبوعةً من الجهاز، فتُطبع والشبكةُ مقطوعة.',
     );
 
-Widget _attendance(BuildContext context) => const PlaceholderScreen(
-      title: 'التفقّد',
-      phase: 'م.6.4',
-      note: 'تفقّدُ أي حلقةٍ في المعهد، وتصحيحُ تفقّدٍ بعد الإقفال، وقفلُ الجلسة.',
-    );
+// ✅ م.6.4 — أوّلُ بابين تُملأ شاشاتُهما.
+Widget _attendance(BuildContext context) => const AttendanceHubScreen();
 
-Widget _circles(BuildContext context) => const PlaceholderScreen(
-      title: 'الحلقات',
-      phase: 'م.6.4',
-      note: 'كشفُ حلقات المعهد وسجلُّ جلساتها وملفّاتُ طلابها.',
-    );
+Widget _circles(BuildContext context) => const CirclesScreen();
 
 Widget _students(BuildContext context) => const PlaceholderScreen(
       title: 'الطلاب',

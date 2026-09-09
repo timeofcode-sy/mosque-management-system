@@ -3,8 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
-import '../data/labels.dart';
-import '../data/views.dart';
 import '../di/app_scope.dart';
 import '../widgets/sync_bar.dart';
 import 'points_screen.dart';
@@ -80,6 +78,14 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   }
 
   Widget _body(BuildContext context, SessionView session) {
+    // الأستاذُ لا يملك `attendance.amend` في البذرة، فالمكتملةُ لا تُحرَّر من جهازه.
+    // والحكمُ يُقرأ من اللقطة لا يُفترض في الشيفرة: هو نفسُه الذي يطبّقه الخادم في
+    // `SyncPush::assertPermitted`، فما يُصفّ هنا لا يُرفض بعد ساعات (م.6.4).
+    final editable = session.editableBy(
+      canAmend: AppScope.of(context).session.snapshot?.can('attendance.amend') ??
+          false,
+    );
+
     if (session.roster.isEmpty) {
       return const EmptyState(
         message: 'لا طلاب مسجَّلون في هذه الحلقة بهذا التاريخ.',
@@ -96,7 +102,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     return Column(
       children: [
         _Summary(roster: roster),
-        if (!session.editable) _LockedBanner(status: session.status!),
+        if (!editable) _LockedBanner(status: session.status!),
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.only(bottom: 16),
@@ -104,9 +110,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             separatorBuilder: (_, _) => const Divider(height: 1),
             itemBuilder: (context, index) => _StudentTile(
               entry: roster[index],
-              editable: session.editable,
-              onStatus: (status) => _setStatus(session, roster[index], status),
-              onMore: () => _showActions(session, roster[index]),
+              editable: editable,
+              onStatus: (status) =>
+                  _setStatus(session, roster[index], status, editable),
+              onMore: () => _showActions(session, roster[index], editable),
               onRecitation: (recitation) =>
                   _openRecitation(session, roster[index], recitation),
               onDeleteRecitation: (recitation) =>
@@ -117,7 +124,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             ),
           ),
         ),
-        if (session.editable)
+        if (editable)
           SafeArea(
             top: false,
             child: Padding(
@@ -126,6 +133,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 spacing: 8,
                 children: [
                   Expanded(
+                    flex: 3,
                     child: FilledButton.icon(
                       onPressed: _saving || !(dirty || !session.exists)
                           ? null
@@ -141,10 +149,20 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       ),
                     ),
                   ),
-                  OutlinedButton.icon(
-                    onPressed: _saving ? null : () => _confirmComplete(session),
-                    icon: const Icon(Icons.lock_outline),
-                    label: const Text('إقفال'),
+                  // 🔴 `Expanded` لا زرٌّ عارٍ: ثيمُ الهاتف يعطي كلَّ زرٍّ
+                  // `minimumSize: Size.fromHeight(52)` — أي عرضاً **لا نهائياً**
+                  // مقصوداً به «بعرض الشاشة». والصفُّ يقيس ابنَه غيرَ المرن بعرضٍ
+                  // غير محدود، فتصير الحدُّ الأدنى تقييداً محكماً باللانهاية
+                  // وينكسر التخطيط. كُشف بأوّل اختبار واجهةٍ لهذه الشاشة (م.6.4).
+                  Expanded(
+                    flex: 2,
+                    child: OutlinedButton.icon(
+                      onPressed: _saving
+                          ? null
+                          : () => _confirmComplete(session),
+                      icon: const Icon(Icons.lock_outline),
+                      label: const Text('إقفال'),
+                    ),
                   ),
                 ],
               ),
@@ -187,8 +205,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     SessionView session,
     RosterEntry entry,
     AttendanceStatus status,
+    bool editable,
   ) {
-    if (!session.editable) {
+    if (!editable) {
       return;
     }
 
@@ -217,7 +236,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     });
   }
 
-  Future<void> _showActions(SessionView session, RosterEntry entry) async {
+  Future<void> _showActions(
+    SessionView session,
+    RosterEntry entry,
+    bool editable,
+  ) async {
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -247,7 +270,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               title: const Text('منح نقاط'),
               onTap: () => Navigator.of(context).pop('points'),
             ),
-            if (session.editable) ...[
+            if (editable) ...[
               ListTile(
                 leading: const Icon(Icons.timer_outlined),
                 title: const Text('تعديل دقائق التأخير'),

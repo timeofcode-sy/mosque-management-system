@@ -563,8 +563,9 @@ institute() = ترويسة X-Institute إن وصلت  ⇒ يُتحقَّق أن�
 |---|---|---|
 | `attendance.session.open` | `course_circle_uuid` · `session_date?` · `uuid?` ✅ م.5.3 | الحلقة تُتحقَّق ضمن معهد المستخدم. `uuid` معرّفٌ يولّده العميل ويُستعمل **عند الإنشاء وحده** (انظر أسفل الجدول) |
 | `attendance.take` | `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 · `attendances[]{student_uuid, status, late_minutes?, note?, recorded_at?}` · `amend?` | `recorded_at` **هو مفتاح حسم التعارض** — أرسله دائماً بزمن الجهاز وقت التسجيل، لا وقت الدفع. و`late_minutes` **اتركه فارغاً** ليحسبه الخادم (انظر أسفل الجدول) |
-| `attendance.teacher.take` | `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 · `teacher_attendances[]{teacher_uuid, status, late_minutes?, note?}` | بلا `recorded_at` ⇒ بلا حسم تعارض |
-| `attendance.session.complete` | `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 | يقفل الجلسة (§6 في SYNC-PROTOCOL) |
+| `attendance.teacher.take` | `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 · `teacher_attendances[]{teacher_uuid, status, late_minutes?, note?}` | بلا `recorded_at` ⇒ بلا حسم تعارض. 🔄 **م.6.4: يتطلّب `teachers.view`** — كان بلا حارسٍ في `SyncPush::assertPermitted`، والمسار يشترط `sync.push` وحدها والأستاذُ يملكها ليتفقّد؛ فمن يتفقّد الأساتذة يجب أن **يراهم أوّلاً** |
+| `attendance.session.complete` | `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 | **إكمالٌ لا قفل** ⇐ `CompleteAttendanceSession` — يفعله الأستاذُ كلّ يوم فلا حارس له، وتُعاد الجلسةُ منه بـ`attendance.take` مع `amend` |
+| `attendance.session.lock` ✅ م.6.4 | `session_uuid?` · `course_circle_uuid?` + `session_date?` | **القفلُ النهائي** ⇐ `LockAttendanceSession` — بعده لا تعديل ولا إعادةُ فتح. يتطلّب `attendance.lock`، **ولا يقع إلا على مكتملة**: فليُصفّ `attendance.session.complete` قبله في نفس الدفعة إن كانت مسوّدةً، وإلا عاد معزولاً بـ«لا تُقفل إلا الجلسة المكتملة» |
 | `excuse.submit` | `student_uuid` · `from_date` · `to_date` · `reason` · `attachment_path?` | نظير `POST /guardian/excuses` لعميل يملك `sync.push` |
 | `recitation.save` | `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 · `student_uuid` · `recitation{uuid?, from_surah, from_ayah, to_surah, to_ayah, grade?, juz?, type?, curriculum_item_id?, notes?}` · `recorded_at?` | `grade`: `excellent`/`very_good`/`good` · `type`: `hifz`/`murajaa`/`tilawah`. الأسطر والنقاط تُحسب على الخادم وتُجمَّد. `uuid` معرّفٌ يولّده العميل: معرّفٌ جديد ⇒ تسجيل، ومعرّفٌ قائم ⇒ **تصحيحٌ في مكانه** ✅ م.5.4 (انظر أسفل الجدول) |
 | `recitation.delete` | `recitation_uuid` | تسميعٌ لا وجود له ⇒ نجاحٌ صامت لا 404 ✅ م.5.4 |
@@ -727,7 +728,7 @@ late_minutes = max(0, minutes(recorded_at − shift.starts_at) − late_grace_mi
 | التطبيق | الأقسام الملزمة |
 |---|---|
 | **الأستاذ** (م.5) | §1 · §3.1 · §3.3 · §3.4 · §3.5 · §6 كاملاً · §8 البند الأول |
-| **الديسكتوب** (م.6) | نفسها + §3.8 و§3.9 و**§3.10 كاملاً** · `attendance.teacher.take` و`amend` في §6 · §4 كاملاً (الترويسة والنطاق) · `failed[]` وأنواعُ الإدارة الأربعة في §6 |
+| **الديسكتوب** (م.6) | نفسها + §3.8 و§3.9 و**§3.10 كاملاً** · `attendance.teacher.take` و`amend` و**`attendance.session.lock`** ✅ م.6.4 في §6 · §4 كاملاً (الترويسة والنطاق) · `failed[]` وأنواعُ الإدارة الأربعة في §6 |
 | **الأهل** (م.7) | §3.6 · §3.4 مع تحفّظه · `sync/pull` بلا `push` (§4) |
 | **الطالب** (م.8) | §3.7 بتحفّظه · `sync/pull` بلا `push` |
 

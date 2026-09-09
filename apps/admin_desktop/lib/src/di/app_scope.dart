@@ -23,6 +23,7 @@ class AppDependencies {
     required this.session,
     required this.sync,
     required this.institutes,
+    required this.circles,
   });
 
   final AppDatabase db;
@@ -32,6 +33,9 @@ class AppDependencies {
   final SessionController session;
   final SyncController sync;
   final InstituteSwitcher institutes;
+
+  /// عملُ الحلقة كلُّه — مرفوعٌ إلى `mousqe_core` في م.6.4 ومشتركٌ مع الأستاذ.
+  final CircleRepository circles;
 
   static Future<AppDependencies> create({
     AppDatabase? database,
@@ -70,12 +74,17 @@ class AppDependencies {
       activeInstitute: activeInstitute,
     );
 
+    final circles = CircleRepository(db: db, syncEngine: syncEngine);
+
     final sync = SyncController(
       engine: syncEngine,
       session: session,
       // أقصرُ من دورة الأستاذ: هذا جهازُ مكتبٍ موصولٌ بالكهرباء، وصاحبُه يكتب
       // ما يقرؤه أستاذٌ في الحلقة بعد قليل.
       interval: const Duration(minutes: 1),
+      // نظيرُ خطّاف الأستاذ: مسودّةٌ استقرّ طابورُها لم يعد لها معنى، وبقاؤها
+      // يعني عرضَ قيمةٍ محلية فوق قيمةٍ حسمها الخادم بخلافها.
+      onSettled: circles.clearSettledDrafts,
     );
 
     return AppDependencies(
@@ -86,6 +95,7 @@ class AppDependencies {
       session: session,
       sync: sync,
       institutes: InstituteSwitcher(session: session, sync: sync),
+      circles: circles,
     );
   }
 

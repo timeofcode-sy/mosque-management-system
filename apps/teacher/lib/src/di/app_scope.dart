@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 
 import '../config.dart';
-import '../data/teacher_repository.dart';
 
 /// اعتماديات التطبيق، مبنيّةً مرّةً عند الإقلاع.
 ///
@@ -23,7 +22,7 @@ class AppDependencies {
   final TokenStore tokenStore;
   final ApiClient apiClient;
   final SyncEngine syncEngine;
-  final TeacherRepository repository;
+  final CircleRepository repository;
   final SessionController session;
   final SyncController sync;
 
@@ -50,7 +49,7 @@ class AppDependencies {
       deviceUuid: deviceUuid,
     );
 
-    final repository = TeacherRepository(db: db, syncEngine: syncEngine);
+    final repository = CircleRepository(db: db, syncEngine: syncEngine);
     final session = SessionController(
       db: db,
       apiClient: apiClient,

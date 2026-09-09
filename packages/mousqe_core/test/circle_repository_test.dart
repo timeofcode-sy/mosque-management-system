@@ -5,8 +5,6 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mousqe_core/mousqe_core.dart';
-import 'package:mousqe_teacher/src/data/teacher_repository.dart';
-import 'package:mousqe_teacher/src/data/views.dart';
 
 import 'support/test_institute.dart';
 
@@ -16,7 +14,7 @@ void main() {
   late AppDatabase db;
   late TestInstitute fixture;
   late SyncEngine engine;
-  late TeacherRepository repository;
+  late CircleRepository repository;
 
   final day = DateTime(2026, 9, 15);
 
@@ -31,7 +29,7 @@ void main() {
       app: 'teacher',
       deviceUuid: 'device-1',
     );
-    repository = TeacherRepository(db: db, syncEngine: engine);
+    repository = CircleRepository(db: db, syncEngine: engine);
   });
 
   tearDown(() => db.close());
@@ -79,7 +77,7 @@ void main() {
       );
 
       expect(session.exists, isFalse);
-      expect(session.editable, isTrue);
+      expect(session.editableBy(canAmend: false), isTrue);
       expect(session.roster, hasLength(3));
       expect(
         session.roster.every(
@@ -140,7 +138,7 @@ void main() {
       );
 
       // الأستاذ لا يملك attendance.amend، فالمنعُ هنا يوفّر عليه طابوراً مرفوضاً.
-      expect(session.editable, isFalse);
+      expect(session.editableBy(canAmend: false), isFalse);
     });
 
     test('a local draft is shown above the synced row it replaces', () async {
@@ -417,7 +415,7 @@ void main() {
         graceMinutes: 0,
       );
       expect(closed.status, 'completed');
-      expect(closed.editable, isFalse);
+      expect(closed.editableBy(canAmend: false), isFalse);
     });
   });
 

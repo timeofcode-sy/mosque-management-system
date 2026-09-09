@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
-import '../data/views.dart';
 import '../di/app_scope.dart';
 
 /// ملف الطالب: حضورُه ونقاطُه ومحفوظاتُه — كلُّها من drift.
@@ -114,7 +113,7 @@ class _Body extends StatelessWidget {
               title: Text(_range(row)),
               subtitle: Text(
                 '${DateFormat('yyyy-MM-dd').format(row.date)} · '
-                '${_typeLabel(row.type)}${row.grade == null ? '' : ' · ${_gradeLabel(row.grade!)}'}',
+                '${recitationTypeLabelOf(row.type)}${row.grade == null ? '' : ' · ${recitationGradeLabelOf(row.grade!)}'}',
               ),
               // الأسطر والنقاط محسوبةٌ على الخادم ومجمَّدة — تُعرض كما وصلت.
               trailing: Text('${row.points.toStringAsFixed(1)} ن'),
@@ -127,7 +126,7 @@ class _Body extends StatelessWidget {
           for (final row in profile.points.take(20))
             ListTile(
               dense: true,
-              title: Text(_reasonLabel(row.reason)),
+              title: Text(pointsReasonLabelOf(row.reason)),
               subtitle: Text(DateFormat('yyyy-MM-dd').format(row.awardedOn)),
               trailing: Text('${row.points.toStringAsFixed(1)} ن'),
             ),
@@ -168,28 +167,6 @@ class _Body extends StatelessWidget {
     AttendanceStatus.absent => BadgeStatus.absent,
     AttendanceStatus.late => BadgeStatus.late,
     AttendanceStatus.excused => BadgeStatus.excused,
-  };
-
-  static String _typeLabel(String type) => switch (type) {
-    'murajaa' => 'مراجعة',
-    'tilawah' => 'تلاوة',
-    _ => 'حفظ',
-  };
-
-  static String _gradeLabel(String grade) => switch (grade) {
-    'excellent' => 'ممتاز',
-    'very_good' => 'جيد جداً',
-    _ => 'جيد',
-  };
-
-  static String _reasonLabel(String reason) => switch (reason) {
-    'behavior' => 'سلوك',
-    'participation' => 'مشاركة',
-    'competition' => 'مسابقة',
-    'reward' => 'مكافأة',
-    'excellence' => 'تميّز',
-    'volunteering' => 'تطوّع',
-    _ => 'أخرى',
   };
 }
 

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 
-import '../data/labels.dart';
-import '../data/views.dart';
 import '../di/app_scope.dart';
 
 /// منح نقاطٍ يدوية وتصحيحُها — `points.award` ([API.md §6](../../../../../docs/API.md)).

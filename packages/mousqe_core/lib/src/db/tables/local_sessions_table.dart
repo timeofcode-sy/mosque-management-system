@@ -20,6 +20,13 @@ class LocalSessions extends Table {
   /// ضغط الأستاذ «إقفال الجلسة» وهو بلا شبكة.
   BoolColumn get completed => boolean().withDefault(const Constant(false))();
 
+  /// ضغط المشرف «قفل نهائي» وهو بلا شبكة — م.6.4.
+  ///
+  /// لم يكن له عمود لأن الأستاذ لا يقفل: بابُه `attendance.lock` وهو لا يملكها.
+  /// وبدونه كان الكشفُ يعود قابلاً للتحرير على جهاز القافل نفسِه حتى تصل دورةُ
+  /// السحب — أي أن المشرف يقفل ثم يجد البابَ مفتوحاً أمامه.
+  BoolColumn get locked => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {courseCircleId, sessionDate};
 }

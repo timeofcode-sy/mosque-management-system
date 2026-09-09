@@ -1,6 +1,28 @@
-import 'package:mousqe_core/mousqe_core.dart';
+import '../models/enums.dart';
+import '../db/database.dart';
+import '../support/quran.dart';
 
-/// حلقةٌ في الدورة الجارية مسنَدةٌ إلى صاحب الجهاز، مجموعةً من خمسة جداول
+/// أستاذٌ مسنَدٌ إلى حلقةٍ في الدورة الجارية — يُعرَض في كشف الحلقات، وهو صفٌّ في
+/// كشف **تفقّد الأساتذة** الذي يملكه الديسكتوب وحده (م.6.4).
+class TeacherView {
+  const TeacherView({
+    required this.id,
+    required this.uuid,
+    required this.fullName,
+    required this.role,
+  });
+
+  final int id;
+  final String uuid;
+  final String fullName;
+
+  /// `main` \| `assistant` — كما في `course_circle_teachers.role`.
+  final String role;
+
+  String get roleLabel => role == 'assistant' ? 'مساعد' : 'أساسي';
+}
+
+/// حلقةٌ في الدورة الجارية، مجموعةً من خمسة جداول
 /// (`course_circles` + `circles` + `shifts` + `course_circle_teachers` + `enrollments`).
 class CircleView {
   const CircleView({
@@ -13,6 +35,7 @@ class CircleView {
     required this.capacity,
     required this.status,
     required this.studentsCount,
+    this.teachers = const [],
   });
 
   final int id;
@@ -28,8 +51,14 @@ class CircleView {
   final String status;
   final int studentsCount;
 
+  /// أساتذةُ الحلقة — فارغةٌ في كشف الأستاذ (يعرف نفسَه)، ومملوءةٌ في كشف المشرف.
+  final List<TeacherView> teachers;
+
   /// `08:00:00` ⇒ `08:00` — ما يُعرَض لا ما يُحسب به.
   String get shiftStartsAtLabel => shiftStartsAt.split(':').take(2).join(':');
+
+  String get teachersLabel =>
+      teachers.map((teacher) => teacher.fullName).join(' · ');
 }
 
 /// من أين جاءت الحالة المعروضة أمام الطالب — تمييزٌ يراه الأستاذ فيعرف ما التزم
@@ -174,6 +203,61 @@ class RosterEntry {
   }
 }
 
+/// صفُّ أستاذٍ في كشف تفقّد الأساتذة — نظير [RosterEntry] وأخصرُ منه.
+///
+/// وأقصرُ بثلاثة أشياء عمداً: لا تسميعَ ولا نقاطَ (هي للطالب)، ولا `recordedAt`
+/// يُرسَل (العقدُ لا يحمله فلا حسمَ تعارض)، ولا حالةً «مقترحة» — الأستاذُ الذي لم
+/// يُسجَّل حضورُه لا يُفترض حاضراً، بخلاف الطالب: الخادمُ يزرع صفوفَ الطلاب عند
+/// فتح الجلسة ولا يزرع صفوفَ الأساتذة.
+class TeacherRosterEntry {
+  const TeacherRosterEntry({
+    required this.teacherId,
+    required this.teacherUuid,
+    required this.fullName,
+    required this.roleLabel,
+    required this.status,
+    required this.recorded,
+    required this.pending,
+    this.lateMinutes,
+    this.note,
+  });
+
+  final int teacherId;
+  final String teacherUuid;
+  final String fullName;
+  final String roleLabel;
+  final AttendanceStatus status;
+
+  /// هل سُجّل له حضورٌ فعلاً؟ — و`false` تعني أن [status] قيمةُ نموذجٍ لا حكمٌ وقع.
+  final bool recorded;
+
+  /// كتابةٌ على هذا الجهاز لم يؤكّدها الخادم بعد.
+  final bool pending;
+
+  final int? lateMinutes;
+  final String? note;
+
+  TeacherRosterEntry copyWith({
+    AttendanceStatus? status,
+    int? lateMinutes,
+    bool clearLateMinutes = false,
+    String? note,
+    bool clearNote = false,
+  }) {
+    return TeacherRosterEntry(
+      teacherId: teacherId,
+      teacherUuid: teacherUuid,
+      fullName: fullName,
+      roleLabel: roleLabel,
+      status: status ?? this.status,
+      recorded: true,
+      pending: true,
+      lateMinutes: clearLateMinutes ? null : (lateMinutes ?? this.lateMinutes),
+      note: clearNote ? null : (note ?? this.note),
+    );
+  }
+}
+
 /// حالةُ جلسةِ يومٍ واحد لحلقة واحدة، مركَّبةً من الصفوف المتزامنة فوقها المسودّة المحلية.
 class SessionView {
   const SessionView({
@@ -183,6 +267,7 @@ class SessionView {
     required this.localUuid,
     required this.status,
     required this.roster,
+    this.teacherRoster = const [],
   });
 
   final CircleView circle;
@@ -199,14 +284,43 @@ class SessionView {
 
   final List<RosterEntry> roster;
 
+  /// كشفُ أساتذة الحلقة — فارغٌ في تطبيق الأستاذ، فهو لا يتفقّدهم.
+  final List<TeacherRosterEntry> teacherRoster;
+
   bool get exists => status != null;
 
-  /// نظير `AttendanceSession::isEditable()` حرفياً: المسوّدة وحدها تقبل التحرير.
+  bool get completed => status == 'completed';
+
+  /// المقفلةُ نهائيّةٌ لا يعدّلها أحد — ولا يعيد فتحَها أحد.
+  bool get locked => status == 'locked';
+
+  /// هل يقبل هذا الكشفُ تحريراً **من هذا المستخدم**؟
   ///
-  /// والأستاذ **لا يملك** `attendance.amend`، فجلسةٌ أُقفلت لا يصحّحها من جهازه
-  /// ([SYNC-PROTOCOL.md §6](../../../../../docs/SYNC-PROTOCOL.md)). منعُ التحرير هنا
-  /// ليس تجميلاً: بدونه يجمع الطابورُ عملياتٍ مصيرُها الرفض بعد ساعات.
-  bool get editable => status == null || status == 'draft';
+  /// نقلٌ حرفيّ لِـ`editable()` في شاشة اللوحة، وبنفس الترتيب:
+  ///
+  /// | الحالة | الحكم |
+  /// |---|---|
+  /// | مقفلة | **لا** لأحد — القفل قرارٌ نهائي |
+  /// | مكتملة | لحاملِ `attendance.amend` وحده |
+  /// | مسودّة أو لم تُفتح | نعم |
+  ///
+  /// 🔄 **م.6.4: صارت تقرأ الصلاحية بدل أن تفترض الأستاذ.** كانت `editable` تحرّم
+  /// المكتملةَ على الجميع لأن التطبيق الوحيد كان تطبيقَ الأستاذ وهو لا يملك
+  /// `attendance.amend`. والآن الفرقُ بين السطحين **ما يملكه فاتحُهما** لا نسخةُ
+  /// البرنامج: المشرفُ يصحّح المكتملةَ من الديسكتوب، والأستاذُ لا — لا لأن شيفرةً
+  /// تمنعه بل لأن الصلاحيةَ ليست في لقطته. وهو نفسُ الحكم الذي يطبّقه الخادم في
+  /// `SyncPush::assertPermitted`، فما يُصفّ هنا لا يُرفض بعد ساعات
+  /// ([SYNC-PROTOCOL.md §6](../../../../../docs/SYNC-PROTOCOL.md)).
+  bool editableBy({required bool canAmend}) => switch (status) {
+    'locked' => false,
+    'completed' => canAmend,
+    _ => true,
+  };
+
+  /// هل هذا الحفظُ **تصحيحٌ رجعي**؟ — أي: يقع على جلسةٍ أُكملت.
+  ///
+  /// وهو ما يُرفع في `amend` إلى `sync/push`، فيحرسه الخادمُ بالصلاحية نفسِها.
+  bool get isAmendment => completed;
 
   bool get hasPendingRows =>
       roster.any((entry) => entry.origin == AttendanceOrigin.pending);

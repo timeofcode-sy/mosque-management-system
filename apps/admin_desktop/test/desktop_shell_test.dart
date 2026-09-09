@@ -72,6 +72,7 @@ void main() {
       session: session,
       sync: sync,
       institutes: InstituteSwitcher(session: session, sync: sync),
+      circles: CircleRepository(db: db, syncEngine: engine),
     );
 
     await session.restore();

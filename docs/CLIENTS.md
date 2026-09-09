@@ -18,7 +18,7 @@
 |---|---|---|---|---|---|
 | **اللوحة** `backend/` | 0–4.7 | `developer` · `super_admin` · `admin` · `supervisor` · `teacher` (جزئياً) | Livewire فوق القاعدة مباشرة — **بلا REST** | ✗ | ✅ **27 شاشة · 279 اختباراً** |
 | **الأستاذ** `apps/teacher/` | م.5 | `teacher` | REST + `sync/push` + `sync/pull` | ✓ كامل | ✅ **8 شاشات · 26 اختباراً** · Android |
-| **الديسكتوب** `apps/admin_desktop/` | م.6 | `supervisor` · `admin` · `super_admin` · `developer` 🔄 | REST + `sync/push` + `sync/pull` | ✓ كامل | 🔄 **م.6.3: الهيكل قائم · 18 اختباراً** — نافذةٌ ودخولٌ وتنقّلٌ ومبدّلُ معاهد؛ والشاشاتُ ⬜ م.6.4–6.6 · Windows |
+| **الديسكتوب** `apps/admin_desktop/` | م.6 | `supervisor` · `admin` · `super_admin` · `developer` 🔄 | REST + `sync/push` + `sync/pull` | ✓ كامل | 🔄 **م.6.4: التفقّد والتصحيح يعملان · 23 اختباراً** — الهيكلُ (م.6.3) وبابا الحلقات والتفقّد بالتصحيح الرجعي والقفل وتفقّد الأساتذة؛ والإدارةُ والتقارير ⬜ م.6.5–6.6 · **وبناءُ ويندوز مُجرَّب** |
 | **الأهل** `apps/guardian/` | م.7 | `guardian` | REST + `sync/pull` فقط | ✓ قراءة | ⬜ مجلد فارغ |
 | **الطالب** `apps/student/` | م.8 | `student` | REST + `sync/pull` فقط | ✓ قراءة | ⬜ مجلد فارغ |
 
@@ -51,8 +51,9 @@
 | الكيان | الجدول | يكتبه اليوم ✅ | سيكتبه ⬜ | يقرأ فقط |
 |---|---|---|---|---|
 | **جلسة تفقّد** (فتح/إكمال) | `attendance_sessions` | اللوحة (`attendance.take`) | الأستاذ · الديسكتوب | الأهل · الطالب |
+| **قفلُ الجلسة نهائياً** ✅ م.6.4 | `attendance_sessions.status` | اللوحة · **الديسكتوب** (`attendance.session.lock` خلف `attendance.lock`) | — | الأستاذ — ولا يملكها في البذرة |
 | **حضور الطالب** | `attendances` | اللوحة | **الأستاذ *أو* الديسكتوب — كلاهما أوف-لاين** | الأهل · الطالب |
-| **حضور الأستاذ** | `teacher_attendances` | اللوحة | الديسكتوب | — |
+| **حضور الأستاذ** | `teacher_attendances` | اللوحة | **الديسكتوب** ✅ م.6.4 (`attendance.teacher.take` خلف `teachers.view`) | الأستاذ |
 | **تسجيل الطالب** (الاستمارة) | `students` + `guardians` + `student_trait` | اللوحة (`students.manage`) · **الديسكتوب** ✅ م.6.2 (`student.save`) | — | الأستاذ · الأهل · الطالب |
 | **التسجيل في حلقة والنقل** | `enrollments` · `student_transfers` | اللوحة (`enrollments.manage`) · **الديسكتوب** ✅ م.6.2 (`enrollment.save` · `student.transfer`) | — | الأستاذ |
 | **إعذار الغياب — التقديم** | `absence_excuses` | اللوحة | **الأهل** (`POST /guardian/excuses`) · الأستاذ (`excuse.submit`) | الطالب |
@@ -218,4 +219,4 @@
 
 | # | الفجوة | من تمسّه | المرجع |
 |---|---|---|---|
-| 8 | 🔴 **قفلُ الجلسة بلا نوع عملية.** `attendance.session.complete` في الطابور **إكمالٌ** يفعله الأستاذ كل يوم لا قفلٌ نهائي؛ و`LockAttendanceSession` — وهو ما تحرسه `attendance.lock` وما يميّز الديسكتوب — بلا نوعٍ يبلغه من عميل. ومعه `attendance.teacher.take` بلا حارسٍ في `SyncPush::assertPermitted` | الديسكتوب | [CHECKPOINT-PHASE-6.3.MD §9](CHECKPOINT-PHASE-6.3.MD) — يُفتح في م.6.4 |
+| 8 | ✅ **سُدَّت في م.6.4.** فُتح `attendance.session.lock` خلف `attendance.lock` ⇐ `LockAttendanceSession`، وبقي `attendance.session.complete` **إكمالاً بلا حارس** يفعله الأستاذُ كلَّ يوم. وحُرس `attendance.teacher.take` بـ`teachers.view` — وهي ما يفصل جمهورَه عن غيره بلا صلاحيةٍ جديدة في الكتالوج | الديسكتوب | [CHECKPOINT-PHASE-6.4.MD §3](CHECKPOINT-PHASE-6.4.MD) |

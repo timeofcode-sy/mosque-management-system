@@ -15,6 +15,10 @@ class TestInstitute {
   static const otherTeacherUuid = 'tch-other';
   static const circleUuid = 'cc-1';
   static const otherCircleUuid = 'cc-2';
+
+  /// حلقةٌ في الدورة الجارية **لم يُسنَد إليها أستاذٌ بعد** — بها يُختبَر أن كشف
+  /// المشرف يراها (فهو من يسند إليها) وأن كشف الأستاذ لا يراه.
+  static const unstaffedCircleUuid = 'cc-3';
   static const shiftStartsAt = '08:00:00';
 
   /// معرّفات الطلاب المحلية بترتيب الزرع.
@@ -128,6 +132,29 @@ class TestInstitute {
         );
 
     await db
+        .into(db.circles)
+        .insert(
+          CirclesCompanion.insert(
+            id: const Value(3),
+            uuid: 'crc-3',
+            instituteId: 1,
+            name: 'حلقة العصر',
+          ),
+        );
+
+    await db
+        .into(db.courseCircles)
+        .insert(
+          CourseCirclesCompanion.insert(
+            id: const Value(3),
+            uuid: unstaffedCircleUuid,
+            courseId: 1,
+            circleId: 3,
+            shiftId: 1,
+          ),
+        );
+
+    await db
         .into(db.teachers)
         .insert(
           TeachersCompanion.insert(
@@ -168,6 +195,20 @@ class TestInstitute {
             uuid: 'cct-2',
             courseCircleId: 2,
             teacherId: 2,
+          ),
+        );
+
+    // أستاذٌ ثانٍ في حلقة الفرقان — بأستاذين تُختبَر **قاعدةُ عدم التكرار**: كشفُ
+    // المشرف لا يعرض الحلقةَ مرّتين لأنها بأستاذين.
+    await db
+        .into(db.courseCircleTeachers)
+        .insert(
+          CourseCircleTeachersCompanion.insert(
+            id: const Value(3),
+            uuid: 'cct-3',
+            courseCircleId: 1,
+            teacherId: 2,
+            role: const Value('assistant'),
           ),
         );
 
@@ -288,6 +329,29 @@ class TestInstitute {
             toAyah: Value(toAyah),
             juz: const Value(30),
             points: Value(points),
+          ),
+        );
+  }
+
+  /// تفقّدُ أستاذٍ وصل من الخادم — الجدولُ يُبثّ في `change_log` منذ م.4، ولم يكن
+  /// له صفٌّ في drift حتى م.6.4.
+  Future<void> syncTeacherAttendance({
+    required String uuid,
+    required int sessionId,
+    required int teacherId,
+    required String status,
+    int? lateMinutes,
+  }) {
+    return db
+        .into(db.teacherAttendances)
+        .insert(
+          TeacherAttendancesCompanion.insert(
+            uuid: uuid,
+            attendanceSessionId: sessionId,
+            teacherId: teacherId,
+            status: Value(status),
+            lateMinutes: Value(lateMinutes),
+            recordedAt: DateTime(2026, 9, 15, 8, 2),
           ),
         );
   }
