@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Admin\CatalogController;
+use App\Http\Controllers\Api\V1\Admin\CurriculumAdminController;
 use App\Http\Controllers\Api\V1\Admin\InstituteAdminController;
 use App\Http\Controllers\Api\V1\Admin\UserAdminController;
 use App\Http\Controllers\Api\V1\AuthController;
@@ -89,6 +90,15 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('/circles', [CatalogController::class, 'storeCircle']);
                 Route::put('/circles/{uuid}', [CatalogController::class, 'updateCircle']);
                 Route::post('/circles/{uuid}/run', [CatalogController::class, 'runCircle']);
+            });
+
+            // ✅ م.6.5 — الفجوة المسمّاة منذ م.6.2: المناهج بلا نقطة.
+            Route::middleware('permission:curricula.manage')->group(function (): void {
+                Route::post('/curricula', [CurriculumAdminController::class, 'store']);
+                Route::put('/curricula/{uuid}', [CurriculumAdminController::class, 'update']);
+                Route::post('/curricula/{uuid}/items', [CurriculumAdminController::class, 'storeItem']);
+                Route::put('/curriculum-items/{uuid}', [CurriculumAdminController::class, 'updateItem']);
+                Route::delete('/curriculum-items/{uuid}', [CurriculumAdminController::class, 'destroyItem']);
             });
         });
 

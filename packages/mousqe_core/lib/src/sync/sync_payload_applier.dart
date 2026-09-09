@@ -119,17 +119,148 @@ class SyncPayloadApplier {
           joinedOn: Value(_date(payload['joined_on'])),
           leftOn: Value(_date(payload['left_on'])),
         ));
+      case 'shift_days':
+        await _put(_db.shiftDays, ShiftDaysCompanion.insert(
+          id: _id(payload),
+          uuid: payload['uuid'] as String,
+          shiftId: _int(payload['shift_id'])!,
+          weekday: _int(payload['weekday'])!,
+        ));
+      // 🔄 م.6.5 — الاستمارةُ كاملةً لا أعمدةَ العرض: المشرفُ يحرّرها أوف-لاين،
+      // وحفظُ ثُمنِها كان يعني فتحَ استمارةٍ نصفُها فارغ ثم محوَ ما لم يُعرض.
       case 'students':
         await _put(_db.students, StudentsCompanion.insert(
           id: _id(payload),
           uuid: payload['uuid'] as String,
           instituteId: _int(payload['institute_id'])!,
           registrationNo: Value(payload['registration_no'] as String?),
+          registrationDate: Value(_date(payload['registration_date'])),
+          registrationDateHijri: Value(payload['registration_date_hijri'] as String?),
           photoPath: Value(payload['photo_path'] as String?),
           firstName: payload['first_name'] as String,
           fatherName: payload['father_name'] as String,
           familyName: payload['family_name'] as String,
+          birthDate: Value(_date(payload['birth_date'])),
+          birthPlace: Value(payload['birth_place'] as String?),
+          gender: Value(payload['gender'] as String?),
+          nationalId: Value(payload['national_id'] as String?),
+          gradeLevel: Value(payload['grade_level'] as String?),
+          studentJob: Value(payload['student_job'] as String?),
+          phone: Value(payload['phone'] as String?),
+          permanentAddress: Value(payload['permanent_address'] as String?),
+          currentAddress: Value(payload['current_address'] as String?),
+          familyMembersCount: Value(_int(payload['family_members_count'])),
+          studentHealthStatus: Value(payload['student_health_status'] as String?),
+          familyHealthStatus: Value(payload['family_health_status'] as String?),
+          notes: Value(payload['notes'] as String?),
           status: Value(payload['status'] as String? ?? 'active'),
+        ));
+      case 'guardians':
+        await _put(_db.guardians, GuardiansCompanion.insert(
+          id: _id(payload),
+          uuid: payload['uuid'] as String,
+          instituteId: _int(payload['institute_id'])!,
+          fullName: payload['full_name'] as String,
+          phone: Value(payload['phone'] as String?),
+          alternatePhone: Value(payload['alternate_phone'] as String?),
+          occupation: Value(payload['occupation'] as String?),
+          nationalId: Value(payload['national_id'] as String?),
+          address: Value(payload['address'] as String?),
+          isAlive: Value(_bool(payload['is_alive'], orElse: true)),
+          notes: Value(payload['notes'] as String?),
+        ));
+      case 'guardian_student':
+        await _put(_db.guardianStudentTable, GuardianStudentTableCompanion.insert(
+          id: _id(payload),
+          uuid: payload['uuid'] as String,
+          guardianId: _int(payload['guardian_id'])!,
+          studentId: _int(payload['student_id'])!,
+          relation: Value(payload['relation'] as String? ?? 'father'),
+          isPrimary: Value(_bool(payload['is_primary'], orElse: false)),
+          canViewReports: Value(_bool(payload['can_view_reports'], orElse: true)),
+          canSubmitExcuses: Value(_bool(payload['can_submit_excuses'], orElse: true)),
+        ));
+      case 'traits':
+        await _put(_db.personalTraits, PersonalTraitsCompanion.insert(
+          id: _id(payload),
+          uuid: payload['uuid'] as String,
+          instituteId: Value(_int(payload['institute_id'])),
+          name: payload['name'] as String,
+          slug: payload['slug'] as String,
+          polarity: Value(payload['polarity'] as String? ?? 'neutral'),
+          color: Value(payload['color'] as String?),
+          sortOrder: Value(_int(payload['sort_order']) ?? 0),
+          isActive: Value(_bool(payload['is_active'], orElse: true)),
+        ));
+      case 'student_trait':
+        await _put(_db.studentTraitTable, StudentTraitTableCompanion.insert(
+          id: _id(payload),
+          uuid: payload['uuid'] as String,
+          studentId: _int(payload['student_id'])!,
+          traitId: _int(payload['trait_id'])!,
+          note: Value(payload['note'] as String?),
+        ));
+      case 'curricula':
+        await _put(_db.curricula, CurriculaCompanion.insert(
+          id: _id(payload),
+          uuid: payload['uuid'] as String,
+          instituteId: Value(_int(payload['institute_id'])),
+          name: payload['name'] as String,
+          slug: payload['slug'] as String,
+          type: Value(payload['type'] as String? ?? 'custom'),
+          description: Value(payload['description'] as String?),
+          sortOrder: Value(_int(payload['sort_order']) ?? 0),
+          isActive: Value(_bool(payload['is_active'], orElse: true)),
+        ));
+      case 'curriculum_items':
+        await _put(_db.curriculumItems, CurriculumItemsCompanion.insert(
+          id: _id(payload),
+          uuid: payload['uuid'] as String,
+          curriculumId: _int(payload['curriculum_id'])!,
+          name: payload['name'] as String,
+          code: payload['code'] as String,
+          sortOrder: Value(_int(payload['sort_order']) ?? 0),
+          meta: Value(_json(payload['meta'])),
+          isActive: Value(_bool(payload['is_active'], orElse: true)),
+        ));
+      case 'student_curriculum_progress':
+        await _put(_db.studentCurriculumProgressTable, StudentCurriculumProgressTableCompanion.insert(
+          id: _id(payload),
+          uuid: payload['uuid'] as String,
+          studentId: _int(payload['student_id'])!,
+          curriculumItemId: _int(payload['curriculum_item_id'])!,
+          courseCircleId: Value(_int(payload['course_circle_id'])),
+          status: Value(payload['status'] as String? ?? 'not_started'),
+          percent: Value(_int(payload['percent']) ?? 0),
+          score: Value(_int(payload['score'])),
+          points: Value(_double(payload['points']) ?? 0),
+          completedOn: Value(_date(payload['completed_on'])),
+          achievedOn: Value(_date(payload['achieved_on'])),
+          notes: Value(payload['notes'] as String?),
+        ));
+      case 'custom_fields':
+        await _put(_db.customFields, CustomFieldsCompanion.insert(
+          id: _id(payload),
+          uuid: payload['uuid'] as String,
+          instituteId: _int(payload['institute_id'])!,
+          entity: payload['entity'] as String,
+          key: payload['key'] as String,
+          label: payload['label'] as String,
+          type: Value(payload['type'] as String? ?? 'text'),
+          options: Value(_json(payload['options'])),
+          group: Value(payload['group'] as String?),
+          isRequired: Value(_bool(payload['is_required'], orElse: false)),
+          isActive: Value(_bool(payload['is_active'], orElse: true)),
+          sortOrder: Value(_int(payload['sort_order']) ?? 0),
+        ));
+      case 'custom_field_values':
+        await _put(_db.customFieldValues, CustomFieldValuesCompanion.insert(
+          id: _id(payload),
+          uuid: payload['uuid'] as String,
+          customFieldId: _int(payload['custom_field_id'])!,
+          entityType: payload['entity_type'] as String,
+          entityId: _int(payload['entity_id'])!,
+          value: Value(_json(payload['value'])),
         ));
       case 'enrollments':
         await _put(_db.enrollments, EnrollmentsCompanion.insert(
@@ -262,7 +393,17 @@ class SyncPayloadApplier {
       'course_circles' => _db.courseCircles,
       'teachers' => _db.teachers,
       'course_circle_teachers' => _db.courseCircleTeachers,
+      'shift_days' => _db.shiftDays,
       'students' => _db.students,
+      'guardians' => _db.guardians,
+      'guardian_student' => _db.guardianStudentTable,
+      'traits' => _db.personalTraits,
+      'student_trait' => _db.studentTraitTable,
+      'curricula' => _db.curricula,
+      'curriculum_items' => _db.curriculumItems,
+      'student_curriculum_progress' => _db.studentCurriculumProgressTable,
+      'custom_fields' => _db.customFields,
+      'custom_field_values' => _db.customFieldValues,
       'enrollments' => _db.enrollments,
       'attendance_sessions' => _db.attendanceSessions,
       'attendances' => _db.attendances,

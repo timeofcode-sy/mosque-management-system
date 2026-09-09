@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\SaveCurriculum;
 use App\Actions\SaveCurriculumItem;
 use App\Concerns\InteractsWithInstitute;
 use App\Enums\CurriculumType;
@@ -8,7 +9,6 @@ use App\Models\CurriculumItem;
 use App\Queries\InstituteCatalogQuery;
 use Flux\Flux;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -104,14 +104,19 @@ new #[Title('المناهج')] class extends Component
             'is_active' => ['boolean'],
         ], attributes: ['name' => 'اسم المنهج']);
 
-        Curriculum::updateOrCreate(
-            ['id' => $this->editingId],
-            [
-                ...$validated,
-                'institute_id' => $this->institute->id,
-                'slug' => Str::slug($validated['name']) ?: Str::random(8),
-            ],
-        );
+        // ✅ م.6.5 — الفعلُ المشترك بدل الكتابة المباشرة، فلا يفترق كاتبا المنهج
+        // بين اللوحة والديسكتوب. وفيه حراسةُ «العامُّ لا يُحرَّر من معهد».
+        $editing = $this->editingId === null
+            ? null
+            : $this->curricula->firstWhere('id', $this->editingId);
+
+        try {
+            app(SaveCurriculum::class)->handle($this->institute, $validated, $editing);
+        } catch (RuntimeException $exception) {
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
+
+            return;
+        }
 
         unset($this->curricula);
         Flux::modal('curriculum-form')->close();

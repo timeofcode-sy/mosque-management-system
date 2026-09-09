@@ -42,6 +42,19 @@ class _DesktopShellState extends State<DesktopShell> {
 
   final Map<String, GlobalKey<NavigatorState>> _navigators = {};
 
+  /// 🔑 م.6.5 — **الأبوابُ تُبنى عند أوّل زيارة لا عند الإقلاع.**
+  ///
+  /// [IndexedStack] يبني أبناءه كلَّهم ويعرض واحداً؛ وهو ما يعطي «لكلِّ بابٍ
+  /// مكدّسُه» مجاناً (§2 البند 2). وكان بلا ثمنٍ ما دامت الأبوابُ placeholder،
+  /// فلمّا مُلئت في هذه المرحلة صار الإقلاعُ يشغّل `initState` لخمسةَ عشرَ
+  /// باباً — ومنها ثلاثةٌ تقرأ من الشبكة (`/admin/users` · `/admin/roles` ·
+  /// `/admin/credentials`)، فيرسل التطبيقُ ثلاثةَ طلباتٍ لم يطلبها أحد ويعرض
+  /// أخطاءَها لمن لم يفتح بابَها.
+  ///
+  /// فيُبنى البابُ عند أوّل اختيارٍ له **ويبقى مبنيّاً بعده** — فالمكدّسُ محفوظ
+  /// كما كان، والثمنُ يُدفع لِما يُفتح وحده.
+  final Set<String> _visited = {};
+
   @override
   Widget build(BuildContext context) {
     final session = AppScope.of(context).session;
@@ -54,6 +67,8 @@ class _DesktopShellState extends State<DesktopShell> {
     final selected = sections.any((section) => section.id == _selectedId)
         ? _selectedId!
         : sections.first.id;
+
+    _visited.add(selected);
 
     return Scaffold(
       body: Column(
@@ -72,14 +87,17 @@ class _DesktopShellState extends State<DesktopShell> {
                     index: sections.indexWhere((s) => s.id == selected),
                     children: [
                       for (final section in sections)
-                        _SectionHost(
-                          key: ValueKey(section.id),
-                          navigatorKey: _navigators.putIfAbsent(
-                            section.id,
-                            GlobalKey<NavigatorState>.new,
-                          ),
-                          section: section,
-                        ),
+                        if (_visited.contains(section.id))
+                          _SectionHost(
+                            key: ValueKey(section.id),
+                            navigatorKey: _navigators.putIfAbsent(
+                              section.id,
+                              GlobalKey<NavigatorState>.new,
+                            ),
+                            section: section,
+                          )
+                        else
+                          SizedBox.shrink(key: ValueKey(section.id)),
                     ],
                   ),
                 ),

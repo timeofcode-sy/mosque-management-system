@@ -237,6 +237,34 @@ abstract class ApiClient {
     @Body() Map<String, dynamic> body,
   );
 
+  // ── المناهجُ وبنودُها ✅ م.6.5 — الفجوةُ المسمّاة منذ م.6.2 ────────────────
+  // نفسُ حجج بنية الدورة: بنيةٌ يُبنى عليها لا حدثٌ يُسجَّل، فسجلُّ محفوظات
+  // الطالب يُعلَّق على بنودها. ولا `GET` لها — تصل في `sync/pull`.
+
+  @POST('/admin/curricula')
+  Future<HttpResponse<dynamic>> createCurriculum(@Body() Map<String, dynamic> body);
+
+  @PUT('/admin/curricula/{uuid}')
+  Future<HttpResponse<dynamic>> updateCurriculum(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST('/admin/curricula/{uuid}/items')
+  Future<HttpResponse<dynamic>> createCurriculumItem(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @PUT('/admin/curriculum-items/{uuid}')
+  Future<HttpResponse<dynamic>> updateCurriculumItem(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @DELETE('/admin/curriculum-items/{uuid}')
+  Future<HttpResponse<dynamic>> deleteCurriculumItem(@Path('uuid') String uuid);
+
   @GET('/teacher/circles')
   Future<HttpResponse<dynamic>> teacherCircles();
 

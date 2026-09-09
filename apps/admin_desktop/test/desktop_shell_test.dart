@@ -73,6 +73,9 @@ void main() {
       sync: sync,
       institutes: InstituteSwitcher(session: session, sync: sync),
       circles: CircleRepository(db: db, syncEngine: engine),
+      students: StudentRepository(db: db, syncEngine: engine),
+      catalog: CatalogRepository(db: db, apiClient: api),
+      admin: AdminRepository(apiClient: api),
     );
 
     await session.restore();
@@ -81,7 +84,12 @@ void main() {
   Widget shell() => AppScope(
         dependencies: dependencies,
         child: MousqeApp(
-          theme: MousqeTheme.fallback(),
+          // ثيمُ التطبيق نفسُه لا ثيمُ الهاتف — درسُ [CHECKPOINT-PHASE-6.4.MD §7]:
+          // اختبارٌ بثيمٍ غير ثيم التطبيق **يقيس شاشةً لا وجود لها**. وبقي هذا
+          // على `fallback()` منذ م.6.3 لأن أبوابه كانت placeholder بلا زرّ، ثم
+          // مُلئت في م.6.5 فظهر الفرق: ثيمُ الهاتف يعطي كلَّ زرٍّ عرضاً لا
+          // نهائياً، فينكسر شريطُ الأدوات.
+          theme: MousqeTheme.forDesktop(MousqeTheme.fallback()),
           home: const DesktopShell(),
         ),
       );

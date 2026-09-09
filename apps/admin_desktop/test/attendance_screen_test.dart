@@ -87,6 +87,9 @@ void main() {
       sync: sync,
       institutes: InstituteSwitcher(session: session, sync: sync),
       circles: CircleRepository(db: db, syncEngine: engine),
+      students: StudentRepository(db: db, syncEngine: engine),
+      catalog: CatalogRepository(db: db, apiClient: api),
+      admin: AdminRepository(apiClient: api),
     );
 
     await session.restore();

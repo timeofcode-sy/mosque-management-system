@@ -24,6 +24,9 @@ class AppDependencies {
     required this.sync,
     required this.institutes,
     required this.circles,
+    required this.students,
+    required this.catalog,
+    required this.admin,
   });
 
   final AppDatabase db;
@@ -36,6 +39,22 @@ class AppDependencies {
 
   /// عملُ الحلقة كلُّه — مرفوعٌ إلى `mousqe_core` في م.6.4 ومشتركٌ مع الأستاذ.
   final CircleRepository circles;
+
+  /// ✅ م.6.5 — والثلاثةُ منفصلةٌ بقناة الكتابة لا بالموضوع:
+  ///
+  /// | | يقرأ | يكتب | أوف-لاين |
+  /// |---|---|---|---|
+  /// | [students] | drift | الطابور | ✓ |
+  /// | [catalog] | drift | REST | ✗ الكتابةُ وحدها |
+  /// | [admin] | الشبكة | REST | ✗ |
+  ///
+  /// وهي القاعدةُ المُعلَنة في [PHASE-6-STAGES.MD §3.1] مرسومةً في الاعتماديات:
+  /// ما يُكتب في المسجد بلا شبكة يمرّ بالطابور، وما هو متّصلٌ بطبعه REST.
+  final StudentRepository students;
+
+  final CatalogRepository catalog;
+
+  final AdminRepository admin;
 
   static Future<AppDependencies> create({
     AppDatabase? database,
@@ -75,6 +94,7 @@ class AppDependencies {
     );
 
     final circles = CircleRepository(db: db, syncEngine: syncEngine);
+    final students = StudentRepository(db: db, syncEngine: syncEngine);
 
     final sync = SyncController(
       engine: syncEngine,
@@ -96,6 +116,9 @@ class AppDependencies {
       sync: sync,
       institutes: InstituteSwitcher(session: session, sync: sync),
       circles: circles,
+      students: students,
+      catalog: CatalogRepository(db: db, apiClient: apiClient),
+      admin: AdminRepository(apiClient: apiClient),
     );
   }
 

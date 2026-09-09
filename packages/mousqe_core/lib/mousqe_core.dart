@@ -18,9 +18,13 @@ export 'src/models/student_point.dart';
 
 export 'src/db/database.dart';
 
+export 'src/data/admin_repository.dart';
+export 'src/data/admin_views.dart';
+export 'src/data/catalog_repository.dart';
 export 'src/data/circle_repository.dart';
 export 'src/data/circle_views.dart';
 export 'src/data/labels.dart';
+export 'src/data/student_repository.dart';
 
 export 'src/api/api_client.dart';
 export 'src/api/api_errors.dart';
