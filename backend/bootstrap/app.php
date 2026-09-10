@@ -6,6 +6,7 @@ use App\Http\Middleware\SetPanelInstituteScope;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
@@ -37,4 +38,23 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        /**
+         * ✅ م.9.1 — «Too Many Attempts.» لا تُقرأ على شاشةِ أبٍ عربية.
+         *
+         * السقفُ في `throttle:login` من صنع لارافيل، ونصُّه إنجليزيٌّ ثابت. وكلُّ
+         * ما يقوله العميلُ للمستخدم يأتي من الخادم (`messageFor`)، فالتعريبُ
+         * ههنا لا في التطبيقات الأربعة.
+         */
+        $exceptions->render(function (ThrottleRequestsException $exception, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json(
+                ['message' => 'حاولتَ مراراً. أمهِل قليلاً ثم أعد المحاولة.'],
+                429,
+                $exception->getHeaders(),
+            );
+        });
     })->create();

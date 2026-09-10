@@ -6,7 +6,10 @@ use App\Models\Institute;
 use App\Models\Teacher;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Laravel\Sanctum\PersonalAccessToken;
 use Spatie\Permission\PermissionRegistrar;
@@ -139,5 +142,116 @@ class AuthTest extends TestCase
     public function test_a_request_without_a_token_is_rejected(): void
     {
         $this->getJson('/api/v1/auth/me')->assertUnauthorized();
+    }
+
+    /**
+     * ✅ م.9.1 — دَينُ م.4 مسدوداً: خمسُ محاولاتٍ خاطئة تقفل الاسمَ ربعَ ساعة.
+     *
+     * والسادسةُ تُردّ **قبل أن تُفحص كلمةُ المرور أصلاً** — فالكلمةُ الصحيحة
+     * نفسُها لا تفتح خلال القفل، وإلّا كان القفلُ زينةً.
+     */
+    public function test_five_wrong_passwords_lock_the_account_for_this_address(): void
+    {
+        User::factory()->create(['username' => 'student1000', 'password' => 'secret-password']);
+
+        foreach (range(1, 5) as $attempt) {
+            $this->postJson('/api/v1/auth/login', [
+                'username' => 'student1000',
+                'password' => 'wrong-password',
+                'device_name' => 'jest',
+            ])->assertUnprocessable();
+        }
+
+        $locked = $this->postJson('/api/v1/auth/login', [
+            'username' => 'student1000',
+            'password' => 'secret-password',
+            'device_name' => 'jest',
+        ]);
+
+        $locked->assertStatus(429);
+        $this->assertStringContainsString('أعِد المحاولة بعد', $locked->json('errors.username.0'));
+        $this->assertSame(0, PersonalAccessToken::count());
+    }
+
+    /**
+     * 🔑 القفلُ على **الاسم والعنوان معاً**: زميلٌ على الشبكة نفسِها لا يُحرَم
+     * لأنّ غيرَه أخطأ. ولولا ذلك لأقفلت شبكةُ المسجد على أربعمئة طالب.
+     */
+    public function test_locking_one_name_does_not_lock_another_on_the_same_address(): void
+    {
+        User::factory()->create(['username' => 'student1000', 'password' => 'secret-password']);
+        User::factory()->create(['username' => 'student1001', 'password' => 'secret-password']);
+
+        foreach (range(1, 5) as $attempt) {
+            $this->postJson('/api/v1/auth/login', [
+                'username' => 'student1000',
+                'password' => 'wrong-password',
+                'device_name' => 'jest',
+            ])->assertUnprocessable();
+        }
+
+        $this->postJson('/api/v1/auth/login', [
+            'username' => 'student1001',
+            'password' => 'secret-password',
+            'device_name' => 'jest',
+        ])->assertOk();
+    }
+
+    /**
+     * 🔑 **النجاحُ يمسح العدّاد**، فأربعُ محاولاتٍ خاطئة ثم دخولٌ صحيح لا تترك
+     * أثراً: من نسي كلمتَه مرّتين هذا الشهر ومرّتين الشهر القادم ليس مهاجماً.
+     */
+    public function test_a_successful_login_clears_the_failed_attempts(): void
+    {
+        User::factory()->create(['username' => 'student1000', 'password' => 'secret-password']);
+
+        foreach (range(1, 4) as $attempt) {
+            $this->postJson('/api/v1/auth/login', [
+                'username' => 'student1000',
+                'password' => 'wrong-password',
+                'device_name' => 'jest',
+            ])->assertUnprocessable();
+        }
+
+        $this->postJson('/api/v1/auth/login', [
+            'username' => 'student1000',
+            'password' => 'secret-password',
+            'device_name' => 'jest',
+        ])->assertOk();
+
+        // العدّادُ ممسوحٌ الآن، فأربعٌ أخرى لا تبلغ الحدّ.
+        foreach (range(1, 4) as $attempt) {
+            $this->postJson('/api/v1/auth/login', [
+                'username' => 'student1000',
+                'password' => 'wrong-password',
+                'device_name' => 'jest',
+            ])->assertUnprocessable();
+        }
+
+        $this->postJson('/api/v1/auth/login', [
+            'username' => 'student1000',
+            'password' => 'secret-password',
+            'device_name' => 'jest',
+        ])->assertOk();
+    }
+
+    /**
+     * 🔑 **رسالةُ 429 عربيةٌ** أيّاً كان مصدرُها: العميلُ يعرض نصَّ الخادم كما
+     * هو (`messageFor`)، فنصُّ لارافيل الإنجليزي كان يبلغ شاشةَ أبٍ لا يقرؤه.
+     */
+    public function test_the_outer_ceiling_answers_in_arabic(): void
+    {
+        $exception = new ThrottleRequestsException('Too Many Attempts.');
+
+        $rendered = app(ExceptionHandler::class)->render(
+            Request::create('/api/v1/auth/login', 'POST'),
+            $exception,
+        );
+
+        $body = json_decode($rendered->getContent(), true);
+
+        $this->assertSame(429, $rendered->getStatusCode());
+        $this->assertStringContainsString('حاولتَ مراراً', $body['message']);
+        $this->assertStringNotContainsString('Too Many Attempts', $body['message']);
     }
 }

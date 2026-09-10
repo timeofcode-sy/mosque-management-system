@@ -9,6 +9,8 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
@@ -20,6 +22,17 @@ use RuntimeException;
  */
 class AuthController extends Controller
 {
+    /**
+     * ✅ م.9.1 — المحاولاتُ الخاطئة قبل قفل الاسم على هذا العنوان، ومدّةُ القفل.
+     *
+     * خمسٌ تسعُ من نسي محرفاً فأعاد، وتقصُر جداً عن تخمينٍ مجدٍ: خمسٌ كلَّ ربع
+     * ساعة تعني عشرين محاولةً في الساعة، وكلمةُ المرور المولَّدة أبعدُ من ذلك
+     * بمراتب.
+     */
+    private const MAX_ATTEMPTS = 5;
+
+    private const LOCKOUT_SECONDS = 900;
+
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
@@ -28,16 +41,30 @@ class AuthController extends Controller
             'device_name' => ['required', 'string', 'max:64'],
         ]);
 
+        $key = self::throttleKey($request, $credentials['username']);
+
+        if (RateLimiter::tooManyAttempts($key, self::MAX_ATTEMPTS)) {
+            throw ValidationException::withMessages([
+                'username' => [self::waitMessage(RateLimiter::availableIn($key))],
+            ])->status(429);
+        }
+
         $user = User::query()
             ->where('username', $credentials['username'])
             ->orWhere(fn ($query) => $query->whereNotNull('email')->where('email', $credentials['username']))
             ->first();
 
         if ($user === null || ! Hash::check($credentials['password'], $user->password)) {
+            RateLimiter::hit($key, self::LOCKOUT_SECONDS);
+
             throw ValidationException::withMessages([
                 'username' => ['بيانات الدخول غير صحيحة.'],
             ]);
         }
+
+        // 🔑 **النجاحُ يمسح العدّاد.** أبٌ يدخل من هاتفه ثم من هاتف زوجه ليس
+        // مهاجماً، وعدٌّ لا يُمسح يقفل الحسابَ على صاحبه بلا أن يخطئ أحد.
+        RateLimiter::clear($key);
 
         if (! $user->is_active) {
             throw ValidationException::withMessages([
@@ -63,6 +90,42 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         return response()->json(self::identity($request->user()));
+    }
+
+    /**
+     * مفتاحُ العدّ: **الاسمُ والعنوانُ معاً** لا أحدُهما — ✅ م.9.1.
+     *
+     * العنوانُ وحده يقفل المعهدَ كلَّه: أجهزةُ المسجد خلف شبكةٍ واحدة تخرج بعنوانٍ
+     * واحد، فخطأُ أستاذٍ في كلمته يمنع من خلفه أربعمئة طالب.
+     *
+     * والاسمُ وحده يفتح باباً آخر: من عرف اسمَ طالبٍ — وهو مطبوعٌ على بطاقته —
+     * أقفل حسابَه عليه متى شاء بخمس محاولاتٍ خاطئة. حرمانٌ لا اختراقاً، لكنه ضرر.
+     *
+     * فباجتماعهما يُقفَل **الحسابُ على المهاجم** ويبقى مفتوحاً لصاحبه من جهازه.
+     * والسقفُ العريض على العنوان وحده يبقى في `throttle:login`، لأن غايتَه أخرى:
+     * منعُ إغراقٍ يستنزف المعالجَ بـbcrypt قبل أن يبلغ الطلبُ قاعدةَ البيانات
+     * (`AppServiceProvider::configureRateLimits`).
+     */
+    private static function throttleKey(Request $request, string $username): string
+    {
+        return 'login|'.sha1(Str::lower($username).'|'.$request->ip());
+    }
+
+    /**
+     * المدّةُ الباقية بصيغةٍ عربية سليمة — والتمييزُ يتبع العدد.
+     */
+    private static function waitMessage(int $seconds): string
+    {
+        $minutes = (int) ceil($seconds / 60);
+
+        $wait = match (true) {
+            $minutes <= 1 => 'دقيقة',
+            $minutes === 2 => 'دقيقتين',
+            $minutes <= 10 => "{$minutes} دقائق",
+            default => "{$minutes} دقيقة",
+        };
+
+        return "حاولتَ مراراً. أعِد المحاولة بعد {$wait}.";
     }
 
     /**

@@ -16,7 +16,8 @@ use App\Http\Controllers\Api\V1\TeacherController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
-    Route::post('/auth/login', [AuthController::class, 'login']);
+    /** ✅ م.9.1 — سقفٌ على العنوان يسبق bcrypt؛ والقفلُ على الحساب في المتحكّم نفسِه */
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:api-login');
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/auth/logout', [AuthController::class, 'logout']);

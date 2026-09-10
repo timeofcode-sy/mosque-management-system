@@ -8,9 +8,12 @@ use App\Notifications\FcmPushNotifier;
 use App\Notifications\NullPushNotifier;
 use App\Support\SyncRecorder;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Kreait\Firebase\Contract\Messaging;
@@ -60,6 +63,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureGlobalRoles();
+        $this->configureRateLimits();
     }
 
     /**
@@ -82,6 +86,37 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null,
         );
+    }
+
+    /**
+     * السقفُ الخارجي على `POST /auth/login` — ✅ م.9.1.
+     *
+     * 🔑 **غايتُه غيرُ غايةِ القفل في `AuthController`.** ذاك يمنع التخمينَ على
+     * حساب، وهذا يمنع **الإغراق**: `bcrypt` باثنتي عشرة جولة يكلّف الخادمَ نحوَ
+     * عُشر ثانيةٍ لكل محاولة، فنقطةُ دخولٍ بلا سقفٍ سلاحُ استنزافٍ للمعالج
+     * لا يحتاج صاحبُه أن يعرف اسمَ حسابٍ واحد.
+     *
+     * 🔑 **وستّون في الدقيقة لا خمس.** المعهدُ كلُّه خلف عنوانٍ واحد (شبكةُ
+     * المسجد)، فالسقفُ الضيّق ههنا يقفل الجماعةَ لا المهاجم. وستّون تعلو فوق كلِّ
+     * استعمالٍ بشريٍّ محتمَل — حتى يومَ التسجيل حين يدخل الطلابُ معاً — وتُبقي
+     * الكلفةَ القصوى ستَّ ثوانٍ من المعالج في الدقيقة.
+     *
+     * 🔴 **واسمُه `api-login` لا `login`.** الاسمُ الثاني مأخوذٌ: فورتيفاي يسجّله
+     * لدخول اللوحة بخمسٍ في الدقيقة، و[FortifyServiceProvider] يُقلع **بعد** هذا
+     * المزوّد (`bootstrap/providers.php`)، فتسجيلُه يطمس تسجيلَنا بلا تحذيرٍ ولا
+     * خطأ — `RateLimiter::for` استبدالٌ صامت لا إضافة.
+     *
+     * 🔑 **والخطرُ في أن الطمسَ يُبقي القفلَ عاملاً ويُضعفه**: كِلا التسجيلين
+     * يقفل، فاختبارُ «هل يُقفَل بعد خمس؟» يمرّ في الحالتين. لكنّ نافذة فورتيفاي
+     * **دقيقةٌ** ونافذتَنا **ربعُ ساعة**، فالطمسُ يعطي المهاجمَ ثلاثمئة محاولةٍ
+     * في الساعة بدل عشرين — إضعافٌ خمسةَ عشرَ ضعفاً لا يُسقط اختباراً واحداً.
+     * وكشفه أن الرسالة العائدة كانت رسالةَ لارافيل العامّة لا «أعِد المحاولة بعد
+     * ربع ساعة» التي يكتبها [AuthController]: **النصُّ هو الذي دلّ على أنّ
+     * الحارسَ غيرُ الحارس.**
+     */
+    protected function configureRateLimits(): void
+    {
+        RateLimiter::for('api-login', fn (Request $request) => Limit::perMinute(60)->by($request->ip()));
     }
 
     /**
