@@ -36,3 +36,12 @@ pubspec.lock
 *.iml
 .DS_Store
 Thumbs.db
+
+# 🔴 مفاتيحُ حساب خدمة Firebase — أينما وقعت.
+#
+# القاعدةُ بالنمط لا بالمسار عمداً: الملفُّ يُحمَّل من لوحة Firebase باسمٍ مولَّد
+# (`<project>-firebase-adminsdk-<hash>.json`) ويُنسَخ يدوياً، فيقع مرّةً في
+# `backend/app/` ومرّةً في جذر الباك إند — وكلاهما مجلدٌ متتبَّع. وقع ذلك فعلاً
+# في م.7.4، والحارسُ ههنا يمنع تكراره بدل أن يُكتشَف عند المراجعة.
+*firebase-adminsdk*.json
+firebase-credentials.json

@@ -4,8 +4,9 @@
 **النتيجة:** **417** اختباراً خادمياً (415 تمرّ + 2 متجاوَزان — كانت 407) · **149** في `mousqe_core`
 (كانت 147) · `pint` نظيف.
 
-> ⏸ **الحالة: الشقُّ الخادميُّ منفَّذٌ كاملاً ومُختبَر، والشقُّ العميلُ ينتظر مشروع Firebase.**
-> ما بقي **لا يُنفَّذ إلا من متصفّح صاحب المشروع** — انظر §7.
+> ✅ **الحالة: منفَّذةٌ كاملةً — الخادمُ والعميل.** ربط مشروع `mousqe` تمّ في 2026-09-10،
+> والقناةُ المربوطة صارت `FcmPushNotifier` لا الصامتة. ويبقى **التجريبُ على جهازٍ حقيقي**
+> (§9).
 
 ---
 
@@ -111,42 +112,63 @@
 
 ---
 
-## 7. ⏸ ما بقي — ولا يُنفَّذ إلا من متصفّح صاحب المشروع
+## 7. ✅ الربطُ بمشروع `mousqe`
 
-| # | الخطوة | لماذا لا أستطيعها |
+| # | الخطوة | النتيجة |
 |---|---|---|
-| 1 | `firebase login` | مصادقةٌ تفاعلية عبر المتصفّح |
-| 2 | إنشاءُ مشروع Firebase وتسجيلُ تطبيق أندرويد بمعرّف `sy.mousqe.mousqe_guardian` | لوحةُ تحكّم |
-| 3 | `flutterfire configure` داخل `apps/guardian` ⇐ يولّد `firebase_options.dart` و`google-services.json` | يتطلّب 1 و2 |
-| 4 | `Generate new private key` ⇐ وضعُ الـJSON في `backend/storage/app/` وضبطُ `FIREBASE_CREDENTIALS` | لوحةُ تحكّم |
+| 1 | `firebase login` | ✅ تفاعلياً من صاحب المشروع |
+| 2 | مشروع `mousqe` (رقم 678592630053) | ✅ |
+| 3 | `flutterfire configure --project=mousqe --platforms=android --android-package-name=sy.mousqe.mousqe_guardian --yes` | ✅ سجّل تطبيقَ أندرويد `1:678592630053:android:b1b6757d7b1afd471f1ecc` وولّد `lib/firebase_options.dart` و`android/app/google-services.json` و`firebase.json`، وأضاف إضافة `com.google.gms.google-services` إلى Gradle |
+| 4 | مفتاحُ حساب الخدمة ⇐ `backend/storage/app/firebase-credentials.json` + `FIREBASE_CREDENTIALS` | ✅ **والقناةُ المربوطة صارت `FcmPushNotifier`** — تحقّقتُ بـ`artisan tinker` |
 
-**والأدواتُ مثبَّتةٌ وجاهزة:** `firebase-tools 15.30.0` · `flutterfire_cli 1.4.1` — وكلاهما في
-PATH.
+**والأدوات:** `firebase-tools 15.30.0` · `flutterfire_cli 1.4.1`.
 
-### 7.1 ولماذا لم تُضَف `firebase_core` و`firebase_messaging` بعد؟
+### 7.1 🔴 المفتاحُ وقع مرّتين في مجلدٍ متتبَّع
 
-لأن `flutterfire configure` **يضيفهما بنفسه** ضمن تدفّقه، وإضافتُهما قبل وجود
-`google-services.json` تعني تطبيقاً يبني ثم يسقط عند أوّل إقلاع بـ«لا مشروع Firebase مهيَّأ» —
-فيُكسر ما يعمل مقابل لا شيء. **الترتيبُ الصحيح: المشروعُ أوّلاً ثم الحزم.**
+الملفُّ يُحمَّل من لوحة Firebase باسمٍ مولَّد (`mousqe-firebase-adminsdk-fbsvc-<hash>.json`)
+ويُنسَخ يدوياً — فوقع مرّةً في `backend/app/` ومرّةً في جذر `backend/`، **وكلاهما متتبَّعٌ في
+git**، ولا يستثنيه أيُّ نمطٍ قائم.
 
-### 7.2 وما يبقى بعد ذلك سطران في التطبيق
+لم يدخل أيَّ التزام (`git log --all` عليه فارغ)، وحُذفت النسختان بعد التحقّق من تطابق SHA-256
+مع الأصل. **وأُضيف حارسٌ بالنمط لا بالمسار** في `.gitignore` الجذر:
 
-بعد `flutterfire configure` يُضاف في `apps/guardian/lib/main.dart` تهيئةُ Firebase، ويُمرَّر
-القارئُ إلى `SessionController` في `app_scope.dart`:
-
-```dart
-// app_scope.dart — المكانُ مُجهَّزٌ بالفعل، والناقصُ جسمُ الدالّة
-pushToken: () async {
-  final settings = await FirebaseMessaging.instance.requestPermission();
-
-  return settings.authorizationStatus == AuthorizationStatus.authorized
-      ? FirebaseMessaging.instance.getToken()
-      : null;
-},
+```gitignore
+*firebase-adminsdk*.json
+firebase-credentials.json
 ```
 
-**ولا شيءَ غيرَ ذلك**: التمريرُ إلى الخادم والتخزينُ والاستهدافُ والإرسالُ كلُّها مبنيّةٌ
-ومُختبَرة.
+**ولماذا بالنمط؟** لأن المسارَ الصحيح (`storage/app/`) محميٌّ أصلاً، والخطرُ في **المسارات
+الخطأ** — وهي غيرُ محدودة. ومُجرَّبٌ عملياً بـ`git check-ignore` على نسخةٍ وُضعت في
+`backend/app/`.
+
+### 7.2 التهيئةُ لا تُسقط التطبيق إن فشلت
+
+الشائعُ `await Firebase.initializeApp(...)` عاريةً في `main` — فيصير **الإشعارُ شرطاً لإقلاع
+التطبيق**. وليس كذلك: وليُّ الأمر يفتح التطبيقَ ليقرأ حضورَ ابنه، وذاك يعمل بلا Firebase أصلاً
+(م.7.1–7.3). ولو رُميت هناك لَما فتح التطبيقُ في جهازٍ بلا Google Play Services، ولا في بناءٍ
+رُكّب بلا `google-services.json`.
+
+فالفشلُ يُبتلع في `main` وحده، و`SessionController` لا يمرّر توكناً حينئذ — وسطحُ الخادم يقبل
+التسجيلَ بلا الحقل منذ م.4.
+
+### 7.3 والإذنُ يُطلب عند الدخول لا عند الإقلاع
+
+أندرويد 13+ يتطلّب `POST_NOTIFICATIONS` صراحةً — **وتأتي من بيان `firebase_messaging` نفسِه**،
+فلا تُضاف يدوياً (تحقّقتُ من بيان الحزمة).
+
+وطلبُ الإذن على شاشة الدخول — **قبل أن يعرف المستخدمُ ما التطبيق** — أسرعُ طريقٍ إلى «رفض»:
+نافذةٌ تقفز على غريبٍ يُسأل عن إذنٍ لا يعرف فيمَ يُستعمل. فالطلبُ يقع في `readPushToken` التي
+يستدعيها `signIn` — بعد أن يعرف صاحبُ الجهاز أنه تطبيقُ متابعةِ ابنه.
+
+**و`provisional` تُعامَل معاملةَ الممنوح**: إذنٌ مؤقّت تمنحه iOS بلا سؤالٍ صريح، والإشعاراتُ تصل
+تحته.
+
+### 7.4 وقارئُ التوكن يُزيَّف في الاختبار صراحةً
+
+الافتراضيُّ `readPushToken` يلمس Firebase الحقيقية، ولا يُستدعى إلا في `signIn` — فاختباراتُ
+الشاشات كانت تمرّ بدونه **مصادفةً**. واختبارٌ يُضاف غداً ويستدعي الدخولَ كان سيصطدم بقناةِ منصّةٍ
+لا تعمل في اختبار وحدة، فيفشل لسببٍ لا علاقة له بما يقيسه. فصار `pushToken` معاملاً في
+`AppDependencies.create` ويُمرَّر `() async => null` في `setUp`.
 
 ---
 

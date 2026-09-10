@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "678592630053",
+    "project_id": "mousqe",
+    "storage_bucket": "mousqe.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:678592630053:android:b1b6757d7b1afd471f1ecc",
+        "android_client_info": {
+          "package_name": "sy.mousqe.mousqe_guardian"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKRGNswnLT4ouC6CEYW7JjFjgoBLqGbb0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
