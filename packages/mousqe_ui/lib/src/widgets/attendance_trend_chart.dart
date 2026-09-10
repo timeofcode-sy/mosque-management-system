@@ -1,39 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:mousqe_core/mousqe_core.dart';
-import 'package:mousqe_ui/mousqe_ui.dart';
 
-/// يترجم حالةَ `mousqe_core` إلى شارة `mousqe_ui`.
-///
-/// أربعةُ أسطرٍ تتكرّر في كل تطبيق (وهي في الديسكتوب باسمها هذا)، **ولا تُرفع
-/// إلى حزمة**: `mousqe_ui` لا تعتمد `mousqe_core` عمداً — مكوّناتُها تستقبل
-/// حالةً جاهزة، فما يربط الطبقتين يبقى في التطبيق ([PLAN.md §7](../../../../docs/PLAN.md)).
-/// ورفعُها إلى `mousqe_core` يقلب الاعتماد إلى ما هو أسوأ: طبقةُ بياناتٍ تعرف
-/// ودجت.
-BadgeStatus badgeOf(AttendanceStatus status) => switch (status) {
-      AttendanceStatus.present => BadgeStatus.present,
-      AttendanceStatus.absent => BadgeStatus.absent,
-      AttendanceStatus.late => BadgeStatus.late,
-      AttendanceStatus.excused => BadgeStatus.excused,
-    };
+/// يومٌ في منحنى الحضور — **سجلٌّ لا نموذجٌ مستورَد** (انظر [Loaded] في
+/// `snapshot_view.dart`): `rate` بـ`null` تعني «لم يُقَس».
+typedef TrendDay = ({String date, double? rate, int sessions});
 
-/// منحنى الثلاثين يوماً — **يصل أيامَ التفقّد بعضَها ببعض ويتخطّى ما بينها**.
+/// منحنى آخرِ ثلاثين يوماً — **يصل أيامَ التفقّد بعضَها ببعض ويتخطّى ما بينها**.
 ///
-/// 🔑 هذه هي القاعدةُ الثالثة من [PHASE-7-STAGES.MD §4] مرسومة: يومٌ بلا جلسة
-/// `rate: null` («لم يُقَس») لا صفر، فلا نقطةَ له ولا يمرّ به الخطّ. ولو رُسم
-/// صفراً لَهبط المنحنى إلى القاع في كل جمعةٍ وعطلة، **فيبدو منحنى ابنٍ مواظبٍ
-/// مسنَّناً بين المئة والصفر** — وهو نفسُ العطب الذي أُصلح في مكوّن اللوحة في
-/// م.7.1.
+/// 🔑 `rate` بـ`null` تعني «لم يُقَس» لا «صفر»، فلا نقطةَ لليوم ولا يمرّ به الخطّ.
+/// ولو رُسم صفراً لَهبط المنحنى إلى القاع في كل جمعةٍ وعطلة، **فيبدو منحنى طالبٍ
+/// مواظبٍ مسنَّناً بين المئة والصفر** — وهو نفسُ العطب الذي أُصلح في مكوّن اللوحة
+/// في م.7.1.
 ///
-/// وبلا مكتبة مخطّطات: `CustomPainter` خالص، كما في صفحات طباعة اللوحة.
+/// وبلا مكتبة مخطّطات: `CustomPainter` خالص.
+///
+/// 🔁 **رُفع من `apps/guardian/` في م.8.2** حين احتاجه تطبيقُ الطالب.
 class AttendanceTrendChart extends StatelessWidget {
-  const AttendanceTrendChart({super.key, required this.days});
+  const AttendanceTrendChart({
+    super.key,
+    required this.days,
+    this.heading = 'منحنى الحضور — آخر ٣٠ يوماً',
+  });
 
-  final List<ChildAttendanceDay> days;
+  final List<TrendDay> days;
+  final String heading;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final measured = days.where((day) => day.isMeasured).toList(growable: false);
+    final measured = days.where((day) => day.rate != null).toList(growable: false);
 
     return Card(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -45,12 +39,9 @@ class AttendanceTrendChart extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('منحنى الحضور — آخر ٣٠ يوماً', style: theme.textTheme.titleSmall),
+                Text(heading, style: theme.textTheme.titleSmall),
                 if (measured.isNotEmpty)
-                  Text(
-                    '${measured.length} يوم تفقّد',
-                    style: theme.textTheme.bodySmall,
-                  ),
+                  Text('${measured.length} يوم تفقّد', style: theme.textTheme.bodySmall),
               ],
             ),
             const SizedBox(height: 12),
@@ -91,7 +82,7 @@ class _TrendPainter extends CustomPainter {
     required this.fill,
   });
 
-  final List<ChildAttendanceDay> days;
+  final List<TrendDay> days;
   final Color line;
   final Color grid;
   final Color fill;
@@ -115,8 +106,8 @@ class _TrendPainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
     }
 
-    // المقياسُ يبقى على المحور الأصلي (اليومُ الأوّل يميناً في RTL يقلبه الإطار)،
-    // والنقاطُ **المقيسةُ وحدها** تدخل المسار — فالفجوةُ فجوةٌ لا هبوط.
+    // المقياسُ يبقى على المحور الأصلي، والنقاطُ **المقيسةُ وحدها** تدخل المسار —
+    // فالفجوةُ فجوةٌ لا هبوط.
     final points = <Offset>[];
 
     for (var i = 0; i < days.length; i++) {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
+import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
-import '../widgets/snapshot_view.dart';
 import 'child_screen.dart';
 import 'excuses_screen.dart';
 
@@ -38,9 +38,10 @@ class ChildrenScreen extends StatelessWidget {
         ],
       ),
       body: SnapshotView<List<GuardianChild>>(
-        load: scope.repository.children,
+        load: () async => (await scope.repository.children()).ui,
         emptyMessage: 'لا أبناءَ مسجَّلون على هذا الحساب.\n'
             'راجع إدارة المعهد إن كان هذا غيرَ متوقَّع.',
+        errorMessageBuilder: messageFor,
         isEmpty: (children) => children.isEmpty,
         builder: (context, children) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

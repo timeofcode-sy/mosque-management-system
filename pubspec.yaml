@@ -11,6 +11,7 @@ workspace:
   - packages/mousqe_core
   - packages/mousqe_ui
   - apps/guardian
+  - apps/student
   - apps/teacher
   - apps/admin_desktop
 

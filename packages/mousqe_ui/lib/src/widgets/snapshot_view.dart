@@ -1,17 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:mousqe_core/mousqe_core.dart';
-import 'package:mousqe_ui/mousqe_ui.dart';
+
+import 'empty_state.dart';
+
+/// قراءةٌ جاهزةٌ للعرض: القيمةُ ومتى قُرئت وهل هي طازجة.
+///
+/// 🔑 **سجلٌّ لا صنفٌ مستورَد** — وهذا هو ما يحفظ حدَّ الحزمة. `Snapshot<T>` يسكن
+/// `mousqe_core`، و`mousqe_ui` **لا تعتمد `mousqe_core`** عمداً
+/// ([PLAN.md §7](../../../../../docs/PLAN.md)): مكوّناتُها تستقبل حالةً جاهزة.
+///
+/// وسجلّاتُ Dart **بنيويّةُ المطابقة** لا اسميّة، فما يعيده `Snapshot.ui` يطابق
+/// هذا النوعَ بلا أن يعرف أحدُ الطرفين الآخر. وهو الجوابُ عن السؤال الذي تركته
+/// م.7.3 مفتوحاً حين بقي `badgeOf` مكرَّراً.
+typedef Loaded<T> = ({T value, DateTime? fetchedAt, bool isStale});
 
 /// يحمل دورةَ قراءةٍ كاملة: تحميلٌ ⇒ خطأٌ برسالته ⇒ محتوىً **مع إعلانِ قِدَمه**.
 ///
-/// 🔑 **هذا الودجت هو موضعُ القاعدة الأولى من [PHASE-7-STAGES.MD §4]**: بيانٌ
-/// قديم يُعرض بلا إعلانِ قِدَمه يقرؤه صاحبُه حاضراً. وليُّ الأمر يفتح التطبيق في
-/// نفقٍ فيرى حضورَ الأسبوع الماضي، فيطمئنّ إلى رقمٍ عمرُه ستّةُ أيام.
+/// 🔑 **وهذا الودجت هو موضعُ قاعدة «البيانُ القديم يُعلن قِدَمه»**: بيانٌ يُعرض بلا
+/// إعلانِ قِدَمه يقرؤه صاحبُه حاضراً — أبٌ يفتح التطبيق في نفقٍ فيرى حضورَ الأسبوع
+/// الماضي، فيطمئنّ إلى رقمٍ عمرُه ستّةُ أيام.
 ///
-/// فوضعُها ههنا لا في كل شاشة: خمسُ شاشاتٍ تقرأ خمسَ قراءات، ولو تُركت لكلِّ
-/// واحدةٍ لَنسيتها إحداها — وهي الحالةُ التي لا تظهر في التطوير أصلاً لأن الشبكة
+/// فوضعُها هنا لا في كل شاشة: تطبيقان يقرآن عشرَ قراءات، ولو تُركت لكلٍّ منها
+/// لَنسيتها إحداها — **وهي الحالةُ التي لا تظهر في التطوير أصلاً** لأن الشبكة
 /// عاملةٌ دائماً على مكتب المطوّر.
+///
+/// 🔁 **رُفعت من `apps/guardian/` في م.8.2** حين احتاجها تطبيقُ الطالب.
 class SnapshotView<T> extends StatefulWidget {
   const SnapshotView({
     super.key,
@@ -19,10 +32,11 @@ class SnapshotView<T> extends StatefulWidget {
     required this.builder,
     this.emptyMessage,
     this.isEmpty,
+    this.errorMessageBuilder,
   });
 
   /// يُستدعى عند أول بناء وعند كل سحبٍ للتحديث.
-  final Future<Snapshot<T>> Function() load;
+  final Future<Loaded<T>> Function() load;
 
   final Widget Function(BuildContext context, T value) builder;
 
@@ -30,12 +44,16 @@ class SnapshotView<T> extends StatefulWidget {
   final String? emptyMessage;
   final bool Function(T value)? isEmpty;
 
+  /// يحوّل ما يرميه [load] إلى نصٍّ عربيّ صالحٍ للعرض. وبدونه تُعرض رسالةٌ عامّة —
+  /// الحزمةُ لا تعرف أخطاء الشبكة، وهي طبقةُ عرضٍ لا طبقةَ بيانات.
+  final String Function(Object failure)? errorMessageBuilder;
+
   @override
   State<SnapshotView<T>> createState() => SnapshotViewState<T>();
 }
 
 class SnapshotViewState<T> extends State<SnapshotView<T>> {
-  Future<Snapshot<T>>? _pending;
+  Future<Loaded<T>>? _pending;
 
   @override
   void initState() {
@@ -59,7 +77,7 @@ class SnapshotViewState<T> extends State<SnapshotView<T>> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Snapshot<T>>(
+    return FutureBuilder<Loaded<T>>(
       future: _pending,
       builder: (context, async) {
         if (async.connectionState == ConnectionState.waiting) {
@@ -68,20 +86,21 @@ class SnapshotViewState<T> extends State<SnapshotView<T>> {
 
         if (async.hasError) {
           return ErrorState(
-            message: messageFor(async.error!),
+            message: widget.errorMessageBuilder?.call(async.error!) ??
+                'تعذّرت القراءة.',
             onRetry: reload,
           );
         }
 
-        final snapshot = async.data!;
-        final empty = widget.isEmpty?.call(snapshot.value) ?? false;
+        final loaded = async.data!;
+        final empty = widget.isEmpty?.call(loaded.value) ?? false;
 
         return RefreshIndicator(
           onRefresh: reload,
           child: ListView(
             padding: const EdgeInsets.only(bottom: 24),
             children: [
-              if (snapshot.isStale) StaleNotice(fetchedAt: snapshot.fetchedAt),
+              if (loaded.isStale) StaleNotice(fetchedAt: loaded.fetchedAt),
               if (empty)
                 Padding(
                   padding: const EdgeInsets.only(top: 48),
@@ -91,7 +110,7 @@ class SnapshotViewState<T> extends State<SnapshotView<T>> {
                   ),
                 )
               else
-                widget.builder(context, snapshot.value),
+                widget.builder(context, loaded.value),
             ],
           ),
         );
@@ -102,9 +121,9 @@ class SnapshotViewState<T> extends State<SnapshotView<T>> {
 
 /// «هذه نسخةٌ محفوظة» ومتى قُرئت — لا شريطَ مزامنةٍ ولا طابور.
 ///
-/// تطبيقُ الأستاذ والديسكتوب يعرضان `SyncBar` لأن لهما طابوراً يقول «بقيت ثلاثُ
-/// عمليات لم تصل». ولا طابورَ ههنا، فالسؤالُ الذي يهمّ وليَّ الأمر مختلف:
-/// **متى قرأ جهازي آخرَ مرّة؟**
+/// تطبيقا الأستاذ والديسكتوب يعرضان `SyncBar` لأن لهما طابوراً يقول «بقيت ثلاثُ
+/// عمليات لم تصل». ولا طابورَ في تطبيقَي ولي الأمر والطالب، فالسؤالُ الذي يهمّهما
+/// مختلف: **متى قرأ جهازي آخرَ مرّة؟**
 class StaleNotice extends StatelessWidget {
   const StaleNotice({super.key, this.fetchedAt});
 

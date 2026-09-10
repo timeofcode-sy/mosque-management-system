@@ -7,4 +7,6 @@ export 'src/widgets/attendance_status_badge.dart';
 export 'src/widgets/sync_bar.dart';
 export 'src/widgets/sync_status_indicator.dart';
 export 'src/widgets/empty_state.dart';
+export 'src/widgets/snapshot_view.dart';
+export 'src/widgets/attendance_trend_chart.dart';
 export 'src/widgets/login_form.dart';

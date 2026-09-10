@@ -3,8 +3,6 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
-import '../widgets/attendance_trend_chart.dart';
-import '../widgets/snapshot_view.dart';
 import 'submit_excuse_screen.dart';
 
 /// ملفُّ ابنٍ بعينه — لسانان: حضورُه، وتقدُّمُ حفظه.
@@ -55,14 +53,20 @@ class _AttendanceTab extends StatelessWidget {
     final repository = AppScope.of(context).repository;
 
     return SnapshotView<ChildAttendance>(
-      load: () => repository.attendanceOf(childUuid),
+      load: () async => (await repository.attendanceOf(childUuid)).ui,
       emptyMessage: 'لا سجلَّ حضورٍ بعد.',
+      errorMessageBuilder: messageFor,
       isEmpty: (attendance) => attendance.summary.total == 0,
       builder: (context, attendance) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _SummaryGrid(summary: attendance.summary),
-          AttendanceTrendChart(days: attendance.trend),
+          AttendanceTrendChart(
+            days: [
+              for (final day in attendance.trend)
+                (date: day.date, rate: day.rate, sessions: day.sessions),
+            ],
+          ),
           const _SectionTitle('السجلّ — آخر ٣٠ يوم تفقّد'),
           for (final row in attendance.recent) _AttendanceRow(row: row),
         ],
@@ -137,7 +141,7 @@ class _AttendanceRow extends StatelessWidget {
               padding: const EdgeInsetsDirectional.only(end: 8),
               child: Text('${row.lateMinutes} د'),
             ),
-          AttendanceStatusBadge(status: badgeOf(row.status)),
+          AttendanceStatusBadge(status: BadgeStatus.fromValue(row.status.value)),
         ],
       ),
     );
@@ -154,8 +158,9 @@ class _ProgressTab extends StatelessWidget {
     final repository = AppScope.of(context).repository;
 
     return SnapshotView<CurriculumProgressReport>(
-      load: () => repository.progressOf(childUuid),
+      load: () async => (await repository.progressOf(childUuid)).ui,
       emptyMessage: 'لم يُسجَّل تقدُّمٌ في المحفوظات بعد.',
+      errorMessageBuilder: messageFor,
       isEmpty: (report) => report.isEmpty,
       builder: (context, report) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

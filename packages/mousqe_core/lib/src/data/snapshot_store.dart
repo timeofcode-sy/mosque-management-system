@@ -14,6 +14,15 @@ class Snapshot<T> {
   final T value;
   final DateTime? fetchedAt;
   final bool isStale;
+
+  /// اللقطةُ سجلّاً جاهزاً لطبقة العرض — ✅ م.8.2.
+  ///
+  /// 🔑 **سجلٌّ لا صنف**، لأن `mousqe_ui` لا تعتمد `mousqe_core` عمداً. وسجلّاتُ
+  /// Dart بنيويّةُ المطابقة لا اسميّة، فما يعيده هذا يطابق `Loaded<T>` في
+  /// `SnapshotView` **بلا أن يستورد أحدُ الطرفين الآخر** — فيُعبَر الحدُّ بلا أن
+  /// يُنقَض.
+  ({T value, DateTime? fetchedAt, bool isStale}) get ui =>
+      (value: value, fetchedAt: fetchedAt, isStale: isStale);
 }
 
 /// آلةُ «اقرأ من الشبكة واحفظ لقطةً، وقدّمها حين تنقطع» — ✅ م.8.1.

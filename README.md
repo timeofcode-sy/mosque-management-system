@@ -11,7 +11,7 @@
 | `apps/teacher/` | تطبيق الأستاذ (Android/iOS) — التفقّد أوف-لاين |
 | `apps/admin_desktop/` | برنامج المشرف (Windows) — إدارة كاملة أوف-لاين |
 | `apps/guardian/` | تطبيق أولياء الأمور — متابعةُ الأبناء وأذوناتُ الغياب ✅ م.7 |
-| `apps/student/` | تطبيق الطالب — ⬜ المرحلة 8 |
+| `apps/student/` | تطبيق الطالب — حضورُه ورتبتُه ونقاطُه وإعلاناتُه ✅ م.8 |
 | `packages/mousqe_core/` | نماذج + drift(SQLite) + محرك المزامنة + عميل API |
 | `packages/mousqe_ui/` | نظام التصميم: ألوان، خط كوفي، ويدجتس، RTL |
 | `design/design-tokens.json` | **اللوحة الاحتياطية** — يُستهلك من Tailwind ومن Flutter؛ ولكل معهد ألوانُه في بياناته |

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
+import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
-import '../widgets/snapshot_view.dart';
 
 /// أعذارُ أبنائه وحالتُها — ومعها **جوابُ الطاقم** حين يصل.
 ///
@@ -19,9 +19,10 @@ class ExcusesScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('أذونات الغياب')),
       body: SnapshotView<List<GuardianExcuse>>(
-        load: repository.excuses,
+        load: () async => (await repository.excuses()).ui,
         emptyMessage: 'لم تقدّم إذناً بعد.\n'
             'يُقدَّم الإذنُ من ملفّ الابن قبل موعد الغياب.',
+        errorMessageBuilder: messageFor,
         isEmpty: (excuses) => excuses.isEmpty,
         builder: (context, excuses) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
