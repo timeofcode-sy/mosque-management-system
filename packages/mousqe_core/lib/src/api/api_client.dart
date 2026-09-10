@@ -294,4 +294,28 @@ abstract class ApiClient {
 
   @POST('/guardian/excuses')
   Future<HttpResponse<dynamic>> submitGuardianExcuse(@Body() Map<String, dynamic> body);
+
+  // ── نقاطُ الطالب ✅ م.8.1 — [API.md §3.7] ────────────────────────────────────
+  // **وهي كلُّ مصادر تطبيقه**، كوليّ الأمر: لا `syncPull` ولا `syncPush`.
+  // **ولا مُعرِّفَ في أي مسار**: النطاقُ من الحساب لا من الطلب، فلا يستطيع
+  // الطالبُ طلبَ بيانات غيره ولو حاول ([API.md §4]).
+  //
+  // 🔑 و`standing` تُحسب في الخادم عمداً — لو حُسبت على الجهاز لَاستقبل صفوفَ
+  // حضورِ كلِّ زملائه ليستخرج رقماً واحداً
+  // ([PHASE-8-STAGES.MD §1.1](../../../../../docs/PHASE-8-STAGES.MD)).
+
+  @GET('/student/me/attendance')
+  Future<HttpResponse<dynamic>> studentAttendance();
+
+  @GET('/student/me/progress')
+  Future<HttpResponse<dynamic>> studentProgress();
+
+  @GET('/student/me/standing')
+  Future<HttpResponse<dynamic>> studentStanding();
+
+  @GET('/student/me/points')
+  Future<HttpResponse<dynamic>> studentPoints();
+
+  @GET('/student/me/announcements')
+  Future<HttpResponse<dynamic>> studentAnnouncements();
 }

@@ -6,8 +6,12 @@ use App\Actions\RecalculateCircleStats;
 use App\Enums\AttendanceStatus;
 use App\Enums\CourseStatus;
 use App\Enums\GuardianRelation;
+use App\Enums\MemorizationType;
+use App\Enums\PointReason;
+use App\Enums\RecitationGrade;
 use App\Enums\SessionStatus;
 use App\Enums\TeacherRole;
+use App\Models\Announcement;
 use App\Models\Attendance;
 use App\Models\AttendanceSession;
 use App\Models\Circle;
@@ -18,10 +22,12 @@ use App\Models\Enrollment;
 use App\Models\Guardian;
 use App\Models\GuardianStudent;
 use App\Models\Institute;
+use App\Models\MemorizationLog;
 use App\Models\PersonalTrait;
 use App\Models\Shift;
 use App\Models\ShiftDay;
 use App\Models\Student;
+use App\Models\StudentPoint;
 use App\Models\StudentTrait;
 use App\Models\Teacher;
 use App\Models\User;
@@ -117,6 +123,7 @@ class DemoInstituteSeeder extends Seeder
         }
 
         $this->recordAttendance($courseCircles, $admin);
+        $this->seedAnnouncements($institute, $admin);
 
         // الإحصاء يُحسب عادةً لحظة إغلاق كل جلسة؛ البذور تكتب الجلسات مباشرةً فتحتاج تشغيله مرّة.
         app(RecalculateCircleStats::class)->forCourse($course->id);
@@ -212,7 +219,7 @@ class DemoInstituteSeeder extends Seeder
                 ]);
 
                 foreach ($enrollments as $enrollment) {
-                    Attendance::factory()->create([
+                    $attendance = Attendance::factory()->create([
                         'attendance_session_id' => $session->id,
                         'student_id' => $enrollment->student_id,
                         'enrollment_id' => $enrollment->id,
@@ -225,8 +232,92 @@ class DemoInstituteSeeder extends Seeder
                         'recorded_by' => $admin->id,
                         'recorded_at' => $date->copy()->setTime(9, 0),
                     ]);
+
+                    $this->recordLesson($session, $enrollment, $attendance, $date, $admin);
                 }
             }
         }
+    }
+
+    /**
+     * تسميعُ الحاضر ونقاطُه — ✅ م.8.1.
+     *
+     * 🔴 **وكان حاجباً موثَّقاً منذ م.4.5**: البذرةُ تنتج حضوراً وحده، فـ
+     * `migrate:fresh --seed` يعطي معهداً بلا تسميعةٍ ولا نقطة — ويبدو تطبيقُ
+     * الطالب **شاشةَ حضورٍ فقط** ([APPS-FEATURES.md §6.4](../../docs/APPS-FEATURES.md)
+     * البند 2). وهو صنفُ نقصٍ لا يُكتشف باختبار: الاختبارُ ينشئ ما يحتاجه، ولا
+     * يشكو أحدٌ إلا من يفتح التطبيقَ على قاعدةٍ مبذورة.
+     *
+     * **والغائبُ لا يُسمّع**: القاعدةُ نفسُها التي تحكم الإحصاءَ كلَّه — ما لم
+     * يُسجَّل لا يُفترض. وبذرةٌ تعطي تسميعاً لطالبٍ غائب تصنع بياناً لا يقع في
+     * الواقع، فتُخفي عطباً يقع.
+     */
+    private function recordLesson(
+        AttendanceSession $session,
+        Enrollment $enrollment,
+        Attendance $attendance,
+        Carbon $date,
+        User $admin,
+    ): void {
+        if (! in_array($attendance->status, [AttendanceStatus::Present, AttendanceStatus::Late], true)) {
+            return;
+        }
+
+        // ثلاثةُ أخماسِ الحاضرين يسمّعون: حصّةٌ لا يسمّع فيها الجميعُ هي الواقع،
+        // وبذرةٌ يسمّع فيها الكلُّ تجعل «لا تسميعَ اليوم» حالةً لا تُرى قطّ.
+        if (fake()->boolean(60)) {
+            $lines = fake()->numberBetween(3, 20);
+
+            MemorizationLog::create([
+                'student_id' => $enrollment->student_id,
+                'course_circle_id' => $session->course_circle_id,
+                'attendance_session_id' => $session->id,
+                'date' => $date->toDateString(),
+                'type' => fake()->randomElement(MemorizationType::cases()),
+                'grade' => fake()->randomElement(RecitationGrade::cases()),
+                'lines' => $lines,
+                'new_lines' => $lines,
+                // النقاطُ **مجمَّدةٌ في الصفّ** كما يفعل `StudentPoints` على
+                // الخادم — والعميلُ يقرؤها ولا يعيد حسابها.
+                'points' => round($lines / 15 * 10, 2),
+                'teacher_id' => null,
+            ]);
+        }
+
+        if (fake()->boolean(20)) {
+            StudentPoint::create([
+                'student_id' => $enrollment->student_id,
+                'course_circle_id' => $session->course_circle_id,
+                'attendance_session_id' => $session->id,
+                'points' => fake()->numberBetween(1, 5),
+                'reason' => fake()->randomElement(PointReason::cases()),
+                'awarded_by' => $admin->id,
+                'awarded_on' => $date->toDateString(),
+            ]);
+        }
+    }
+
+    /**
+     * إعلانان — ✅ م.8.1، فشاشةُ الطالب لا تُفتح فارغة.
+     */
+    private function seedAnnouncements(Institute $institute, User $admin): void
+    {
+        Announcement::create([
+            'institute_id' => $institute->id,
+            'title' => 'انتظام الدوام',
+            'body' => 'نذكّر الطلابَ بالحضور قبل بداية الحصّة بعشر دقائق، وجزاكم الله خيراً.',
+            'scope' => 'all',
+            'created_by' => $admin->id,
+            'published_at' => now()->subDays(3),
+        ]);
+
+        Announcement::create([
+            'institute_id' => $institute->id,
+            'title' => 'مسابقة حفظ جزء عمّ',
+            'body' => 'تُقام المسابقةُ نهايةَ الشهر، والتسجيلُ عند أستاذ الحلقة.',
+            'scope' => 'all',
+            'created_by' => $admin->id,
+            'published_at' => now()->subDay(),
+        ]);
     }
 }

@@ -3,10 +3,15 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\V1\AnnouncementResource;
 use App\Http\Resources\V1\AttendanceResource;
 use App\Http\Resources\V1\ProgressResource;
+use App\Http\Resources\V1\StandingResource;
 use App\Models\Student;
+use App\Queries\AnnouncementQuery;
+use App\Queries\StudentPointsQuery;
 use App\Queries\StudentProfileQuery;
+use App\Queries\StudentStandingQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -48,6 +53,56 @@ class StudentSelfController extends Controller
             'data' => (object) $query->progressByCurriculum($student)
                 ->map(fn ($entries) => ProgressResource::collection($entries))
                 ->all(),
+        ]);
+    }
+
+    /**
+     * موقعُه بين زملائه — ✅ م.8.1، **رقمٌ لا كشف**.
+     *
+     * 🔑 الرتبةُ تُحسب في الخادم لأن حسابَها على الجهاز يعني أن يستقبل هاتفُ
+     * الطالب صفوفَ حضورِ كلِّ زملائه ليستخرج منها رقماً واحداً
+     * ([PHASE-8-STAGES.MD §1.1](../../../../../docs/PHASE-8-STAGES.MD)).
+     */
+    public function standing(Request $request, StudentStandingQuery $query): JsonResponse
+    {
+        return response()->json([
+            'data' => new StandingResource($query->for($this->student($request))),
+        ]);
+    }
+
+    /**
+     * نقاطُه بمصادرها الخمسة في الدورة الجارية — ✅ م.8.1.
+     *
+     * `student_points` جدولٌ يُزامَن، لكنّ الطالبَ خارج التيّار (§1.1) —
+     * و`StudentPointsQuery` قائمٌ منذ م.4.5، فالغلافُ وحده كان ينقص.
+     */
+    public function points(Request $request, StudentPointsQuery $query): JsonResponse
+    {
+        $student = $this->student($request);
+        $course = $student->institute?->currentCourse();
+
+        if ($course === null) {
+            // لا دورةَ جارية ⇒ أصفارٌ لا خطأ: معهدٌ بين دورتين حالٌ عادية،
+            // وشاشةُ الطالب تعرض صفراً مفهوماً لا رسالةَ عطب.
+            return response()->json(['data' => StudentPointsQuery::EMPTY]);
+        }
+
+        return response()->json([
+            'data' => $query->forStudent(
+                $student,
+                $course->starts_on->toDateString(),
+                $course->ends_on->toDateString(),
+            ),
+        ]);
+    }
+
+    /**
+     * إعلاناتُ معهده وحلقته — ✅ م.8.1، والترشيحُ في الخادم (§1.3).
+     */
+    public function announcements(Request $request, AnnouncementQuery $query): JsonResponse
+    {
+        return response()->json([
+            'data' => AnnouncementResource::collection($query->forStudent($this->student($request))),
         ]);
     }
 

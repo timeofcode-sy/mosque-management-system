@@ -88,13 +88,22 @@
                     </flux:sidebar.group>
                 @endcanany
 
-                @can('curricula.manage')
+                @canany(['curricula.manage', 'announcements.manage'])
                     <flux:sidebar.group heading="المحتوى" class="grid">
-                        <flux:sidebar.item icon="book-open-text" :href="route('curricula.index')" :current="request()->routeIs('curricula.*')" wire:navigate>
-                            المناهج
-                        </flux:sidebar.item>
+                        @can('curricula.manage')
+                            <flux:sidebar.item icon="book-open-text" :href="route('curricula.index')" :current="request()->routeIs('curricula.*')" wire:navigate>
+                                المناهج
+                            </flux:sidebar.item>
+                        @endcan
+
+                        {{-- ✅ م.8.1 --}}
+                        @can('announcements.manage')
+                            <flux:sidebar.item icon="megaphone" :href="route('announcements.index')" :current="request()->routeIs('announcements.*')" wire:navigate>
+                                الإعلانات
+                            </flux:sidebar.item>
+                        @endcan
                     </flux:sidebar.group>
-                @endcan
+                @endcanany
 
                 @canany(['institutes.manage', 'users.manage'])
                     <flux:sidebar.group heading="الإدارة العليا" class="grid">

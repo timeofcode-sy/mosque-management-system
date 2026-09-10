@@ -4,6 +4,7 @@ export 'src/models/absence_excuse.dart';
 export 'src/models/admin_user.dart';
 export 'src/models/bootstrap_snapshot.dart';
 export 'src/models/institute_option.dart';
+export 'src/models/announcement.dart';
 export 'src/models/attendance.dart';
 export 'src/models/attendance_session.dart';
 export 'src/models/attendance_settings.dart';
@@ -20,6 +21,8 @@ export 'src/models/recitation.dart';
 export 'src/models/student.dart';
 export 'src/models/points_settings.dart';
 export 'src/models/student_point.dart';
+export 'src/models/student_points_summary.dart';
+export 'src/models/student_standing.dart';
 export 'src/models/sync_conflict.dart';
 
 export 'src/db/database.dart';
@@ -35,7 +38,9 @@ export 'src/data/guardian_repository.dart';
 export 'src/data/labels.dart';
 export 'src/data/stats_repository.dart';
 export 'src/data/stats_views.dart';
+export 'src/data/snapshot_store.dart';
 export 'src/data/student_repository.dart';
+export 'src/data/student_self_repository.dart';
 
 export 'src/api/api_client.dart';
 export 'src/api/api_errors.dart';

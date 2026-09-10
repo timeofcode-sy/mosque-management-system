@@ -40,6 +40,15 @@ class PanelAccessTest extends TestCase
             'الطلاب' => ['students.index', ['admin', 'supervisor', 'super_admin', 'developer']],
             'الأساتذة' => ['teachers.index', ['admin', 'super_admin', 'developer']],
             'المناهج' => ['curricula.index', ['admin', 'super_admin', 'developer']],
+            /**
+             * ✅ م.8.1 — الطرفُ الكاتب للإعلانات، خلف `announcements.manage`.
+             *
+             * والأستاذُ يحمل `announcements.view` لا `.manage` في الكتالوج منذ
+             * م.1 — **فيقرأ الإعلانَ ولا يكتبه**، وهو تقسيمٌ صحيح: الإعلانُ
+             * صوتُ المعهد لا صوتُ حلقةٍ واحدة. فبقي الكتالوجُ كما هو وصُحِّح
+             * التوقّعُ ههنا.
+             */
+            'الإعلانات' => ['announcements.index', ['admin', 'supervisor', 'super_admin', 'developer']],
             'التفقّد' => ['attendance.index', ['admin', 'supervisor', 'teacher', 'super_admin', 'developer']],
             'أذونات الغياب' => ['excuses.index', ['admin', 'supervisor', 'teacher', 'super_admin', 'developer']],
             /**

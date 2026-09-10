@@ -121,6 +121,12 @@ Route::prefix('v1')->group(function (): void {
         Route::middleware('role:student')->prefix('/student')->group(function (): void {
             Route::get('/me/attendance', [StudentSelfController::class, 'attendance']);
             Route::get('/me/progress', [StudentSelfController::class, 'progress']);
+            // ✅ م.8.1 — ثلاثٌ جديدة. الطالبُ خارجَ `sync/pull` كوليّ الأمر
+            // (§1.1 في PHASE-8-STAGES.MD)، **والرتبةُ تُحسب في الخادم** فلا يصل
+            // جهازَه صفُّ زميلٍ واحد.
+            Route::get('/me/standing', [StudentSelfController::class, 'standing']);
+            Route::get('/me/points', [StudentSelfController::class, 'points']);
+            Route::get('/me/announcements', [StudentSelfController::class, 'announcements']);
         });
     });
 });
