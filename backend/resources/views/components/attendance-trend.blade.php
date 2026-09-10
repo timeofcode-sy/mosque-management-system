@@ -1,7 +1,7 @@
 @props(['points', 'heading' => 'منحنى الحضور — آخر أسبوعين'])
 
 @php
-    /** @var \Illuminate\Support\Collection<int, array{date: string, rate: float, sessions: int}> $points */
+    /** @var \Illuminate\Support\Collection<int, array{date: string, rate: float|null, sessions: int}> $points */
     $points = collect($points);
     $withSessions = $points->where('sessions', '>', 0);
     $count = max($points->count(), 1);
@@ -12,15 +12,29 @@
     $viewHeight = 160;
     $padY = 12;
 
+    // 🔑 م.7.1: **الخطّ يصل أيامَ التفقّد بعضَها ببعض ويتخطّى ما بينها.**
+    //
+    // كان يمرّ بكل يوم من الثلاثين، ويومٌ بلا جلسة يأتي بـrate صفر — فيهبط الخطُّ
+    // إلى القاع في كل جمعةٍ وعطلة ثم يعود. الدوائرُ كانت مرشَّحةً بـsessions > 0
+    // منذ بنائها، فالنقاطُ صحيحةٌ والخطُّ الواصلُ بينها يكذب: منحنى طالبٍ مواظبٍ
+    // يبدو مسنَّناً بين المئة والصفر. وصارت rate الآن null لتلك الأيام
+    // (StudentProfileQuery::attendanceTrend) فلزم الترشيحُ ههنا أيضاً.
     $step = $count > 1 ? $viewWidth / ($count - 1) : 0;
-    $coords = $points->values()->map(fn (array $point, int $i) => [
-        'x' => round($i * $step, 2),
-        'y' => round($padY + (($viewHeight - 2 * $padY) * (100 - min(100, max(0, $point['rate'])))) / 100, 2),
-        'point' => $point,
-    ]);
+    $coords = $points->values()
+        ->map(fn (array $point, int $i) => [
+            'x' => round($i * $step, 2),
+            'y' => $point['rate'] === null ? null : round($padY + (($viewHeight - 2 * $padY) * (100 - min(100, max(0, $point['rate'])))) / 100, 2),
+            'point' => $point,
+        ])
+        ->filter(fn (array $c) => $c['y'] !== null)
+        ->values();
 
     $line = $coords->map(fn (array $c) => $c['x'].','.$c['y'])->implode(' ');
-    $area = $coords->isEmpty() ? '' : "0,{$viewHeight} ".$line." {$viewWidth},{$viewHeight}";
+    // والمساحةُ تُغلَق تحت أوّلِ نقطةٍ مقيسة وآخرِها لا تحت حافّتَي الصندوق، وإلا
+    // امتدّ ظلُّها فوق مدى لا قياسَ فيه.
+    $area = $coords->isEmpty()
+        ? ''
+        : $coords->first()['x'].",{$viewHeight} ".$line.' '.$coords->last()['x'].",{$viewHeight}";
 @endphp
 
 <div {{ $attributes->class('rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900') }}>

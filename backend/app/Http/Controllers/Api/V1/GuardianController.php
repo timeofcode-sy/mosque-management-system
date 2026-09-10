@@ -4,14 +4,30 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\SubmitAbsenceExcuse;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\V1\AbsenceExcuseResource;
 use App\Http\Resources\V1\AttendanceResource;
+use App\Http\Resources\V1\ProgressResource;
 use App\Http\Resources\V1\StudentResource;
 use App\Models\Guardian;
 use App\Queries\GuardianChildrenQuery;
+use App\Queries\StudentProfileQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
+/**
+ * ما يقرؤه وليُّ الأمر عن أبنائه، وكتابتُه الوحيدة: تقديمُ إذن غياب.
+ *
+ * 🔑 **وليُّ الأمر لا يستدعي `sync/pull` إطلاقاً** — القرارُ 0.1 في
+ * [PHASE-7-STAGES.MD](../../../../../docs/PHASE-7-STAGES.MD). التيّارُ يبثّ
+ * **معهداً كاملاً** لكل الأدوار ([SYNC-PROTOCOL.md §4](../../../../../docs/SYNC-PROTOCOL.md))،
+ * وذاك على جهاز الأستاذ حِملٌ وعلى جهاز الأب **تسريب**: أسماءُ كلِّ طلاب المعهد
+ * وحضورُهم في هاتف كلِّ وليّ. ولا يحتاجه أصلاً — من يستدعي التيّارَ من يكتب في
+ * الطابور، وهو لا يملك `sync.push`.
+ *
+ * فهذه النقاطُ **كلُّ** مصادرِ التطبيق، ولذلك تعيد ما يُعرَض جاهزاً — الملخّصَ
+ * والمنحنى محسوبين — لا صفوفاً يجمعها العميل.
+ */
 class GuardianController extends Controller
 {
     public function children(Request $request, GuardianChildrenQuery $query): JsonResponse
@@ -21,17 +37,62 @@ class GuardianController extends Controller
         ]);
     }
 
-    public function childAttendance(Request $request, string $student, GuardianChildrenQuery $query): JsonResponse
-    {
-        $guardian = $this->guardian($request);
-        $child = $guardian->students()->where('students.uuid', $student)->firstOrFail();
+    /**
+     * حضورُ ابنٍ بعينه: الملخّصُ والمنحنى والسجلُّ.
+     *
+     * 🔄 م.7.1 — كان يعيد `{"data": [ …سجلّات… ]}`. صار شكلُه **شكلَ**
+     * `/student/me/attendance` ([API.md §3.7](../../../../../docs/API.md)) لأن
+     * الشاشتين تعرضان الشيءَ نفسَه لجمهورين: الأبُ يرى نسبةَ ابنه والابنُ يرى
+     * نسبتَه. وعقدان مختلفان لنفس الرقم يعنيان حسابَه مرّتين — وهو بالضبط ما
+     * صار إليه `AttendanceRate` في م.6.6 حين تكرّر في Dart.
+     *
+     * ولا عميلَ يستهلك الشكلَ القديم: `apps/guardian/` لم يُبنَ بعد.
+     */
+    public function childAttendance(
+        Request $request,
+        string $student,
+        GuardianChildrenQuery $children,
+        StudentProfileQuery $profile,
+    ): JsonResponse {
+        $child = $children->child($this->guardian($request), $student);
 
         return response()->json([
-            'data' => AttendanceResource::collection($query->attendanceOf($child)),
+            'summary' => $profile->attendanceSummary($child),
+            'trend' => $profile->attendanceTrend($child),
+            // ثلاثون لا عشرون: عقدُ ولي الأمر منذ [API.md §3.6] «آخر 30 سجلاً»،
+            // وهو يقرأ شهراً كاملاً بينما الطالبُ يقرأ آخرَ أسبوعين تقريباً.
+            'recent' => AttendanceResource::collection($profile->recentAttendances($child, 30)),
         ]);
     }
 
-    public function submitExcuse(Request $request, SubmitAbsenceExcuse $action): JsonResponse
+    /**
+     * تقدُّمُ حفظِ ابنٍ بعينه، مجمَّعاً باسم المنهج — ✅ م.7.1، نقطةٌ جديدة.
+     */
+    public function childProgress(
+        Request $request,
+        string $student,
+        GuardianChildrenQuery $children,
+        StudentProfileQuery $profile,
+    ): JsonResponse {
+        $child = $children->child($this->guardian($request), $student);
+
+        return response()->json([
+            'data' => $profile->progressByCurriculum($child)
+                ->map(fn ($entries) => ProgressResource::collection($entries)),
+        ]);
+    }
+
+    /**
+     * أعذارُ أبنائه وحالتُها — ✅ م.7.1، نقطةٌ جديدة.
+     */
+    public function excuses(Request $request, GuardianChildrenQuery $query): JsonResponse
+    {
+        return response()->json([
+            'data' => AbsenceExcuseResource::collection($query->excuses($this->guardian($request))),
+        ]);
+    }
+
+    public function submitExcuse(Request $request, SubmitAbsenceExcuse $action, GuardianChildrenQuery $children): JsonResponse
     {
         $guardian = $this->guardian($request);
 
@@ -42,7 +103,7 @@ class GuardianController extends Controller
             'reason' => ['required', 'string', 'max:500'],
         ]);
 
-        $student = $guardian->students()->where('students.uuid', $validated['student_uuid'])->firstOrFail();
+        $student = $children->child($guardian, $validated['student_uuid']);
 
         $excuse = $action->handle($student, $validated, $request->user());
 

@@ -110,6 +110,11 @@ Route::prefix('v1')->group(function (): void {
         Route::middleware('role:guardian')->prefix('/guardian')->group(function (): void {
             Route::get('/children', [GuardianController::class, 'children']);
             Route::get('/children/{student}/attendance', [GuardianController::class, 'childAttendance']);
+            // ✅ م.7.1 — نقطتان جديدتان. وليُّ الأمر خارجَ `sync/pull` عمداً
+            // (القرار 0.1 في PHASE-7-STAGES.MD)، فما كان يصله في التيّار — حالةُ
+            // إذنه وتقدُّمُ حفظِ ابنه — صار له نقطتُه.
+            Route::get('/children/{student}/progress', [GuardianController::class, 'childProgress']);
+            Route::get('/excuses', [GuardianController::class, 'excuses']);
             Route::post('/excuses', [GuardianController::class, 'submitExcuse']);
         });
 

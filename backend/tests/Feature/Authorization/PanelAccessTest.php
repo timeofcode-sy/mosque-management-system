@@ -42,9 +42,14 @@ class PanelAccessTest extends TestCase
             'المناهج' => ['curricula.index', ['admin', 'super_admin', 'developer']],
             'التفقّد' => ['attendance.index', ['admin', 'supervisor', 'teacher', 'super_admin', 'developer']],
             'أذونات الغياب' => ['excuses.index', ['admin', 'supervisor', 'teacher', 'super_admin', 'developer']],
-            /** ولي الأمر يحمل reports.view في كتالوج الأدوار منذ المرحلة الأولى — انظر §التقارير في نقطة التفتيش */
-            'التقارير' => ['reports.index', ['admin', 'supervisor', 'teacher', 'guardian', 'super_admin', 'developer']],
-            'الإحصائيات' => ['stats.index', ['admin', 'supervisor', 'teacher', 'guardian', 'super_admin', 'developer']],
+            /**
+             * 🔄 م.7.1: **خرج ولي الأمر من الصفّين.** كان يحمل reports.view منذ
+             * المرحلة الأولى فيفتح تقاريرَ المعهد كلِّه وإحصائياتِه في اللوحة —
+             * وهو يقرأ عن ابنه لا عن المعهد. نُزعت الصلاحيةُ من دوره في
+             * كتالوج الأدوار، والـAPI لا يستعملها فلا يفقد تطبيقُه شيئاً.
+             */
+            'التقارير' => ['reports.index', ['admin', 'supervisor', 'teacher', 'super_admin', 'developer']],
+            'الإحصائيات' => ['stats.index', ['admin', 'supervisor', 'teacher', 'super_admin', 'developer']],
             'المعاهد' => ['institutes.index', ['super_admin', 'developer']],
             'لوحة المعاهد' => ['institutes.overview', ['super_admin', 'developer']],
             'المستخدمون' => ['users.index', ['admin', 'super_admin', 'developer']],

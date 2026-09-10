@@ -65,9 +65,17 @@ class RolesAndPermissionsSeeder extends Seeder
             'excuses.review', 'reports.view', 'announcements.view',
             'sync.pull', 'sync.push',
         ],
+        // 🔄 م.7.1: **نُزعت `reports.view`** — كان يحملها منذ م.1 فيصل نظرياً إلى
+        // شاشتَي التقارير والإحصائيات في **لوحة الويب** (وهي محروسة بها)، وفيهما
+        // أرقامُ المعهد كلِّه لا أرقامُ ابنه. والـAPI لا يقرأ هذه الصلاحية إطلاقاً
+        // فلا يفقد تطبيقُ ولي الأمر شيئاً: تقريرُه الدوري يُبنى من `/guardian/*`.
+        //
+        // وبقيت `sync.pull` وإن كان التطبيقُ لا يستدعيها (القرار 0.1 في
+        // PHASE-7-STAGES.MD): نزعُها قرارُ كتالوجٍ لا يخدم شيئاً — الصلاحيةُ تصف
+        // ما يحقّ له لا ما يفعله، والحقُّ قائمٌ لو احتاجه سطحٌ آخر.
         'guardian' => [
             'students.view', 'attendance.view', 'progress.view', 'evaluations.view',
-            'excuses.submit', 'reports.view', 'announcements.view', 'sync.pull',
+            'excuses.submit', 'announcements.view', 'sync.pull',
         ],
         'student' => [
             'attendance.view', 'progress.view', 'evaluations.view', 'announcements.view', 'sync.pull',
