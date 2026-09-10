@@ -11,6 +11,7 @@ use App\Models\AttendanceSession;
 use App\Models\Curriculum;
 use App\Models\CurriculumItem;
 use App\Models\Guardian;
+use App\Models\GuardianStudent;
 use App\Models\Student;
 use App\Models\StudentCurriculumProgress;
 use App\Models\User;
@@ -284,11 +285,18 @@ class GuardianAppTest extends TestCase
             ]);
     }
 
+    /**
+     * الربطُ بـ`GuardianStudent::create` لا بـ`attach` على العلاقة: الجدولُ
+     * الوسيط نموذجٌ يحمل `HasUuid`، و`attach` يكتب صفّاً خاماً بلا `uuid` فيسقط
+     * على قيد `NOT NULL`. وهو نفسُ ما تفعله `ScopeTest`.
+     */
     private function childOf(Guardian $guardian): Student
     {
         $child = Student::factory()->create(['institute_id' => $this->institute->id]);
 
-        $guardian->students()->attach($child->id, [
+        GuardianStudent::create([
+            'guardian_id' => $guardian->id,
+            'student_id' => $child->id,
             'relation' => GuardianRelation::Father,
             'is_primary' => true,
             'can_view_reports' => true,
