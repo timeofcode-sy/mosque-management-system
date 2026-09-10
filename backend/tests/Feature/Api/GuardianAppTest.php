@@ -172,6 +172,30 @@ class GuardianAppTest extends TestCase
     }
 
     /**
+     * 🔴 م.7.4 — **الحالةُ الفارغة تبقى كائناً `{}` لا تصير مصفوفةً `[]`**.
+     *
+     * `groupBy` على مجموعةٍ فارغة يخرج من `json_encode` مصفوفةً، فيبدّل الحقلُ
+     * **نوعَه** بحسب محتواه ويرمي العميلُ عند فكّ الحمولة. وطالبٌ جديد بلا
+     * محفوظاتٍ هو الحالةُ الأغلب لا النادرة.
+     *
+     * كُشف بتجريبٍ على المحاكي: النقطةُ ردّت 200 والشاشةُ عرضت «حدث خطأ غير
+     * متوقّع». ولم يكشفه الاختبارُ الذي فوقه لأنه **ينشئ صفَّ تقدُّمٍ قبل
+     * القراءة** — فالحالةُ الفارغة لم تُختبَر أصلاً.
+     */
+    public function test_a_child_with_no_progress_still_returns_an_object_not_an_array(): void
+    {
+        $guardian = $this->actingAsGuardian();
+        $child = $this->childOf($guardian);
+
+        $raw = $this->getJson("/api/v1/guardian/children/{$child->uuid}/progress")
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('"data":{}', $raw);
+        $this->assertStringNotContainsString('"data":[]', $raw);
+    }
+
+    /**
      * ✅ م.7.1 — النقطةُ التي حلّت محلّ `sync/pull` عند ولي الأمر: بدونها يقدّم
      * إذناً ثم لا يرى جوابَ الطاقم عليه أبداً.
      */

@@ -71,8 +71,14 @@ class GuardianRepository {
     return _read(
       key: progressKey(childUuid),
       fetch: () async => (await _apiClient.guardianChildProgress(childUuid)).data,
+      // 🔴 `json['data'] as Map` كان يرمي على الطالب **بلا محفوظات**: خريطةٌ
+      // فارغة تخرج من PHP مصفوفةً `[]` لا كائناً `{}`، فيبدّل الحقلُ نوعَه
+      // بحسب محتواه. أُصلح العقدُ في الخادم (م.7.4)، ويبقى القارئُ متسامحاً —
+      // فعميلٌ يتحدّث خادماً أقدم لا يسقط.
       decode: (json) => CurriculumProgressReport.fromJson(
-        (json['data'] as Map?)?.cast<String, dynamic>() ?? const {},
+        json['data'] is Map
+            ? (json['data'] as Map).cast<String, dynamic>()
+            : const <String, dynamic>{},
       ),
     );
   }

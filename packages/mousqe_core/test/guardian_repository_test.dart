@@ -156,6 +156,19 @@ void main() {
       expect(entry.points, 10);
     });
 
+    /// 🔴 م.7.4: طالبٌ بلا محفوظاتٍ تخرج خريطتُه من PHP **مصفوفةً `[]`** لا
+    /// كائناً. أُصلح العقدُ في الخادم، ويبقى القارئُ متسامحاً فلا يسقط عميلٌ
+    /// يتحدّث خادماً أقدم. وهي الحالةُ التي أسقطت الشاشةَ على المحاكي فعلاً.
+    test('an empty progress map arrives as a list and is read as empty, not thrown at', () async {
+      when(() => api.guardianChildProgress('std-1'))
+          .thenAnswer((_) async => _response({'data': <dynamic>[]}));
+
+      final report = (await repository.progressOf('std-1')).value;
+
+      expect(report.isEmpty, isTrue);
+      expect(report.curricula, isEmpty);
+    });
+
     test('an excuse carries the staff verdict and its note', () async {
       when(api.guardianExcuses).thenAnswer(
         (_) async => _response({

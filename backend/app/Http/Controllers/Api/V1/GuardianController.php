@@ -9,6 +9,7 @@ use App\Http\Resources\V1\AttendanceResource;
 use App\Http\Resources\V1\ProgressResource;
 use App\Http\Resources\V1\StudentResource;
 use App\Models\Guardian;
+use App\Models\Student;
 use App\Queries\GuardianChildrenQuery;
 use App\Queries\StudentProfileQuery;
 use Illuminate\Http\JsonResponse;
@@ -77,9 +78,27 @@ class GuardianController extends Controller
         $child = $children->child($this->guardian($request), $student);
 
         return response()->json([
-            'data' => $profile->progressByCurriculum($child)
-                ->map(fn ($entries) => ProgressResource::collection($entries)),
+            'data' => $this->groupedProgress($profile, $child),
         ]);
+    }
+
+    /**
+     * 🔴 م.7.4: **الخريطةُ الفارغة تُجبَر كائناً `{}` لا مصفوفةً `[]`**.
+     *
+     * `groupBy` على مجموعةٍ فارغة يعطي مجموعةً فارغة، و`json_encode` يخرجها
+     * `[]` — أي **يبدّل نوعَ الحقل بحسب محتواه**: كائنٌ حين يكون فيه منهجٌ
+     * واحد، ومصفوفةٌ حين لا يكون. فيرمي العميلُ عند فكّ الحمولة، والطالبُ
+     * الجديد بلا محفوظاتٍ هو **الحالةُ الأغلب** لا النادرة.
+     *
+     * كُشف بتجريبٍ على جهاز: النقطةُ ردّت 200 والشاشةُ عرضت «حدث خطأ غير
+     * متوقّع». ولم تكشفه الاختبارات لأنها تنشئ صفَّ تقدُّمٍ قبل القراءة —
+     * **فالحالةُ الفارغة لم تُختبَر أصلاً**.
+     */
+    private function groupedProgress(StudentProfileQuery $profile, Student $child): object
+    {
+        return (object) $profile->progressByCurriculum($child)
+            ->map(fn ($entries) => ProgressResource::collection($entries))
+            ->all();
     }
 
     /**

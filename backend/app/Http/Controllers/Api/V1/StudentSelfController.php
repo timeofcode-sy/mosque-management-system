@@ -40,9 +40,14 @@ class StudentSelfController extends Controller
     {
         $student = $this->student($request);
 
+        // 🔴 م.7.4: `(object)` تُجبر الخريطةَ الفارغة على `{}` بدل `[]` — وإلا
+        // بدّل الحقلُ **نوعَه** بحسب محتواه فرمى العميلُ عند فكّ الحمولة. كُشف في
+        // نقطة ولي الأمر بتجريبٍ على جهاز، وهذه نظيرتُها حرفياً
+        // ([GuardianController::groupedProgress](GuardianController.php)).
         return response()->json([
-            'data' => $query->progressByCurriculum($student)
-                ->map(fn ($entries) => ProgressResource::collection($entries)),
+            'data' => (object) $query->progressByCurriculum($student)
+                ->map(fn ($entries) => ProgressResource::collection($entries))
+                ->all(),
         ]);
     }
 
