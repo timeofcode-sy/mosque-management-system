@@ -3,7 +3,7 @@
   "meta": {
     "name": "Mousqe Design Tokens",
     "version": "0.1.0",
-    "note": "مصدر واحد للهوية البصرية. يُستهلك من Tailwind 4 (@theme) ومن mousqe_ui (ThemeData). لوحة مؤقتة إلى حين وصول شعار العميل."
+    "note": "اللوحة الاحتياطية للنظام — يستهلكها Tailwind 4 (@theme) وmousqe_ui (ThemeData). 🔄 م.5.1: صارت الافتراضيَّ لا المفروض؛ لكل معهد ثلاثة ألوان في institutes.settings.theme تُشتقّ منها سلالمُه. ولا تُصبَغ هذه بألوان معهد بعينه، وإلا صار كل معهد جديد بلونه. وشعار العميل في design/logo/ منذ 2026-09-10."
   },
   "color": {
     "brand": {

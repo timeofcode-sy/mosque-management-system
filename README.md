@@ -14,7 +14,8 @@
 | `apps/student/` | تطبيق الطالب — ⬜ المرحلة 8 |
 | `packages/mousqe_core/` | نماذج + drift(SQLite) + محرك المزامنة + عميل API |
 | `packages/mousqe_ui/` | نظام التصميم: ألوان، خط كوفي، ويدجتس، RTL |
-| `design/design-tokens.json` | **مصدر واحد للهوية البصرية** — يُستهلك من Tailwind ومن Flutter |
+| `design/design-tokens.json` | **اللوحة الاحتياطية** — يُستهلك من Tailwind ومن Flutter؛ ولكل معهد ألوانُه في بياناته |
+| `design/logo/` | ✅ شعار معهد عمر الفاروق ومشتقّاته — وصل 2026-09-10 |
 | `docs/` | `PLAN.md` (الخطة وسجل تغييراتها) · `ERD.md` (نموذج البيانات) · `CHECKPOINT-PHASE-*.MD` (نقطة تفتيش لكل مرحلة منفَّذة) |
 
 ## البدء
