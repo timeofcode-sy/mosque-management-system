@@ -273,4 +273,25 @@ abstract class ApiClient {
     @Path('date') String date,
     @Query('course_circle_uuid') String courseCircleUuid,
   );
+
+  // ── نقاطُ ولي الأمر ✅ م.7.2 — [API.md §3.6] ─────────────────────────────────
+  // **وهي كلُّ مصادر تطبيقه**: لا `syncPull` ولا `syncPush` في تطبيق ولي الأمر
+  // إطلاقاً. التيّارُ يبثّ معهداً كاملاً لكل الأدوار، وذاك على جهاز الأب تسريبٌ
+  // لا حِمل — ولا يحتاجه لأنه لا يكتب في الطابور أصلاً
+  // ([CHECKPOINT-PHASE-7.1.MD §2](../../../../../docs/CHECKPOINT-PHASE-7.1.MD)).
+
+  @GET('/guardian/children')
+  Future<HttpResponse<dynamic>> guardianChildren();
+
+  @GET('/guardian/children/{uuid}/attendance')
+  Future<HttpResponse<dynamic>> guardianChildAttendance(@Path('uuid') String uuid);
+
+  @GET('/guardian/children/{uuid}/progress')
+  Future<HttpResponse<dynamic>> guardianChildProgress(@Path('uuid') String uuid);
+
+  @GET('/guardian/excuses')
+  Future<HttpResponse<dynamic>> guardianExcuses();
+
+  @POST('/guardian/excuses')
+  Future<HttpResponse<dynamic>> submitGuardianExcuse(@Body() Map<String, dynamic> body);
 }

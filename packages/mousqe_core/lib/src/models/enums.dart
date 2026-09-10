@@ -36,6 +36,22 @@ enum ExcuseStatus {
   rejected,
 }
 
+/// حالةُ بندٍ في محفوظات الطالب — نظيرُ `App\Enums\ProgressStatus`.
+///
+/// ✅ م.7.2. و`notStarted` **لا تصل في نقاط التقدُّم**: الخادمُ يرشّحها
+/// (`in_progress` و`memorized` و`mastered` وحدها)، لكنها في الكتالوج لأن الصفَّ
+/// نفسَه يصل في `sync/pull` إلى أجهزة الطاقم بها.
+enum ProgressStatus {
+  @JsonValue('not_started')
+  notStarted,
+  @JsonValue('in_progress')
+  inProgress,
+  @JsonValue('memorized')
+  memorized,
+  @JsonValue('mastered')
+  mastered,
+}
+
 /// نوع التسميع.
 enum RecitationType {
   @JsonValue('hifz')
