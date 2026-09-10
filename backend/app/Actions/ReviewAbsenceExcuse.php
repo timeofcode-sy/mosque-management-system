@@ -8,6 +8,7 @@ use App\Enums\SessionStatus;
 use App\Models\AbsenceExcuse;
 use App\Models\Attendance;
 use App\Models\User;
+use App\Notifications\PushMessage;
 
 /**
  * البتّ في إذن غياب مسبق.
@@ -17,7 +18,10 @@ use App\Models\User;
  */
 class ReviewAbsenceExcuse
 {
-    public function __construct(private RecalculateCircleStats $recalculate) {}
+    public function __construct(
+        private RecalculateCircleStats $recalculate,
+        private NotifyGuardians $notify,
+    ) {}
 
     public function handle(AbsenceExcuse $excuse, ExcuseStatus $decision, ?User $reviewedBy = null, ?string $note = null): AbsenceExcuse
     {
@@ -32,7 +36,38 @@ class ReviewAbsenceExcuse
             $this->applyToOpenSessions($excuse);
         }
 
+        $this->announce($excuse, $decision);
+
         return $excuse->refresh();
+    }
+
+    /**
+     * ✅ م.7.4 — **تكملةُ الدائرة التي بدأها وليُّ الأمر**.
+     *
+     * هو من قدّم الإذن وينتظر جواباً، وبلا إشعارٍ لا يعرف أن الطاقم بتّ فيه إلا
+     * أن يفتح التطبيق ويسأل. والقرارُ ذو أثرٍ عملي: إذنٌ رُفض يعني أن على الابن
+     * أن يحضر.
+     *
+     * **ولا يُشعَر عن `pending`**: الحالةُ الابتدائية ليست بتّاً، ولو أُشعر عنها
+     * لَوصل «تحديثٌ» عند كل حفظٍ لا يغيّر شيئاً.
+     */
+    private function announce(AbsenceExcuse $excuse, ExcuseStatus $decision): void
+    {
+        if ($decision === ExcuseStatus::Pending) {
+            return;
+        }
+
+        $student = $excuse->student;
+
+        if ($student === null) {
+            return;
+        }
+
+        $this->notify->handle($student, PushMessage::excuseReviewed(
+            $student->full_name,
+            $decision === ExcuseStatus::Approved,
+            $excuse->uuid,
+        ));
     }
 
     private function applyToOpenSessions(AbsenceExcuse $excuse): void

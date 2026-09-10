@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Contracts\PushNotifier;
 use App\Models\User;
+use App\Notifications\FcmPushNotifier;
+use App\Notifications\NullPushNotifier;
 use App\Support\SyncRecorder;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -10,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Kreait\Firebase\Contract\Messaging;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +25,32 @@ class AppServiceProvider extends ServiceProvider
         // سياق تسجيل التغييرات حالةُ طلبٍ لا حالةُ نموذج: SyncPush يضبطه مرّة لكل عملية،
         // ومراقبُ RecordsSyncChanges يقرؤه من حيث لا يملك تمرير وسيط. ولذلك نسخةٌ واحدة.
         $this->app->singleton(SyncRecorder::class);
+
+        $this->bindPushNotifier();
+    }
+
+    /**
+     * قناةُ الإشعار الفوري — ✅ م.7.4.
+     *
+     * 🔑 **تُختار بوجود بيانات الاعتماد لا بعلَمٍ يدوي**: معهدٌ بلا حساب Firebase
+     * يعمل كاملاً بقناةٍ صامتة، ولا يحتاج أحدٌ أن يتذكّر إطفاء مفتاحٍ ثانٍ. وعلَمٌ
+     * منفصل عن الواقع يعني حالتين تفترقان — `FIREBASE_ENABLED=true` وبلا ملفّ
+     * اعتماد ⇒ استثناءٌ عند أوّل غيابٍ يُسجَّل.
+     *
+     * والملفُّ يُفحَص وجودُه لا اسمُه: مسارٌ مضبوطٌ في `.env` إلى ملفٍّ لم يُنسَخ
+     * إلى الخادم هو بالضبط الحالةُ التي تقع عند النشر.
+     */
+    private function bindPushNotifier(): void
+    {
+        $this->app->bind(PushNotifier::class, function (): PushNotifier {
+            $credentials = config('firebase.projects.app.credentials');
+
+            if (! is_string($credentials) || ! is_file(base_path($credentials)) && ! is_file($credentials)) {
+                return new NullPushNotifier;
+            }
+
+            return new FcmPushNotifier($this->app->make(Messaging::class));
+        });
     }
 
     /**
