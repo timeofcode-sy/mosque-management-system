@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
+import 'config.dart';
 import 'di/app_scope.dart';
 import 'screens/children_screen.dart';
 import 'screens/login_screen.dart';
@@ -46,16 +47,44 @@ class _GuardianAppState extends State<GuardianApp> {
       dependencies: widget.dependencies,
       child: MousqeApp(
         theme: _theme,
-        home: switch (_session.stage) {
-          SessionStage.starting => const _Splash(),
-          SessionStage.signedOut => const LoginScreen(),
-          SessionStage.ready => const ChildrenScreen(),
-        },
+        home: SplashGate(
+          ready: _session.stage != SessionStage.starting,
+          caption: AppConfig.label,
+          onServerChoice: (context) =>
+              showServerChoiceDialog(context, _serverChoice),
+          child: switch (_session.stage) {
+            // تحت شاشة البدء لا يُبنى شيء: تغطّيه حتى تُحسم الجلسة.
+            SessionStage.starting => const SizedBox.shrink(),
+            SessionStage.signedOut => const LoginScreen(),
+            SessionStage.ready => const ChildrenScreen(),
+          },
+        ),
       ),
     );
   }
 
   /// ثيمُ المعهد الثلاثي، أو لوحة `design-tokens.json` لمعهدٍ لم تصل لقطتُه بعد.
+  /// ثلاثُ نقراتٍ على شعار شاشة البدء: الخادمُ الرئيسي أو خادمٌ محلّي.
+  ServerChoice get _serverChoice {
+    final endpoint = widget.dependencies.endpoint;
+
+    return ServerChoice(
+      primaryHost: ServerEndpoint.primaryHost,
+      usesPrimary: endpoint.usesPrimary,
+      localAddress: endpoint.localAddress,
+      warning: _session.stage == SessionStage.ready
+          ? 'تبديلُ الخادم يُخرجك من حسابك ويمسح بياناتِ هذا الجهاز المحلية.'
+          : null,
+      validateLocal: ServerEndpoint.validateLocal,
+      check: (primary, local) => endpoint.probe(primary: primary, local: local),
+      apply: (primary, local) => endpoint.choose(
+        primary: primary,
+        local: local,
+        session: _session,
+      ),
+    );
+  }
+
   ThemeData get _theme {
     final theme = _session.snapshot?.institute.theme;
 
@@ -64,14 +93,5 @@ class _GuardianAppState extends State<GuardianApp> {
       secondary: theme?.secondary,
       surface: theme?.surface,
     );
-  }
-}
-
-class _Splash extends StatelessWidget {
-  const _Splash();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 }

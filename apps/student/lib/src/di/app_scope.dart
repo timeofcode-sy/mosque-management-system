@@ -13,6 +13,7 @@ class AppDependencies {
   AppDependencies({
     required this.db,
     required this.tokenStore,
+    required this.endpoint,
     required this.apiClient,
     required this.repository,
     required this.session,
@@ -20,6 +21,9 @@ class AppDependencies {
 
   final AppDatabase db;
   final TokenStore tokenStore;
+
+  /// الخادمُ الذي يكلّمه هذا التثبيت — يُبدَّل من شاشة البدء ([ServerEndpoint]).
+  final ServerEndpoint endpoint;
   final ApiClient apiClient;
   final StudentSelfRepository repository;
   final SessionController session;
@@ -28,16 +32,30 @@ class AppDependencies {
     AppDatabase? database,
     TokenStore? tokens,
     ApiClient? api,
+    ServerEndpoint? endpoint,
     String baseUrl = AppConfig.baseUrl,
   }) async {
     final db = database ?? AppDatabase();
     final tokenStore = tokens ?? TokenStore();
     final deviceUuid = await tokenStore.deviceUuid();
-    final apiClient = api ?? ApiClient.create(tokenStore: tokenStore, baseUrl: baseUrl);
+    // قبل بناء العميل: عنوانُه الأولُ هو ما اختاره صاحبُ الجهاز في المرّة السابقة
+    // إن اختار، وإلا عنوانُ البناء.
+    final server = endpoint ?? ServerEndpoint(fallbackBaseUrl: baseUrl);
+    if (endpoint == null) {
+      await server.load();
+    }
+
+    final apiClient = api ??
+        ApiClient.create(
+          tokenStore: tokenStore,
+          baseUrl: server.baseUrl,
+          baseUrlReader: () => server.baseUrl,
+        );
 
     return AppDependencies(
       db: db,
       tokenStore: tokenStore,
+      endpoint: server,
       apiClient: apiClient,
       repository: StudentSelfRepository(db: db, apiClient: apiClient),
       session: SessionController(

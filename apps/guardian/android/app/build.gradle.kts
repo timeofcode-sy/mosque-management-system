@@ -18,7 +18,9 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // Still the pre-Nuzuln id: google-services.json is registered in Firebase under
+        // this package name. Moving to com.nuzuln.guardian needs a new Android app in
+        // the Firebase console and its google-services.json, then this and namespace.
         applicationId = "sy.mousqe.mousqe_guardian"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.

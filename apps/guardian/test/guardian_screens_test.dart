@@ -109,6 +109,7 @@ void main() {
     db = AppDatabase(NativeDatabase.memory());
     api = _MockApiClient();
     dependencies = await AppDependencies.create(
+      endpoint: ServerEndpoint(fallbackBaseUrl: 'http://test.invalid/api/v1'),
       database: db,
       tokens: _MemoryTokenStore(),
       api: api,
