@@ -22,6 +22,18 @@ class AttendanceResource extends JsonResource
             'late_minutes' => $this->late_minutes,
             'note' => $this->note,
             'recorded_at' => $this->recorded_at,
+            // 🔄 م.7.1: **يومُ الحضور** لا لحظةُ تسجيله. recorded_at وحده كان يكفي
+            // شاشةَ الأستاذ لأنها تفتح يوماً بعينه فتعرفه مسبقاً، ولا يكفي سجلّاً
+            // يُقرأ يوماً بيوم كسجلّ ولي الأمر والطالب: أستاذٌ يصحّح جلسةَ أمس
+            // اليوم يكتب recorded_at اليومَ، فيقع السجلُّ في اليوم الخطأ عند من
+            // يقرؤه ([API.md §3.6](../../../../docs/API.md)).
+            //
+            // whenLoaded لا قراءةٌ مباشرة: المورد يُستعمل في قوائمَ طويلة،
+            // والعلاقةُ غيرُ محمّلةٍ تعني n+1 صامتاً بعدد السجلّات.
+            'session_date' => $this->whenLoaded(
+                'attendanceSession',
+                fn () => $this->attendanceSession->session_date->toDateString(),
+            ),
         ];
     }
 }

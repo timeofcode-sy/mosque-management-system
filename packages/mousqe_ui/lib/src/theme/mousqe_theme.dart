@@ -195,6 +195,25 @@ class MousqeTheme {
           color: colorScheme.onPrimary,
         ),
       ),
+      // 🔴 م.7.4: **لسانٌ أخضرُ على ترويسةٍ خضراء — لا يُرى.**
+      //
+      // `TabBar` تحت `AppBar` يرث افتراضيّاتِ Material 3 لا ألوانَ الترويسة التي
+      // يجلس فيها: المحدَّدُ `colorScheme.primary` — وهو **لونُ الترويسة نفسِه** —
+      // وغيرُ المحدَّد `onSurfaceVariant` الرماديُّ الداكن. فيختفي اللسانُ العامل
+      // تماماً ويبهت الآخر، **ولا خطأ يُرمى ولا اختبارَ يسقط**: الودجت موجودةٌ في
+      // الشجرة ويجدها `find.text`، وإنما لونُها لونُ ما تحتها.
+      //
+      // كُشف بتجريبٍ على جهاز في م.7.4 — وهو صنفُ عطبٍ لا يكشفه إلا النظر.
+      // والإصلاحُ في الحزمة لا في التطبيق: كلُّ سطحٍ يضع ألسنةً في ترويسته يقع
+      // فيه، والتطبيقاتُ الأربعة تشترك في هذا الثيم.
+      tabBarTheme: TabBarThemeData(
+        labelColor: colorScheme.onPrimary,
+        unselectedLabelColor: colorScheme.onPrimary.withValues(alpha: 0.72),
+        indicatorColor: colorScheme.onPrimary,
+        dividerColor: Colors.transparent,
+        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        unselectedLabelStyle: const TextStyle(fontSize: 13),
+      ),
       // البطاقةُ بيضاءُ ناصعة فوق صفحةٍ دافئة — الفرقُ الذي يجعلها ترتفع عنها.
       cardTheme: CardThemeData(
         color: colorScheme.surfaceContainerLowest,

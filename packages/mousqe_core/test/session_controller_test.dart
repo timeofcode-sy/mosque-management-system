@@ -56,6 +56,21 @@ Map<String, dynamic> _bootstrapBody({
   'circles': <Map<String, dynamic>>[],
 };
 
+/// يهيّئ الردودَ الثلاثة التي يمرّ بها [SessionController.signIn].
+void _stubSignIn(_MockApiClient api) {
+  when(() => api.login(any())).thenAnswer(
+    (_) async => _response({
+      'token': '12|secret',
+      'user': {'id': 41, 'name': 'أحمد بن سعيد', 'roles': ['guardian']},
+    }),
+  );
+  when(() => api.registerDevice(any())).thenAnswer(
+    (_) async => _response({'device_uuid': 'device-1', 'last_pulled_seq': 0}),
+  );
+  when(() => api.bootstrap())
+      .thenAnswer((_) async => _response(_bootstrapBody()));
+}
+
 void main() {
   late AppDatabase db;
   late _MockApiClient api;
@@ -114,6 +129,65 @@ void main() {
     expect(registration['device_uuid'], 'device-1');
     // اسمُ التطبيق معاملٌ لا ثابتٌ في الحزمة — الديسكتوب يسجّل نفسه بـ`admin_desktop`.
     expect(registration['app'], 'teacher');
+    // ✅ م.7.4: تطبيقٌ لا يمرّر قارئَ التوكن يسجّل جهازَه **بلا الحقل** كما كان.
+    expect(registration.containsKey('fcm_token'), isFalse);
+  });
+
+  /// ✅ م.7.4 — التوكنُ يمرّ من نقطة تسجيل الجهاز القائمة لا من نقطةٍ ثانية.
+  test('a push token, when the app can read one, rides along with the device registration', () async {
+    session = SessionController(
+      db: db,
+      apiClient: api,
+      tokenStore: tokens,
+      deviceUuid: 'device-1',
+      app: 'guardian',
+      appLabel: 'تطبيق ولي الأمر',
+      activeInstitute: activeInstitute,
+      pushToken: () async => 'fcm-abc123',
+    );
+
+    _stubSignIn(api);
+
+    await session.signIn(username: 'guardian55', password: 'secret-pass');
+
+    final registration =
+        verify(() => api.registerDevice(captureAny())).captured.single
+            as Map<String, dynamic>;
+    expect(registration['fcm_token'], 'fcm-abc123');
+    expect(registration['app'], 'guardian');
+  });
+
+  /// 🔑 **من رفض الإشعارات يدخل التطبيق**: القارئُ يرمي أو يعيد `null`، والدخولُ
+  /// يمضي بلا الحقل — الإشعارُ ميزةٌ فوق الوظيفة لا شرطٌ لها.
+  test('a refused or failing push token never blocks the sign-in', () async {
+    for (final reader in <PushTokenReader>[
+      () async => null,
+      () async => '',
+      () async => throw StateError('المستخدم رفض إذن الإشعارات'),
+    ]) {
+      api = _MockApiClient();
+      session = SessionController(
+        db: db,
+        apiClient: api,
+        tokenStore: tokens,
+        deviceUuid: 'device-1',
+        app: 'guardian',
+        appLabel: 'تطبيق ولي الأمر',
+        activeInstitute: ActiveInstitute(),
+        pushToken: reader,
+      );
+
+      _stubSignIn(api);
+
+      await session.signIn(username: 'guardian55', password: 'secret-pass');
+
+      expect(session.stage, SessionStage.ready);
+
+      final registration =
+          verify(() => api.registerDevice(captureAny())).captured.single
+              as Map<String, dynamic>;
+      expect(registration.containsKey('fcm_token'), isFalse);
+    }
   });
 
   test('the institute colours reach the snapshot, and reach it offline too', () async {

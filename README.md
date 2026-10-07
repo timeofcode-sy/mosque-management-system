@@ -12,12 +12,12 @@
 | `backend/` | Laravel 13 · Livewire 4 · Flux · Fortify · Spatie Permission — لوحة التحكم + API |
 | `apps/teacher/` | تطبيق الأستاذ (Android/iOS) — التفقّد أوف-لاين |
 | `apps/admin_desktop/` | برنامج المشرف (Windows) — إدارة كاملة أوف-لاين |
-| `apps/guardian/` | تطبيق أولياء الأمور |
-| `apps/student/` | تطبيق الطالب |
+| `apps/guardian/` | تطبيق أولياء الأمور — متابعةُ الأبناء وأذوناتُ الغياب ✅ م.7 |
+| `apps/student/` | تطبيق الطالب — حضورُه ورتبتُه ونقاطُه وإعلاناتُه ✅ م.8 |
 | `packages/mousqe_core/` | نماذج + drift(SQLite) + محرك المزامنة + عميل API |
 | `packages/mousqe_ui/` | نظام التصميم: ألوان، خط كوفي، ويدجتس، RTL |
-| `design/design-tokens.json` | **مصدر واحد للهوية البصرية** — يُستهلك من Tailwind ومن Flutter |
-| `design/logo/` | الشعار: الأصل، والعلامة الشفافة (PNG/SVG)، وأيقونة البلاطة — ومنها تُولَّد أيقونات التطبيقات والموقع |
+| `design/design-tokens.json` | **اللوحة الاحتياطية** — يُستهلك من Tailwind ومن Flutter؛ ولكل معهد ألوانُه في بياناته، وألوانُ شعار النظام في `color.logo` ثابتة |
+| `design/logo/` | شعار النظام (نزلاً) ومنه أيقوناتُ التطبيقات والموقع · وشعار معهد عمر الفاروق ومشتقّاته — وصل 2026-09-10 |
 | `docs/` | `PLAN.md` (الخطة وسجل تغييراتها) · `ERD.md` (نموذج البيانات) · `CHECKPOINT-PHASE-*.MD` (نقطة تفتيش لكل مرحلة منفَّذة) |
 
 ## البدء

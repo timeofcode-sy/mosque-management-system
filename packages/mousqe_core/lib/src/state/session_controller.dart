@@ -31,6 +31,17 @@ class ActiveInstitute {
   String? uuid;
 }
 
+/// يقرأ توكنَ الإشعارات لحظةَ الدخول — ✅ م.7.4.
+///
+/// دالّةٌ يمرّرها التطبيق لا اعتمادٌ على `firebase_messaging` في `mousqe_core`:
+/// الحزمةُ طبقةُ بياناتٍ تخدم أربعة تطبيقات، ولا يحتاج ثلاثةٌ منها Firebase.
+/// وتطبيقٌ لا يمرّرها يرسل تسجيلَ جهازه بلا الحقل كما كان — والخادمُ يقبله
+/// اختيارياً منذ م.4.
+///
+/// وتعيد `null` حين يرفض المستخدمُ إذنَ الإشعارات أو حين لا تصل الشبكة إلى FCM —
+/// **وذاك ليس خطأً يُوقف الدخول**: من رفض الإشعارات يدخل التطبيقَ ويستعمله.
+typedef PushTokenReader = Future<String?> Function();
+
 /// يُرمى حين يُطلب تبديلُ المعهد والطابورُ غيرُ فارغ — [SessionController.switchInstitute].
 class PendingWorkBlocksSwitch implements Exception {
   const PendingWorkBlocksSwitch(this.count);
@@ -62,13 +73,15 @@ class SessionController extends ChangeNotifier {
     required String app,
     required String appLabel,
     ActiveInstitute? activeInstitute,
+    PushTokenReader? pushToken,
   })  : _db = db,
         _apiClient = apiClient,
         _tokenStore = tokenStore,
         _deviceUuid = deviceUuid,
         _app = app,
         _appLabel = appLabel,
-        _activeInstitute = activeInstitute ?? ActiveInstitute();
+        _activeInstitute = activeInstitute ?? ActiveInstitute(),
+        _pushTokenReader = pushToken;
 
   /// مفتاحُ المعهد العامل في `app_state` — يُقرأ عند الإقلاع فيفتح الجهازُ على
   /// المعهد الذي أُغلق عليه، لا على معهد الحساب الأصلي.
@@ -81,6 +94,7 @@ class SessionController extends ChangeNotifier {
   final String _app;
   final String _appLabel;
   final ActiveInstitute _activeInstitute;
+  final PushTokenReader? _pushTokenReader;
 
   SessionStage _stage = SessionStage.starting;
   BootstrapSnapshot? _snapshot;
@@ -155,6 +169,11 @@ class SessionController extends ChangeNotifier {
       'app': _app,
       'platform': Platform.operatingSystem,
       'app_version': '1.0.0',
+      // ✅ م.7.4: توكنُ الإشعارات يمرّ من **هذه النقطة** لا من نقطةٍ ثانية —
+      // `POST /devices/register` يقبل `fcm_token` منذ م.4 ويكتبه في `devices`،
+      // وهو يُستدعى هنا عند كل دخول: أي في اللحظة التي يصير فيها للجهاز صاحبٌ
+      // معروف. ونقطةٌ مستقلّة للتوكن كانت ستضاعف ما هو مبنيّ.
+      if (await _pushToken() case final String token) 'fcm_token': token,
     });
 
     await refreshSnapshot(rethrowErrors: true);
@@ -262,6 +281,24 @@ class SessionController extends ChangeNotifier {
   Future<void> _saveActiveInstitute(String? uuid) async {
     _activeInstitute.uuid = uuid;
     await _db.writeAppState(activeInstituteKey, uuid ?? '');
+  }
+
+  /// توكنُ الإشعارات، أو `null` — **ولا يُسقط الدخولَ مهما وقع**.
+  ///
+  /// من رفض إذنَ الإشعارات، ومن دخل وFCM غيرُ قابلٍ للوصول، يدخلان التطبيقَ
+  /// ويستعملانه كاملاً. الإشعارُ ميزةٌ فوق الوظيفة لا شرطٌ لها.
+  Future<String?> _pushToken() async {
+    if (_pushTokenReader == null) {
+      return null;
+    }
+
+    try {
+      final token = await _pushTokenReader();
+
+      return (token == null || token.isEmpty) ? null : token;
+    } on Object {
+      return null;
+    }
   }
 
   static String? _blankToNull(String? value) =>

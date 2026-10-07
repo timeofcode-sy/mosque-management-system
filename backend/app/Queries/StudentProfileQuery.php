@@ -97,7 +97,18 @@ class StudentProfileQuery
     /**
      * نسبة حضور الطالب في كل يوم من آخر مدّة — مدخل منحنى ملف الطالب.
      *
-     * @return Collection<int, array{date: string, rate: float, sessions: int}>
+     * 🔑 م.7.1: **يومٌ بلا جلسة `rate: null` لا `0.0`** — وهي قاعدةُ م.6.6 حرفياً
+     * («ما لم يُسجَّل لا يُفترض، و`null` ليست صفراً» —
+     * [CHECKPOINT-PHASE-6.6.MD §3](../../../docs/CHECKPOINT-PHASE-6.6.MD)) مطبَّقةً
+     * على السطح الخادمي بعد أن طُبِّقت في `StatsRepository` على سطح الديسكتوب.
+     *
+     * الصفرُ كان يقول «حضر صفراً بالمئة» عن يومِ جمعةٍ لا تفقّدَ فيه أصلاً. لم
+     * يكن يظهر في اللوحة لأن مكوّنَ المنحنى يرشّح النقاطَ بـ`sessions > 0` قبل
+     * رسم دوائرها — لكنّ **الخطَّ نفسَه** كان يهبط إليها، ولا مرشِّحَ في نقطة
+     * الـAPI إطلاقاً. وشاشةُ ولي الأمر تعرض السجلَّ يوماً بيوم لقارئٍ ليس طاقماً
+     * ولا يعرف أيُّ يومٍ يومُ دوام.
+     *
+     * @return Collection<int, array{date: string, rate: float|null, sessions: int}>
      */
     public function attendanceTrend(Student $student, int $days = 30): Collection
     {
@@ -114,7 +125,7 @@ class StudentProfileQuery
             $day = $byDate->get($date);
 
             if ($day === null || $day->isEmpty()) {
-                return ['date' => $date, 'rate' => 0.0, 'sessions' => 0];
+                return ['date' => $date, 'rate' => null, 'sessions' => 0];
             }
 
             $countable = $day->whereNotIn('status', [AttendanceStatus::Excused])->count();
@@ -122,7 +133,9 @@ class StudentProfileQuery
 
             return [
                 'date' => $date,
-                'rate' => $countable > 0 ? round($attended / $countable * 100, 1) : 0.0,
+                // ويومٌ كلُّ سجلّاته «مأذون» ⇒ null كذلك لا صفر: المأذونُ خارج
+                // المقام في معادلة النسبة، فيومٌ لا مقامَ له لا نسبةَ له.
+                'rate' => $countable > 0 ? round($attended / $countable * 100, 1) : null,
                 'sessions' => $day->count(),
             ];
         });

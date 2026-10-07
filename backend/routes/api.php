@@ -16,7 +16,8 @@ use App\Http\Controllers\Api\V1\TeacherController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
-    Route::post('/auth/login', [AuthController::class, 'login']);
+    /** ✅ م.9.1 — سقفٌ على العنوان يسبق bcrypt؛ والقفلُ على الحساب في المتحكّم نفسِه */
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:api-login');
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -110,12 +111,23 @@ Route::prefix('v1')->group(function (): void {
         Route::middleware('role:guardian')->prefix('/guardian')->group(function (): void {
             Route::get('/children', [GuardianController::class, 'children']);
             Route::get('/children/{student}/attendance', [GuardianController::class, 'childAttendance']);
+            // ✅ م.7.1 — نقطتان جديدتان. وليُّ الأمر خارجَ `sync/pull` عمداً
+            // (القرار 0.1 في PHASE-7-STAGES.MD)، فما كان يصله في التيّار — حالةُ
+            // إذنه وتقدُّمُ حفظِ ابنه — صار له نقطتُه.
+            Route::get('/children/{student}/progress', [GuardianController::class, 'childProgress']);
+            Route::get('/excuses', [GuardianController::class, 'excuses']);
             Route::post('/excuses', [GuardianController::class, 'submitExcuse']);
         });
 
         Route::middleware('role:student')->prefix('/student')->group(function (): void {
             Route::get('/me/attendance', [StudentSelfController::class, 'attendance']);
             Route::get('/me/progress', [StudentSelfController::class, 'progress']);
+            // ✅ م.8.1 — ثلاثٌ جديدة. الطالبُ خارجَ `sync/pull` كوليّ الأمر
+            // (§1.1 في PHASE-8-STAGES.MD)، **والرتبةُ تُحسب في الخادم** فلا يصل
+            // جهازَه صفُّ زميلٍ واحد.
+            Route::get('/me/standing', [StudentSelfController::class, 'standing']);
+            Route::get('/me/points', [StudentSelfController::class, 'points']);
+            Route::get('/me/announcements', [StudentSelfController::class, 'announcements']);
         });
     });
 });

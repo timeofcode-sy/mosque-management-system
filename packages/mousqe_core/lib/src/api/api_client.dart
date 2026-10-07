@@ -273,4 +273,49 @@ abstract class ApiClient {
     @Path('date') String date,
     @Query('course_circle_uuid') String courseCircleUuid,
   );
+
+  // ── نقاطُ ولي الأمر ✅ م.7.2 — [API.md §3.6] ─────────────────────────────────
+  // **وهي كلُّ مصادر تطبيقه**: لا `syncPull` ولا `syncPush` في تطبيق ولي الأمر
+  // إطلاقاً. التيّارُ يبثّ معهداً كاملاً لكل الأدوار، وذاك على جهاز الأب تسريبٌ
+  // لا حِمل — ولا يحتاجه لأنه لا يكتب في الطابور أصلاً
+  // ([CHECKPOINT-PHASE-7.1.MD §2](../../../../../docs/CHECKPOINT-PHASE-7.1.MD)).
+
+  @GET('/guardian/children')
+  Future<HttpResponse<dynamic>> guardianChildren();
+
+  @GET('/guardian/children/{uuid}/attendance')
+  Future<HttpResponse<dynamic>> guardianChildAttendance(@Path('uuid') String uuid);
+
+  @GET('/guardian/children/{uuid}/progress')
+  Future<HttpResponse<dynamic>> guardianChildProgress(@Path('uuid') String uuid);
+
+  @GET('/guardian/excuses')
+  Future<HttpResponse<dynamic>> guardianExcuses();
+
+  @POST('/guardian/excuses')
+  Future<HttpResponse<dynamic>> submitGuardianExcuse(@Body() Map<String, dynamic> body);
+
+  // ── نقاطُ الطالب ✅ م.8.1 — [API.md §3.7] ────────────────────────────────────
+  // **وهي كلُّ مصادر تطبيقه**، كوليّ الأمر: لا `syncPull` ولا `syncPush`.
+  // **ولا مُعرِّفَ في أي مسار**: النطاقُ من الحساب لا من الطلب، فلا يستطيع
+  // الطالبُ طلبَ بيانات غيره ولو حاول ([API.md §4]).
+  //
+  // 🔑 و`standing` تُحسب في الخادم عمداً — لو حُسبت على الجهاز لَاستقبل صفوفَ
+  // حضورِ كلِّ زملائه ليستخرج رقماً واحداً
+  // ([PHASE-8-STAGES.MD §1.1](../../../../../docs/PHASE-8-STAGES.MD)).
+
+  @GET('/student/me/attendance')
+  Future<HttpResponse<dynamic>> studentAttendance();
+
+  @GET('/student/me/progress')
+  Future<HttpResponse<dynamic>> studentProgress();
+
+  @GET('/student/me/standing')
+  Future<HttpResponse<dynamic>> studentStanding();
+
+  @GET('/student/me/points')
+  Future<HttpResponse<dynamic>> studentPoints();
+
+  @GET('/student/me/announcements')
+  Future<HttpResponse<dynamic>> studentAnnouncements();
 }

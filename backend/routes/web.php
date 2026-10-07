@@ -95,6 +95,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware('permission:curricula.manage')
         ->name('curricula.index');
 
+    // ✅ م.8.1 — الطرفُ الكاتب لجدولٍ قائمٍ منذ م.1 بلا شاشةٍ ولا نقطة.
+    Route::livewire('announcements', 'pages::announcements.index')
+        ->middleware('permission:announcements.manage')
+        ->name('announcements.index');
+
     Route::middleware('permission:reports.view')->group(function () {
         Route::livewire('reports', 'pages::reports.index')->name('reports.index');
         Route::livewire('stats', 'pages::stats.index')->name('stats.index');

@@ -23,7 +23,21 @@ enum AttendanceStatus {
   @JsonValue('late')
   late,
   @JsonValue('excused')
-  excused,
+  excused;
+
+  /// قيمةُ العقد النصّية — نظيرُ `->value` في enum الخادم ✅ م.8.2.
+  ///
+  /// `@JsonValue` يوجّه المولِّدَ ولا يترك في زمن التشغيل ما يُقرأ، فكان كلُّ
+  /// سطحٍ يحتاج النصَّ يكتب `switch` من أربعة أسطر — وبلغت ثلاثةَ أسطح.
+  /// وباستخراجها هنا تقرأ `mousqe_ui` الحالةَ **بقيمتها لا بنوعها**
+  /// (`BadgeStatus.fromValue`)، فتزول الترجمةُ المكرَّرة **بلا أن تعتمد حزمةُ
+  /// العرض على حزمة البيانات**.
+  String get value => switch (this) {
+        AttendanceStatus.present => 'present',
+        AttendanceStatus.absent => 'absent',
+        AttendanceStatus.late => 'late',
+        AttendanceStatus.excused => 'excused',
+      };
 }
 
 /// حالة إذن الغياب.
@@ -34,6 +48,22 @@ enum ExcuseStatus {
   approved,
   @JsonValue('rejected')
   rejected,
+}
+
+/// حالةُ بندٍ في محفوظات الطالب — نظيرُ `App\Enums\ProgressStatus`.
+///
+/// ✅ م.7.2. و`notStarted` **لا تصل في نقاط التقدُّم**: الخادمُ يرشّحها
+/// (`in_progress` و`memorized` و`mastered` وحدها)، لكنها في الكتالوج لأن الصفَّ
+/// نفسَه يصل في `sync/pull` إلى أجهزة الطاقم بها.
+enum ProgressStatus {
+  @JsonValue('not_started')
+  notStarted,
+  @JsonValue('in_progress')
+  inProgress,
+  @JsonValue('memorized')
+  memorized,
+  @JsonValue('mastered')
+  mastered,
 }
 
 /// نوع التسميع.
