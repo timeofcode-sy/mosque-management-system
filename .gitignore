@@ -45,3 +45,6 @@ Thumbs.db
 # في م.7.4، والحارسُ ههنا يمنع تكراره بدل أن يُكتشَف عند المراجعة.
 *firebase-adminsdk*.json
 firebase-credentials.json
+
+# مخرجاتُ scripts/export-apps.ps1
+dist/

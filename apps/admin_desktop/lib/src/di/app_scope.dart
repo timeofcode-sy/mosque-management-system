@@ -18,6 +18,7 @@ class AppDependencies {
   AppDependencies({
     required this.db,
     required this.tokenStore,
+    required this.endpoint,
     required this.apiClient,
     required this.syncEngine,
     required this.session,
@@ -33,6 +34,9 @@ class AppDependencies {
 
   final AppDatabase db;
   final TokenStore tokenStore;
+
+  /// الخادمُ الذي يكلّمه هذا التثبيت — يُبدَّل من شاشة البدء ([ServerEndpoint]).
+  final ServerEndpoint endpoint;
   final ApiClient apiClient;
   final SyncEngine syncEngine;
   final SessionController session;
@@ -81,6 +85,11 @@ class AppDependencies {
     final db = database ?? AppDatabase(_openStore());
     final tokenStore = tokens ?? TokenStore();
 
+    // قبل بناء العميل: عنوانُه الأولُ هو ما اختاره صاحبُ الجهاز في المرّة السابقة
+    // إن اختار، وإلا عنوانُ البناء.
+    final endpoint = ServerEndpoint(fallbackBaseUrl: baseUrl);
+    await endpoint.load();
+
     // ثابتٌ مدى عمر التثبيت: هو مفتاح `sync_devices` لا `user_id`، فللمستخدم أن
     // يعمل من مكتبه وحاسوب الحلقة بمؤشّرين ([API.md §1](../../../../../docs/API.md)).
     final deviceUuid = await tokenStore.deviceUuid();
@@ -91,7 +100,8 @@ class AppDependencies {
 
     final apiClient = ApiClient.create(
       tokenStore: tokenStore,
-      baseUrl: baseUrl,
+      baseUrl: endpoint.baseUrl,
+      baseUrlReader: () => endpoint.baseUrl,
       instituteUuid: () => activeInstitute.uuid,
     );
     final syncEngine = SyncEngine(
@@ -127,6 +137,7 @@ class AppDependencies {
     return AppDependencies(
       db: db,
       tokenStore: tokenStore,
+      endpoint: endpoint,
       apiClient: apiClient,
       syncEngine: syncEngine,
       session: session,

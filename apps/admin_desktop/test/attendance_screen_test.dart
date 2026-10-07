@@ -79,6 +79,7 @@ void main() {
     ).thenAnswer((_) async => _response(bootstrapBody(permissions: permissions)));
 
     dependencies = AppDependencies(
+      endpoint: ServerEndpoint(fallbackBaseUrl: 'http://test.invalid/api/v1'),
       db: db,
       tokenStore: tokens,
       apiClient: api,

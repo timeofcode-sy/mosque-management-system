@@ -105,6 +105,7 @@ void main() {
     );
 
     dependencies = AppDependencies(
+      endpoint: ServerEndpoint(fallbackBaseUrl: 'http://test.invalid/api/v1'),
       db: db,
       tokenStore: tokens,
       apiClient: api,

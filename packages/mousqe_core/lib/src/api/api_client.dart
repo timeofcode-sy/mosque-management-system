@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
 import 'api_exception.dart';
+import 'server_endpoint.dart';
 import 'token_store.dart';
 
 part 'api_client.g.dart';
@@ -20,16 +21,24 @@ typedef InstituteUuidReader = String? Function();
 /// يحقن التوكن من [TokenStore] في كل طلب، ويترجم استجابات الخطأ إلى
 /// [ApiException] مصنَّفة — [API.md §5](../../../../docs/API.md).
 class _AuthInterceptor extends Interceptor {
-  _AuthInterceptor(this._tokenStore, this._instituteUuid);
+  _AuthInterceptor(this._tokenStore, this._instituteUuid, this._baseUrl);
 
   final TokenStore _tokenStore;
   final InstituteUuidReader? _instituteUuid;
+  final BaseUrlReader? _baseUrl;
 
   @override
   Future<void> onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    // العنوانُ يُقرأ هنا لا عند بناء العميل: اختيارُ الخادم من شاشة البدء يتبدّل
+    // والعميلُ قائم، وما بناه Retrofit في الخيارات هو عنوانُ البناء لا الحالي.
+    final baseUrl = _baseUrl?.call();
+    if (baseUrl != null && baseUrl.isNotEmpty) {
+      options.baseUrl = baseUrl;
+    }
+
     final token = await _tokenStore.readToken();
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
@@ -96,10 +105,13 @@ abstract class ApiClient {
     required String baseUrl,
     Dio? dio,
     InstituteUuidReader? instituteUuid,
+    BaseUrlReader? baseUrlReader,
   }) {
     final client = dio ?? Dio();
     client.options.baseUrl = baseUrl;
-    client.interceptors.add(_AuthInterceptor(tokenStore, instituteUuid));
+    client.interceptors.add(
+      _AuthInterceptor(tokenStore, instituteUuid, baseUrlReader),
+    );
     return ApiClient(client, baseUrl: baseUrl);
   }
 

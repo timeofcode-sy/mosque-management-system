@@ -1,6 +1,7 @@
 library mousqe_ui;
 
 export 'src/brand/brand.dart';
+export 'src/brand/server_choice.dart';
 export 'src/brand/splash.dart';
 export 'src/theme/mousqe_theme.dart';
 export 'src/l10n/mousqe_app.dart';

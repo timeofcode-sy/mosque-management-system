@@ -60,6 +60,8 @@ class _AdminDesktopAppState extends State<AdminDesktopApp> {
         home: SplashGate(
           ready: _session.stage != SessionStage.starting,
           caption: AppConfig.label,
+          onServerChoice: (context) =>
+              showServerChoiceDialog(context, _serverChoice),
           child: switch (_session.stage) {
             // تحت شاشة البدء لا يُبنى شيء: تغطّيه حتى تُحسم الجلسة.
             SessionStage.starting => const SizedBox.shrink(),
@@ -67,6 +69,27 @@ class _AdminDesktopAppState extends State<AdminDesktopApp> {
             SessionStage.ready => const DesktopShell(),
           },
         ),
+      ),
+    );
+  }
+
+  /// ثلاثُ نقراتٍ على شعار شاشة البدء: الخادمُ الرئيسي أو خادمٌ محلّي.
+  ServerChoice get _serverChoice {
+    final endpoint = widget.dependencies.endpoint;
+
+    return ServerChoice(
+      primaryHost: ServerEndpoint.primaryHost,
+      usesPrimary: endpoint.usesPrimary,
+      localAddress: endpoint.localAddress,
+      warning: _session.stage == SessionStage.ready
+          ? 'تبديلُ الخادم يُخرجك من حسابك ويمسح بياناتِ هذا الجهاز المحلية.'
+          : null,
+      validateLocal: ServerEndpoint.validateLocal,
+      check: (primary, local) => endpoint.probe(primary: primary, local: local),
+      apply: (primary, local) => endpoint.choose(
+        primary: primary,
+        local: local,
+        session: _session,
       ),
     );
   }

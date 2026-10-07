@@ -45,6 +45,7 @@ export 'src/data/student_self_repository.dart';
 export 'src/api/api_client.dart';
 export 'src/api/api_errors.dart';
 export 'src/api/api_exception.dart';
+export 'src/api/server_endpoint.dart';
 export 'src/api/token_store.dart';
 
 export 'src/state/session_controller.dart';

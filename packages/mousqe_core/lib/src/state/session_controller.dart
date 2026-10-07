@@ -44,13 +44,17 @@ typedef PushTokenReader = Future<String?> Function();
 
 /// يُرمى حين يُطلب تبديلُ المعهد والطابورُ غيرُ فارغ — [SessionController.switchInstitute].
 class PendingWorkBlocksSwitch implements Exception {
-  const PendingWorkBlocksSwitch(this.count);
+  const PendingWorkBlocksSwitch(this.count, {this.server = false});
 
   final int count;
 
+  /// تبديلُ الخادم لا المعهد — [SessionController.switchServer].
+  final bool server;
+
   String get message =>
-      'بقيت $count عملية لم تصل الخادم بعد. زامِن أوّلاً ثم بدّل المعهد — '
-      'تبديلُ المعهد يمسح مخزنَ الجهاز، فتضيع معه.';
+      'بقيت $count عملية لم تصل الخادم بعد. زامِن أوّلاً ثم بدّل '
+      '${server ? 'الخادم' : 'المعهد'} — '
+      'التبديلُ يمسح مخزنَ الجهاز، فتضيع معه.';
 
   @override
   String toString() => message;
@@ -243,6 +247,27 @@ class SessionController extends ChangeNotifier {
     notifyListeners();
 
     await refreshSnapshot(rethrowErrors: true);
+  }
+
+  /// تبديلُ الخادم — **يُخرج صاحبَ الجهاز ويمسح مخزنَه**.
+  ///
+  /// التوكنُ ومؤشّرُ `since` ومعرّفاتُ الصفوف كلُّها من الخادم السابق، ولا يعرفها
+  /// الجديد: توكنٌ غريبٌ يُردّ 401، ومؤشّرٌ غريبٌ يتخطّى صفوفاً أو يُنزل ناقصاً.
+  /// ولذلك يُرفض التبديلُ والطابورُ غيرُ فارغ، كتبديل المعهد تماماً.
+  ///
+  /// [change] هو التبديلُ نفسُه (حفظُ العنوان الجديد)؛ ينفَّذ بعد فحص الطابور
+  /// وقبل المسح، فلا يبقى الجهازُ على عنوانٍ جديدٍ بجلسةٍ قديمة.
+  Future<void> switchServer(Future<void> Function() change) async {
+    final unsent = await _db.pendingOperations.count().getSingle();
+
+    if (unsent > 0) {
+      throw PendingWorkBlocksSwitch(unsent, server: true);
+    }
+
+    await change();
+    await _wipe();
+    _notice = null;
+    notifyListeners();
   }
 
   Future<void> signOut() async {
