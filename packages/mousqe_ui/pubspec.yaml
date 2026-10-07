@@ -1,6 +1,6 @@
 name: mousqe_ui
 description: >
-  الهوية البصرية المشتركة لتطبيقات موسقي الأربعة — ثيم مشتق من ألوان المعهد،
+  الهوية البصرية المشتركة لتطبيقات نزلاً الأربعة — ثيم مشتق من ألوان المعهد،
   تعريب وRTL، ومكوّنات واجهة دنيا.
 version: 0.1.0
 publish_to: none
@@ -23,6 +23,9 @@ dev_dependencies:
     sdk: flutter
 
 flutter:
+  # الشعارُ مولَّدٌ من design/logo — لا يُحرَّر هنا بل يُعاد توليدُه من هناك.
+  assets:
+    - assets/brand/
   fonts:
     - family: Reem Kufi
       fonts:

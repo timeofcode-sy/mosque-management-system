@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import '../brand/brand.dart';
+
 /// غلافُ `MaterialApp` تصدّره الحزمة — `ar` اللغة الوحيدة في 5.2، RTL مضبوطة،
 /// وأرقام لاتينية بلا أرقام هندية (`MaterialLocalizations` الافتراضية).
 class MousqeApp extends StatelessWidget {
@@ -8,15 +10,20 @@ class MousqeApp extends StatelessWidget {
     super.key,
     required this.home,
     required this.theme,
+    this.title = Brand.name,
   });
 
   final Widget home;
   final ThemeData theme;
 
+  /// ما يقرؤه النظامُ اسماً للنافذة — بطاقةُ التطبيق في قائمة المهامّ على أندرويد.
+  final String title;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      title: title,
       theme: theme,
       locale: const Locale('ar'),
       supportedLocales: const [Locale('ar')],

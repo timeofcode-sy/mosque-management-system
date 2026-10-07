@@ -31,7 +31,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   // would be visible as a jump. The Arabic title is set there too -- this
   // file stays ASCII because MSVC reads it in the system code page.
   Win32Window::Size size(1360, 860);
-  if (!window.Create(L"Mousqe Admin", origin, size)) {
+  if (!window.Create(L"Nuzuln", origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

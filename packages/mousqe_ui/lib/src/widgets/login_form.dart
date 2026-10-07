@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// استمارةُ الدخول باسم المستخدم — مشتركةٌ بين أسطح موسقي الأربعة.
+import '../brand/brand.dart';
+
+/// استمارةُ الدخول باسم المستخدم — مشتركةٌ بين أسطح نزلاً الأربعة، ويعلوها شعارُه.
 ///
 /// بالاسم لا بالبريد ([API.md §3.1](../../../../../docs/API.md)): حساباتُ الأستاذ
 /// والطالب مولَّدةٌ من اللوحة وقد لا يكون لصاحبها بريدٌ أصلاً.
@@ -14,7 +16,6 @@ class LoginForm extends StatefulWidget {
     required this.title,
     required this.subtitle,
     required this.onSubmit,
-    this.icon = Icons.menu_book_outlined,
     this.notice,
     this.errorMessageBuilder,
     this.maxWidth = 420,
@@ -22,7 +23,6 @@ class LoginForm extends StatefulWidget {
 
   final String title;
   final String subtitle;
-  final IconData icon;
 
   /// رسالةٌ تُعرض قبل أي محاولة — «هذا الحساب مقفل» مثلاً.
   final String? notice;
@@ -98,7 +98,7 @@ class _LoginFormState extends State<LoginForm> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(widget.icon, size: 56, color: theme.colorScheme.primary),
+                const Center(child: BrandMark(size: 80)),
                 const SizedBox(height: 16),
                 Text(
                   widget.title,

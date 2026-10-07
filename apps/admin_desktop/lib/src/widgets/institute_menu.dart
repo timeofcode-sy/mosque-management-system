@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
+import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 
@@ -41,7 +42,7 @@ class InstituteMenu extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      snapshot?.institute.name ?? 'موسقي',
+                      snapshot?.institute.name ?? Brand.name,
                       style: theme.textTheme.titleMedium,
                       overflow: TextOverflow.ellipsis,
                     ),

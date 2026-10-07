@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "sa.mousqe" "\0"
-            VALUE "FileDescription", "mousqe_admin_desktop" "\0"
+            VALUE "CompanyName", "Nuzuln" "\0"
+            VALUE "FileDescription", "نزلاً — إدارة المعهد" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "mousqe_admin_desktop" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 sa.mousqe. All rights reserved." "\0"
-            VALUE "OriginalFilename", "mousqe_admin_desktop.exe" "\0"
-            VALUE "ProductName", "mousqe_admin_desktop" "\0"
+            VALUE "InternalName", "nuzuln" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Nuzuln (nuzuln.com). All rights reserved." "\0"
+            VALUE "OriginalFilename", "nuzuln.exe" "\0"
+            VALUE "ProductName", "Nuzuln" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

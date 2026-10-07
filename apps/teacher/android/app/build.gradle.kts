@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "sy.mousqe.mousqe_teacher"
+    namespace = "com.nuzuln.teacher"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -15,8 +15,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "sy.mousqe.mousqe_teacher"
+        // Reverse-DNS of nuzuln.com. Fixed once the app ships to the store.
+        applicationId = "com.nuzuln.teacher"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

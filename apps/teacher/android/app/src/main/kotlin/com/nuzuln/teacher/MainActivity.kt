@@ -1,4 +1,4 @@
-package sy.mousqe.mousqe_teacher
+package com.nuzuln.teacher
 
 import io.flutter.embedding.android.FlutterActivity
 

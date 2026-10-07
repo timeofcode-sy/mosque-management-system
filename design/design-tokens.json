@@ -1,11 +1,18 @@
 {
   "$schema": "https://design-tokens.org/schema.json",
   "meta": {
-    "name": "Mousqe Design Tokens",
+    "name": "Nuzuln Design Tokens",
     "version": "0.1.0",
-    "note": "مصدر واحد للهوية البصرية. يُستهلك من Tailwind 4 (@theme) ومن mousqe_ui (ThemeData). لوحة مؤقتة إلى حين وصول شعار العميل."
+    "note": "مصدر واحد للهوية البصرية لنظام نزلاً (nuzuln.com). يُستهلك من Tailwind 4 (@theme) ومن mousqe_ui (ThemeData). ألوان الشعار في color.logo ثابتة لا يغيّرها ثيم المعهد؛ وملفاته في design/logo."
   },
   "color": {
+    "logo": {
+      "ground":      "#0E2925",
+      "groundLight": "#1B3C35",
+      "groundDark":  "#0A221E",
+      "ribbon":      "#D8C0A2",
+      "celestial":   "#FFFFFF"
+    },
     "brand": {
       "50":  "#E8F2ED",
       "100": "#C6E0D4",

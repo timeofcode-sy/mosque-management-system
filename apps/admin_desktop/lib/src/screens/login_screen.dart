@@ -20,7 +20,6 @@ class LoginScreen extends StatelessWidget {
 
     return Scaffold(
       body: LoginForm(
-        icon: Icons.account_balance_outlined,
         title: AppConfig.label,
         subtitle: 'سجّل الدخول بحساب المشرف أو مدير المعهد',
         notice: session.notice,

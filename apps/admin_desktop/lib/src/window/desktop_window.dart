@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:mousqe_ui/mousqe_ui.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:window_manager/window_manager.dart';
@@ -47,7 +48,7 @@ class DesktopWindow with WindowListener {
         size: state.size ?? defaultSize,
         minimumSize: minimumSize,
         center: state.position == null,
-        title: 'موسقي · ${AppConfig.label}',
+        title: '${Brand.name} · ${AppConfig.label}',
         titleBarStyle: TitleBarStyle.normal,
       ),
       () async {

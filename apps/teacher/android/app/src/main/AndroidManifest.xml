@@ -4,7 +4,7 @@
          الإصدار كان يخرج بلا صلاحية شبكة أصلاً. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="mousqe_teacher"
+        android:label="نزلاً"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -14,18 +14,18 @@
 
 @if($sidebar)
     <flux:sidebar.brand :name="$brandName" {{ $attributes }}>
-        <x-slot name="logo" class="flex aspect-square size-8 items-center justify-center rounded-md bg-brand-600 text-white">
+        <x-slot name="logo" class="flex aspect-square size-8 items-center justify-center">
             @if ($institute?->logo_path)
                 <img src="{{ Storage::url($institute->logo_path) }}" alt="{{ $brandName }}" class="size-8 rounded-md object-contain" />
             @else
-                <x-app-logo-icon class="size-5 fill-current text-white" />
+                <x-app-logo-icon class="size-8" />
             @endif
         </x-slot>
     </flux:sidebar.brand>
 @else
     <flux:brand :name="$brandName" {{ $attributes }}>
-        <x-slot name="logo" class="flex aspect-square size-8 items-center justify-center rounded-md bg-brand-600 text-white">
-            <x-app-logo-icon class="size-5 fill-current text-white" />
+        <x-slot name="logo" class="flex aspect-square size-8 items-center justify-center">
+            <x-app-logo-icon class="size-8" />
         </x-slot>
     </flux:brand>
 @endif
