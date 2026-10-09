@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nuzul_ui/nuzul_ui.dart';
 import 'package:intl/intl.dart';
 
 import 'sync_status_indicator.dart';
@@ -96,7 +97,7 @@ class SyncBar extends StatelessWidget {
                   IconButton(
                     tooltip: 'زامن الآن',
                     onPressed: onSync,
-                    icon: const Icon(Icons.sync),
+                    icon: const NzIcon(NzIcons.review),
                   ),
               ],
             ),
@@ -171,7 +172,7 @@ class _FailureStrip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Row(
         children: [
-          Icon(Icons.report_outlined, size: 16, color: theme.colorScheme.error),
+          NzIcon(NzIcons.warning, size: 16, color: theme.colorScheme.error),
           const SizedBox(width: 6),
           Expanded(
             child: Text(
@@ -236,13 +237,13 @@ class _FailuresDialog extends StatelessWidget {
                           IconButton(
                             tooltip: 'أعِد المحاولة',
                             onPressed: () => onRetry!(failure.opUuid),
-                            icon: const Icon(Icons.refresh),
+                            icon: const NzIcon(NzIcons.review),
                           ),
                         if (onDiscard != null)
                           IconButton(
                             tooltip: 'تخلَّ عنها',
                             onPressed: () => onDiscard!(failure.opUuid),
-                            icon: const Icon(Icons.delete_outline),
+                            icon: const NzIcon(NzIcons.trash),
                           ),
                       ],
                     ),

@@ -29,7 +29,7 @@ class CurriculaScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('المناهج')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _editCurriculum(context),
-        icon: const Icon(Icons.add),
+        icon: const NzIcon(NzIcons.plus),
         label: const Text('منهج جديد'),
       ),
       body: StreamBuilder<List<CurriculumView>>(
@@ -45,7 +45,7 @@ class CurriculaScreen extends StatelessWidget {
             return EmptyState(
               message: 'لم تصل المناهجُ بعد.\n'
                   'القرآنُ والحديثُ والمتون مزروعةٌ عامةً — زامِن الجهازَ لتصلك.',
-              icon: Icons.menu_book_outlined,
+              icon: NzIcons.mushaf,
               onRetry: deps.sync.syncNow,
             );
           }
@@ -100,16 +100,16 @@ class _CurriculumCard extends StatelessWidget {
             if (!curriculum.isFixedQuran)
               IconButton(
                 tooltip: 'بند جديد',
-                icon: const Icon(Icons.playlist_add, size: 20),
+                icon: const NzIcon(NzIcons.plus, size: 20),
                 onPressed: () => _editItem(context, curriculum),
               ),
             if (!curriculum.isGlobal)
               IconButton(
                 tooltip: 'تحرير المنهج',
-                icon: const Icon(Icons.edit_outlined, size: 18),
+                icon: const NzIcon(NzIcons.edit, size: 18),
                 onPressed: () => _editCurriculum(context, curriculum),
               ),
-            const Icon(Icons.expand_more),
+            const NzIcon(NzIcons.chevronDown),
           ],
         ),
         children: [
@@ -129,13 +129,13 @@ class _CurriculumCard extends StatelessWidget {
                 children: [
                   IconButton(
                     tooltip: 'تحرير البند',
-                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    icon: const NzIcon(NzIcons.edit, size: 16),
                     onPressed: () => _editItem(context, curriculum, item),
                   ),
                   if (!curriculum.isFixedQuran)
                     IconButton(
                       tooltip: 'حذف البند',
-                      icon: const Icon(Icons.delete_outline, size: 16),
+                      icon: const NzIcon(NzIcons.trash, size: 16),
                       onPressed: () => _deleteItem(context, item),
                     ),
                 ],

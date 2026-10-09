@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nuzul_ui/nuzul_ui.dart';
 
 /// حالات التفقّد الأربع — نظير `AttendanceStatus` في `mousqe_core` بلا اعتماد
 /// على الحزمة تفادياً لدائرة استيراد بين `mousqe_ui` و`mousqe_core`.
@@ -29,18 +30,15 @@ enum BadgeStatus {
       };
 }
 
-/// شارة تلوّن حسب الحالة بألوان `design/design-tokens.json → color.status`.
+/// شارة الحالة بأزواج الهوية الثابتة (حاضر: success · متأخر: warning · مستأذن: info · غائب: danger).
+/// تُكتب الحالةُ بكلمتها وأيقونتها دائماً — اللونُ وحده لا يكفي (قاعدة الهوية).
 class AttendanceStatusBadge extends StatelessWidget {
-  const AttendanceStatusBadge({super.key, required this.status});
+  const AttendanceStatusBadge({super.key, required this.status, this.text});
 
   final BadgeStatus status;
 
-  static const _colors = {
-    BadgeStatus.present: Color(0xFF177F5C),
-    BadgeStatus.absent: Color(0xFFB42318),
-    BadgeStatus.late: Color(0xFFC9A227),
-    BadgeStatus.excused: Color(0xFF2563EB),
-  };
+  /// يستبدل الكلمة الافتراضية، مثل «متأخر 10 د».
+  final String? text;
 
   static const _labels = {
     BadgeStatus.present: 'حاضر',
@@ -49,21 +47,14 @@ class AttendanceStatusBadge extends StatelessWidget {
     BadgeStatus.excused: 'مأذون',
   };
 
-  @override
-  Widget build(BuildContext context) {
-    final color = _colors[status]!;
+  static const _nz = {
+    BadgeStatus.present: NzAttendance.present,
+    BadgeStatus.absent: NzAttendance.absent,
+    BadgeStatus.late: NzAttendance.late,
+    BadgeStatus.excused: NzAttendance.excused,
+  };
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color),
-      ),
-      child: Text(
-        _labels[status]!,
-        style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 12),
-      ),
-    );
-  }
+  @override
+  Widget build(BuildContext context) =>
+      NzAttendanceBadge(_nz[status]!, text: text ?? _labels[status]);
 }

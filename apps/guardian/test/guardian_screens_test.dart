@@ -95,7 +95,7 @@ Map<String, dynamic> _allExcused() => {
 
 Widget _wrap(AppDependencies dependencies, Widget home) => AppScope(
       dependencies: dependencies,
-      child: MousqeApp(theme: MousqeTheme.fromHexes(), home: home),
+      child: MousqeApp(theme: MousqeTheme.light(), home: home),
     );
 
 void main() {

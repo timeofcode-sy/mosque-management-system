@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mousqe_ui/mousqe_ui.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 
 import '../di/app_scope.dart';
@@ -108,7 +109,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.save_outlined, size: 18),
+                  : const NzIcon(NzIcons.save, size: 18),
               label: const Text('حفظ'),
             ),
           ),
@@ -492,9 +493,9 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
             isDense: true,
             border: const OutlineInputBorder(),
             suffixIcon: value == null
-                ? const Icon(Icons.calendar_today_outlined, size: 18)
+                ? const NzIcon(NzIcons.calendar, size: 18)
                 : IconButton(
-                    icon: const Icon(Icons.clear, size: 18),
+                    icon: const NzIcon(NzIcons.close, size: 18),
                     onPressed: () => onChanged(null),
                   ),
           ),
@@ -682,7 +683,7 @@ class _ErrorBanner extends StatelessWidget {
       child: Row(
         spacing: 8,
         children: [
-          Icon(Icons.error_outline, color: scheme.onErrorContainer, size: 20),
+          NzIcon(NzIcons.exclamationCircle, color: scheme.onErrorContainer, size: 20),
           Expanded(
             child: Text(
               message,

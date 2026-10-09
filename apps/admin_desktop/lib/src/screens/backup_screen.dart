@@ -132,10 +132,10 @@ class _BackupScreenState extends State<BackupScreen> {
                       return Row(
                         spacing: 8,
                         children: [
-                          Icon(
+                          NzIcon(
                             pending == 0
-                                ? Icons.cloud_done_outlined
-                                : Icons.cloud_upload_outlined,
+                                ? NzIcons.checkCircle
+                                : NzIcons.upload,
                             color: pending == 0
                                 ? theme.colorScheme.primary
                                 : theme.colorScheme.error,
@@ -168,12 +168,12 @@ class _BackupScreenState extends State<BackupScreen> {
                                 height: 16,
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
-                            : const Icon(Icons.save_alt_outlined, size: 18),
+                            : const NzIcon(NzIcons.save, size: 18),
                         label: const Text('احفظ نسخةً الآن'),
                       ),
                       OutlinedButton.icon(
                         onPressed: _refresh,
-                        icon: const Icon(Icons.refresh, size: 18),
+                        icon: const NzIcon(NzIcons.review, size: 18),
                         label: const Text('تحديث'),
                       ),
                     ],
@@ -193,13 +193,13 @@ class _BackupScreenState extends State<BackupScreen> {
           if (_backups.isEmpty)
             const EmptyState(
               message: 'لا نسخةَ محفوظةٌ بعد على هذا الجهاز.',
-              icon: Icons.save_alt_outlined,
+              icon: NzIcons.save,
             )
           else
             for (final file in _backups)
               Card(
                 child: ListTile(
-                  leading: const Icon(Icons.inventory_2_outlined),
+                  leading: const NzIcon(NzIcons.archive),
                   title: Text(p.basename(file.path)),
                   subtitle: Text(
                     '${_size(file.lengthSync())} · '

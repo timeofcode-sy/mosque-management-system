@@ -37,21 +37,21 @@ class _AttendanceHubScreenState extends State<AttendanceHubScreen> {
         actions: [
           IconButton(
             tooltip: 'اليوم السابق',
-            icon: const Icon(Icons.chevron_right),
+            icon: const NzIcon(NzIcons.back),
             onPressed: () => setState(
               () => _date = _date.subtract(const Duration(days: 1)),
             ),
           ),
           TextButton.icon(
             onPressed: _pickDate,
-            icon: const Icon(Icons.event_outlined, size: 18),
+            icon: const NzIcon(NzIcons.calendar, size: 18),
             label: Text(DateFormat('EEEE، d MMMM y', 'ar').format(_date)),
           ),
           IconButton(
             tooltip: 'اليوم التالي',
             // لا تفقُّدَ لغدٍ: `showDatePicker` يمنعه، فيُمنع هنا أيضاً وإلا
             // اختلف البابان إلى نفس التاريخ.
-            icon: const Icon(Icons.chevron_left),
+            icon: const NzIcon(NzIcons.chevronLeft),
             onPressed: _date.isBefore(_today())
                 ? () => setState(() => _date = _date.add(const Duration(days: 1)))
                 : null,
@@ -72,7 +72,7 @@ class _AttendanceHubScreenState extends State<AttendanceHubScreen> {
             return EmptyState(
               message: 'لا حلقات في الدورة الجارية.\n'
                   'إن كانت الدورة قد بدأت للتوّ فزامِن الجهازَ ليصلك كشفُها.',
-              icon: Icons.fact_check_outlined,
+              icon: NzIcons.attendance,
               onRetry: deps.sync.syncNow,
             );
           }
@@ -155,7 +155,7 @@ class _CircleTile extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Icon(_icon, color: _color(theme)),
+        leading: NzIcon(_icon, color: _color(theme)),
         title: Text(circle.circleName, style: theme.textTheme.titleMedium),
         subtitle: Text(
           '${circle.shiftName} · ${circle.shiftStartsAtLabel} — '
@@ -169,7 +169,7 @@ class _CircleTile extends StatelessWidget {
             Text(_label, style: theme.textTheme.labelLarge?.copyWith(
               color: _color(theme),
             )),
-            const Icon(Icons.chevron_left),
+            const NzIcon(NzIcons.chevronLeft),
           ],
         ),
         onTap: onOpen,
@@ -177,11 +177,11 @@ class _CircleTile extends StatelessWidget {
     );
   }
 
-  IconData get _icon => switch (status) {
-    null => Icons.radio_button_unchecked,
-    'draft' => Icons.edit_note,
-    'completed' => Icons.check_circle_outline,
-    _ => Icons.lock_outline,
+  String get _icon => switch (status) {
+    null => NzIcons.radioOff,
+    'draft' => NzIcons.edit,
+    'completed' => NzIcons.checkCircle,
+    _ => NzIcons.lockClosed,
   };
 
   String get _label => switch (status) {

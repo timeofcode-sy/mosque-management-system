@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mousqe_ui/mousqe_ui.dart';
 
 /// بابٌ قائمٌ في الهيكل ولم تُبنَ شاشتُه بعد.
 ///
@@ -36,8 +37,7 @@ class PlaceholderScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.construction_outlined,
+              NzIcon(NzIcons.settings,
                 size: 44,
                 color: theme.colorScheme.onSurfaceVariant,
               ),

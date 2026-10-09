@@ -1,344 +1,162 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:nuzul_ui/nuzul_ui.dart';
 
-/// نظير `App\Support\InstituteTheme` — نفس النسب على نفس الألوان الثلاثة
-/// القادمة في `/bootstrap`. الخوارزمية خلطٌ خطّيٌّ في sRGB نحو الأبيض
-/// للفواتح ونحو الأسود للدواكن، بنسبٍ ثابتة (BRAND · GOLD · SAND).
+/// ثيمُ التطبيقات الأربعة: هويةُ نزلاً v3 كما تقدّمها [NuzulTheme] (فاتح: ضبابٌ وأخضرُ عميق، وليلي: ليلُ
+/// المسجد ونحاس) مع ما لا تغطّيه الحزمةُ من أسطح Material — الحوارات والأوراق السفلية والمنتقيات والشرائح
+/// والمفاتيح — لتخرج كلُّها بالحدّ والزاوية واللون نفسها.
 ///
-/// معهدٌ لم يضبط ألوانه يعود بلوحة `design/design-tokens.json` الافتراضية —
-/// القيم منسوخة حرفياً كـ Dart consts، لا إعادة اشتقاق من ملف JSON في زمن
-/// التشغيل لتفادي حزمة تحليل JSON إضافية لأربعة أرقام ثابتة.
+/// ### الألوان ثابتة
+/// ألوانُ المعهد (`institutes.settings.theme`) تبقى بياناتٍ في الخادم والـAPI لكنها **لا تصبغ الواجهة**:
+/// لوحةُ v3 مضمونةُ التباين (4.5:1 للنص و3:1 للحدود والتركيز) في السمتين، وألوانٌ اعتباطية تكسر هذا الضمان.
+/// وعلامةُ المعهد الخاصة (الشعار والاسم) تبقى ظاهرةً حيث كانت.
 ///
-/// 🔄 م.5.3 — **الخلفيةُ بيضاءُ دائماً.** كان `surface` يُسنَد خاماً إلى
-/// `scaffoldBackgroundColor`، فصارت الصفحةُ كلُّها بلون المعهد الثالث: نصٌّ داكنُ
-/// الحمرة على خردلٍ مشبع، وبطاقاتٌ وحواراتٌ تذوب في خلفيتها لأنها من لونها.
-/// صار `surface` **مصدرَ حرارةٍ لا طلاءَ صفحة**: يُخلط 92% نحو الأبيض للصفحة،
-/// وتُشتقّ منه طبقاتُ `surfaceContainer*` بنسبٍ متدرّجة، فتنفصل البطاقةُ عن أرضيّتها
-/// مهما أشبع المعهدُ لونَه — وتبقى هويتُه محسوسةً في دفء البياض.
+/// ### السمتان
+/// التطبيقاتُ تمرّر [light] و[dark] مع `themeMode: ThemeMode.system`، فتتبع الليلُ تلقائياً.
 class MousqeTheme {
   const MousqeTheme._();
 
-  static const defaultPrimary = '#0F5132'; // brand-600
-  static const defaultSecondary = '#C9A227'; // gold-500
-  static const defaultSurface = '#F7F3EA'; // sand-100
+  /// لمسٌ للهاتف واللوحي، وفأرةٌ ولوحةُ مفاتيح لسطح المكتب (ويندوز وماك ولينكس).
+  static NzDensity get density => NuzulTheme.densityFor(defaultTargetPlatform);
 
-  static const Map<int, double> _brandRatios = {
-    50: 0.92,
-    100: 0.84,
-    200: 0.68,
-    300: 0.50,
-    400: 0.30,
-    500: 0.14,
-    600: 0.0,
-    700: -0.15,
-    800: -0.32,
-    900: -0.50,
-  };
+  static ThemeData light({NzDensity? density}) =>
+      _decorate(NuzulTheme.light(density: density ?? MousqeTheme.density));
 
-  static const Map<int, double> _goldRatios = {
-    300: 0.40,
-    400: 0.20,
-    500: 0.0,
-    600: -0.18,
-    700: -0.36,
-  };
+  static ThemeData dark({NzDensity? density}) =>
+      _decorate(NuzulTheme.dark(density: density ?? MousqeTheme.density));
 
-  /// سلالمُ الأسطح المشتقّة من لون المعهد الثالث — كلُّها قريبةٌ من الأبيض.
-  ///
-  /// الفروقُ بينها صغيرةٌ عمداً (6% بين الطبقة والتي تليها): ما يفصل البطاقةَ عن
-  /// الصفحة هو الحدُّ والظلّ، والتدرّجُ يسندهما ولا ينوب عنهما. وتوسيعُ الفروق يعيد
-  /// المشكلةَ نفسها بدرجةٍ أخفّ — أسطحٌ ملوّنة بدل أسطحٍ بيضاء دافئة.
-  static const double _pageTint = 0.92;
-  static const double _containerLowTint = 0.88;
-  static const double _containerTint = 0.82;
-  static const double _containerHighTint = 0.74;
-  static const double _containerHighestTint = 0.66;
-  static const double _outlineVariantTint = 0.58;
-  static const double _outlineTint = 0.34;
+  static ThemeData _decorate(ThemeData base) {
+    final c = base.extension<NzPalette>()!.tokens;
+    final small = BorderRadius.circular(NzRadius.sm);
+    final medium = BorderRadius.circular(NzRadius.md);
+    final dense = base.visualDensity == VisualDensity.compact;
 
-  /// سلّم التدرّج الكامل (50→900 حسب النطاق) مشتقّاً من لون أساسي واحد.
-  static Map<int, Color> shades(String hex, Map<int, double> ratios) {
-    final base = _parseHex(hex);
-    return {
-      for (final entry in ratios.entries) entry.key: _shade(base, entry.value),
-    };
-  }
+    WidgetStateProperty<T> sel<T>(T on, T off) =>
+        WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? on : off);
 
-  /// ثيمٌ كامل من ثلاثة ألوان اعتباطية — نظير `InstituteTheme::for()`.
-  static ThemeData fromColors({
-    required String primary,
-    required String secondary,
-    required String surface,
-  }) {
-    final brand = shades(primary, _brandRatios);
-    final gold = shades(secondary, _goldRatios);
-    final sandBase = _parseHex(surface);
-
-    Color sand(double tint) => _shade(sandBase, tint);
-
-    // الحبرُ يحمل مسحةً من لون المعهد لا حياداً رمادياً: نصٌّ أسودُ تماماً فوق بياضٍ
-    // دافئ يبدو غريباً عنه، والمسحةُ تربط النصَّ بالصفحة بلا أن تُضعف تباينه.
-    final ink = _shade(_parseHex(primary), -0.74);
-    final mutedInk = _shade(_parseHex(primary), -0.40);
-
-    final colorScheme = ColorScheme.light(
-      primary: brand[600]!,
-      onPrimary: Colors.white,
-      primaryContainer: brand[100]!,
-      onPrimaryContainer: brand[900]!,
-      // الخام كما في اللوحة (gold-500 = المُدخَل حرفياً) — العقدُ واحد، ولا يُغيَّر
-      // معناه هنا. وحبرُه داكنٌ منه لأن معاهد كثيرة تختار ثانوياً فاتحاً.
-      secondary: gold[500]!,
-      onSecondary: _shade(_parseHex(secondary), -0.62),
-      secondaryContainer: gold[300]!,
-      onSecondaryContainer: _shade(_parseHex(secondary), -0.62),
-      surface: sand(_pageTint),
-      onSurface: ink,
-      surfaceContainerLowest: Colors.white,
-      surfaceContainerLow: sand(_containerLowTint),
-      surfaceContainer: sand(_containerTint),
-      surfaceContainerHigh: sand(_containerHighTint),
-      surfaceContainerHighest: sand(_containerHighestTint),
-      onSurfaceVariant: mutedInk,
-      outline: sand(_outlineTint),
-      outlineVariant: sand(_outlineVariantTint),
-      surfaceTint: brand[600]!,
-    );
-
-    return _build(colorScheme);
-  }
-
-  /// ثيمٌ افتراضي مطابق لـ `design/design-tokens.json` بلا ألوان معهد.
-  static ThemeData fallback() {
-    return fromColors(
-      primary: defaultPrimary,
-      secondary: defaultSecondary,
-      surface: defaultSurface,
-    );
-  }
-
-  /// من ثلاثة ألوان **قد تكون غائبة** — لقطةٌ لم تصل بعد، أو معهدٌ بلا ألوان.
-  ///
-  /// الغائبُ يسقط إلى لوحة `design-tokens.json` لوناً لوناً لا دفعةً واحدة، فمعهدٌ
-  /// ضبط لونين وترك ثالثاً يبقى بلونيه.
-  static ThemeData fromHexes({
-    String? primary,
-    String? secondary,
-    String? surface,
-  }) {
-    return fromColors(
-      primary: primary ?? defaultPrimary,
-      secondary: secondary ?? defaultSecondary,
-      surface: surface ?? defaultSurface,
-    );
-  }
-
-  /// نفسُ الهوية بمقاسات مكتب: الفأرةُ أدقّ من الإصبع، والشاشةُ أعرض.
-  ///
-  /// الأزرارُ 52 بكسل ارتفاعاً مقاسُ إبهام على هاتف؛ على شاشةٍ فيها عشرون حقلاً
-  /// تصير جداراً. وما عدا المقاسات يبقى كما هو — اللونُ والخطُّ والحدُّ واحدٌ في
-  /// السطحين، فلا يبدو البرنامجان من بيتين.
-  static ThemeData forDesktop(ThemeData base) {
     return base.copyWith(
-      visualDensity: VisualDensity.compact,
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          minimumSize: const Size(0, 40),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          textStyle: const TextStyle(
-            fontFamily: 'IBM Plex Sans Arabic',
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size(0, 40),
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          side: BorderSide(color: base.colorScheme.outline),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      ),
-    );
-  }
-
-  static ThemeData _build(ColorScheme colorScheme) {
-    return ThemeData(
-      useMaterial3: true,
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: colorScheme.surface,
-      fontFamily: 'IBM Plex Sans Arabic',
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(fontFamily: 'Reem Kufi'),
-        headlineMedium: TextStyle(fontFamily: 'Reem Kufi'),
-        headlineSmall: TextStyle(fontFamily: 'Reem Kufi'),
-        titleLarge: TextStyle(fontFamily: 'Reem Kufi'),
-      ),
-      // الترويسةُ وحدها تحمل لون المعهد كاملاً — وهي مرساةُ الشاشة. جُرّبت مقابلها
-      // ترويسةٌ بيضاء بعنوانٍ ملوّن على جهازٍ فعلي: أهدأ، لكن الشاشةَ الكثيفة تفقد
-      // حدَّها الأعلى فتذوب الحقولُ في حقلٍ واحد. فالهويةُ شريطٌ أعلى، وما تحته بياض.
-      appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        centerTitle: true,
-        titleTextStyle: TextStyle(
-          fontFamily: 'Reem Kufi',
-          fontSize: 20,
-          color: colorScheme.onPrimary,
-        ),
-      ),
-      // 🔴 م.7.4: **لسانٌ أخضرُ على ترويسةٍ خضراء — لا يُرى.**
-      //
-      // `TabBar` تحت `AppBar` يرث افتراضيّاتِ Material 3 لا ألوانَ الترويسة التي
-      // يجلس فيها: المحدَّدُ `colorScheme.primary` — وهو **لونُ الترويسة نفسِه** —
-      // وغيرُ المحدَّد `onSurfaceVariant` الرماديُّ الداكن. فيختفي اللسانُ العامل
-      // تماماً ويبهت الآخر، **ولا خطأ يُرمى ولا اختبارَ يسقط**: الودجت موجودةٌ في
-      // الشجرة ويجدها `find.text`، وإنما لونُها لونُ ما تحتها.
-      //
-      // كُشف بتجريبٍ على جهاز في م.7.4 — وهو صنفُ عطبٍ لا يكشفه إلا النظر.
-      // والإصلاحُ في الحزمة لا في التطبيق: كلُّ سطحٍ يضع ألسنةً في ترويسته يقع
-      // فيه، والتطبيقاتُ الأربعة تشترك في هذا الثيم.
-      tabBarTheme: TabBarThemeData(
-        labelColor: colorScheme.onPrimary,
-        unselectedLabelColor: colorScheme.onPrimary.withValues(alpha: 0.72),
-        indicatorColor: colorScheme.onPrimary,
-        dividerColor: Colors.transparent,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-        unselectedLabelStyle: const TextStyle(fontSize: 13),
-      ),
-      // البطاقةُ بيضاءُ ناصعة فوق صفحةٍ دافئة — الفرقُ الذي يجعلها ترتفع عنها.
-      cardTheme: CardThemeData(
-        color: colorScheme.surfaceContainerLowest,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: colorScheme.outlineVariant),
-        ),
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      ),
-      // الحوارُ أبيضُ معتم: كان يرث لون الصفحة فيبدو شفافاً فوق ما تحته.
       dialogTheme: DialogThemeData(
-        backgroundColor: colorScheme.surfaceContainerLowest,
+        backgroundColor: c.surfaceRaised,
         surfaceTintColor: Colors.transparent,
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        titleTextStyle: TextStyle(
-          fontFamily: 'Reem Kufi',
-          fontSize: 19,
-          color: colorScheme.onSurface,
-        ),
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: medium, side: BorderSide(color: c.line)),
+        titleTextStyle: NzType.title.copyWith(color: c.ink),
+        contentTextStyle: NzType.body.copyWith(color: c.ink),
       ),
-      // منتقي التاريخ حوارٌ أيضاً، ولا يرث dialogTheme — فيُضبط صراحةً أو خرج
-      // كريمياً وحده بين حوارَين أبيضين.
       datePickerTheme: DatePickerThemeData(
-        backgroundColor: colorScheme.surfaceContainerLowest,
+        backgroundColor: c.surfaceRaised,
         surfaceTintColor: Colors.transparent,
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        headerBackgroundColor: colorScheme.surfaceContainerLowest,
-        headerForegroundColor: colorScheme.onSurface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: medium, side: BorderSide(color: c.line)),
+        headerBackgroundColor: c.surfaceRaised,
+        headerForegroundColor: c.ink,
+        todayBorder: BorderSide(color: c.primary),
+        dayStyle: NzType.body,
+        yearStyle: NzType.body,
+      ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: c.surfaceRaised,
+        shape: RoundedRectangleBorder(borderRadius: medium, side: BorderSide(color: c.line)),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: colorScheme.surfaceContainerLowest,
+        backgroundColor: c.surfaceRaised,
         surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        modalBackgroundColor: c.surfaceRaised,
+        shape: RoundedRectangleBorder(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(NzRadius.md)),
+          side: BorderSide(color: c.line),
+        ),
       ),
-      dividerTheme: DividerThemeData(
-        color: colorScheme.outlineVariant,
-        space: 1,
-        thickness: 1,
+      popupMenuTheme: PopupMenuThemeData(
+        color: c.surfaceRaised,
+        surfaceTintColor: Colors.transparent,
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: small, side: BorderSide(color: c.line)),
+        textStyle: NzType.body.copyWith(color: c.ink),
       ),
-      filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(52),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          textStyle: const TextStyle(
-            fontFamily: 'IBM Plex Sans Arabic',
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
+      menuTheme: MenuThemeData(
+        style: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(c.surfaceRaised),
+          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: small, side: BorderSide(color: c.line)),
           ),
         ),
       ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(52),
-          side: BorderSide(color: colorScheme.outline),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
+      dropdownMenuTheme: DropdownMenuThemeData(
+        textStyle: NzType.body.copyWith(color: c.ink),
+        menuStyle: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(c.surfaceRaised),
+          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
         ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: c.surfaceRaised,
+        selectedColor: c.bronzeSoft,
+        side: BorderSide(color: c.line),
+        shape: RoundedRectangleBorder(borderRadius: small),
+        labelStyle: NzType.label.copyWith(color: c.ink),
+        secondaryLabelStyle: NzType.label.copyWith(color: c.bronzeInk),
+        checkmarkColor: c.bronzeInk,
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
         style: ButtonStyle(
-          // الحالةُ المختارة تُملأ بلون المعهد كاملاً لا بشفافيةٍ منه: أربعُ خاناتٍ
-          // متجاورة تحتاج فصلاً قاطعاً يُقرأ بطرف العين أثناء التفقّد.
-          backgroundColor: WidgetStateProperty.resolveWith(
-            (states) => states.contains(WidgetState.selected)
-                ? colorScheme.primary
-                : colorScheme.surfaceContainerLowest,
-          ),
-          foregroundColor: WidgetStateProperty.resolveWith(
-            (states) => states.contains(WidgetState.selected)
-                ? colorScheme.onPrimary
-                : colorScheme.onSurfaceVariant,
-          ),
-          side: WidgetStatePropertyAll(
-            BorderSide(color: colorScheme.outlineVariant),
-          ),
+          backgroundColor: sel(c.primary, c.surfaceRaised),
+          foregroundColor: sel(c.onPrimary, c.inkMuted),
+          side: WidgetStatePropertyAll(BorderSide(color: c.line)),
+          shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: small)),
+          textStyle: WidgetStatePropertyAll(NzType.label),
+          minimumSize: WidgetStatePropertyAll(Size(48, dense ? NzSize.controlHeightDense : NzSize.touchTarget)),
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: colorScheme.surfaceContainerLowest,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.outlineVariant),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.outlineVariant),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: colorScheme.primary, width: 1.6),
+      switchTheme: SwitchThemeData(
+        thumbColor: sel(c.onPrimary, c.inkMuted),
+        trackColor: sel(c.primary, c.surfaceSunken),
+        trackOutlineColor: sel(c.primary, c.inkMuted),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: sel(c.primary, Colors.transparent),
+        checkColor: WidgetStatePropertyAll(c.onPrimary),
+        side: BorderSide(color: c.inkMuted, width: 1.5),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(2)),
+      ),
+      radioTheme: RadioThemeData(fillColor: sel(c.primary, c.inkMuted)),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: c.primary,
+        linearTrackColor: c.surfaceSunken,
+        circularTrackColor: c.surfaceSunken,
+        linearMinHeight: 4,
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: c.inkMuted,
+        textColor: c.ink,
+        titleTextStyle: NzType.body.copyWith(color: c.ink),
+        subtitleTextStyle: NzType.caption.copyWith(color: c.inkMuted),
+        shape: RoundedRectangleBorder(borderRadius: small),
+      ),
+      expansionTileTheme: ExpansionTileThemeData(
+        shape: const Border(),
+        collapsedShape: const Border(),
+        iconColor: c.ink,
+        collapsedIconColor: c.inkMuted,
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: c.ink,
+          minimumSize: Size.square(dense ? NzSize.controlHeightDense : NzSize.touchTarget),
+          shape: RoundedRectangleBorder(borderRadius: small),
         ),
       ),
-      listTileTheme: ListTileThemeData(iconColor: colorScheme.primary),
-      chipTheme: ChipThemeData(
-        backgroundColor: colorScheme.surfaceContainerLow,
-        side: BorderSide(color: colorScheme.outlineVariant),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: c.focus,
+        selectionColor: c.bronzeSoft,
+        selectionHandleColor: c.focus,
+      ),
+      scrollbarTheme: ScrollbarThemeData(
+        thumbColor: WidgetStatePropertyAll(c.line),
+        radius: Radius.zero,
       ),
     );
-  }
-
-  /// لونٌ ممزوجٌ نحو الأبيض (نسبة موجبة) أو نحو الأسود (سالبة) — نظير
-  /// `InstituteTheme::shade()`.
-  static Color _shade(Color base, double ratio) {
-    final target = ratio >= 0 ? 255 : 0;
-    final weight = ratio.abs();
-
-    int mix(int channel) => (channel + (target - channel) * weight).round();
-
-    final r = (base.r * 255).round();
-    final g = (base.g * 255).round();
-    final b = (base.b * 255).round();
-
-    return Color.fromARGB(255, mix(r), mix(g), mix(b));
-  }
-
-  static Color _parseHex(String hex) {
-    final normalized = hex.replaceFirst('#', '');
-    final value = int.parse(normalized, radix: 16);
-    return Color(0xFF000000 | value);
   }
 }

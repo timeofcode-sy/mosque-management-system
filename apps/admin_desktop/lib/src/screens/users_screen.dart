@@ -64,7 +64,7 @@ class _UsersScreenState extends State<UsersScreen> {
         actions: [
           IconButton(
             tooltip: 'تحديث',
-            icon: const Icon(Icons.refresh),
+            icon: const NzIcon(NzIcons.review),
             onPressed: _reload,
           ),
           if (deps.session.can('users.invite'))
@@ -72,7 +72,7 @@ class _UsersScreenState extends State<UsersScreen> {
               padding: const EdgeInsetsDirectional.only(start: 8, end: 12),
               child: FilledButton.icon(
                 onPressed: _invite,
-                icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
+                icon: const NzIcon(NzIcons.userPlus, size: 18),
                 label: const Text('حساب جديد'),
               ),
             ),
@@ -90,11 +90,11 @@ class _UsersScreenState extends State<UsersScreen> {
               },
               decoration: InputDecoration(
                 isDense: true,
-                prefixIcon: const Icon(Icons.search, size: 20),
+                prefixIcon: const NzIcon(NzIcons.search, size: 20),
                 hintText: 'ابحث بالاسم أو اسم الدخول ثم اضغط Enter',
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.arrow_forward),
+                  icon: const NzIcon(NzIcons.arrowRight),
                   onPressed: () {
                     _query = _search.text.trim();
                     _reload();
@@ -124,7 +124,7 @@ class _UsersScreenState extends State<UsersScreen> {
                 if (users.isEmpty) {
                   return const EmptyState(
                     message: 'لا مستخدمين مطابقين.',
-                    icon: Icons.badge_outlined,
+                    icon: NzIcons.badge,
                   );
                 }
 
@@ -300,20 +300,20 @@ class _UserRow extends StatelessWidget {
           if (deps.session.can('users.manage'))
             IconButton(
               tooltip: 'إسناد دور',
-              icon: const Icon(Icons.add_moderator_outlined, size: 18),
+              icon: const NzIcon(NzIcons.shield, size: 18),
               onPressed: () => _assign(context),
             ),
           if (deps.session.can('credentials.manage'))
             IconButton(
               tooltip: 'توليد كلمة مرور جديدة',
-              icon: const Icon(Icons.password_outlined, size: 18),
+              icon: const NzIcon(NzIcons.key, size: 18),
               onPressed: () => _resetPassword(context),
             ),
           if (deps.session.can('users.manage'))
             IconButton(
               tooltip: user.isActive ? 'إقفال الحساب' : 'فتح الحساب',
-              icon: Icon(
-                user.isActive ? Icons.lock_outline : Icons.lock_open_outlined,
+              icon: NzIcon(
+                user.isActive ? NzIcons.lockClosed : NzIcons.lockOpen,
                 size: 18,
               ),
               onPressed: () => _toggleActivation(context),
@@ -468,7 +468,7 @@ class _NetworkError extends StatelessWidget {
           ? 'هذا البابُ يحتاج اتصالاً: الحساباتُ لا تُزامَن ولا تُخزَّن على الجهاز.\n'
               'أعِد المحاولة حين تعود الشبكة.'
           : messageFor(error),
-      icon: isOffline(error) ? Icons.wifi_off_outlined : Icons.error_outline,
+      icon: isOffline(error) ? NzIcons.offline : NzIcons.exclamationCircle,
       onRetry: onRetry,
     );
   }

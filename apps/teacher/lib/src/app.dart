@@ -49,7 +49,8 @@ class _TeacherAppState extends State<TeacherApp> {
     return AppScope(
       dependencies: widget.dependencies,
       child: MousqeApp(
-        theme: _theme,
+        theme: MousqeTheme.light(),
+        darkTheme: MousqeTheme.dark(),
         home: SplashGate(
           ready: _session.stage != SessionStage.starting,
           caption: AppConfig.label,
@@ -84,17 +85,6 @@ class _TeacherAppState extends State<TeacherApp> {
         local: local,
         session: _session,
       ),
-    );
-  }
-
-  /// ثيمُ المعهد الثلاثي، أو لوحة `design-tokens.json` لمعهدٍ لم تصل لقطتُه بعد.
-  ThemeData get _theme {
-    final theme = _session.snapshot?.institute.theme;
-
-    return MousqeTheme.fromHexes(
-      primary: theme?.primary,
-      secondary: theme?.secondary,
-      surface: theme?.surface,
     );
   }
 }

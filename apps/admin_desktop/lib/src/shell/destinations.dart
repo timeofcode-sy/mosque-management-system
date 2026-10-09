@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mousqe_ui/mousqe_ui.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 
 import '../screens/attendance_hub_screen.dart';
@@ -43,7 +44,7 @@ class DesktopSection {
 
   final String id;
   final String label;
-  final IconData icon;
+  final String icon;
   final SectionGroup group;
 
   /// يُفتح البابُ بـ**واحدةٍ** من هذه لا بكلّها: «الطلاب» يراها من يملك
@@ -74,7 +75,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'dashboard',
     label: 'الداشبورد',
-    icon: Icons.space_dashboard_outlined,
+    icon: NzIcons.grid,
     group: SectionGroup.overview,
     permissions: ['reports.view'],
     builder: _dashboard,
@@ -82,7 +83,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'reports',
     label: 'التقارير والطباعة',
-    icon: Icons.print_outlined,
+    icon: NzIcons.printer,
     group: SectionGroup.overview,
     permissions: ['reports.view', 'reports.export'],
     builder: _reports,
@@ -90,7 +91,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'attendance',
     label: 'التفقّد',
-    icon: Icons.fact_check_outlined,
+    icon: NzIcons.attendance,
     group: SectionGroup.circle,
     permissions: ['attendance.view'],
     builder: _attendance,
@@ -98,7 +99,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'circles',
     label: 'الحلقات',
-    icon: Icons.groups_2_outlined,
+    icon: NzIcons.halaqa,
     group: SectionGroup.circle,
     permissions: ['circles.view'],
     builder: _circles,
@@ -106,7 +107,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'students',
     label: 'الطلاب',
-    icon: Icons.school_outlined,
+    icon: NzIcons.certificate,
     group: SectionGroup.daily,
     permissions: ['students.view', 'students.manage'],
     builder: _students,
@@ -114,7 +115,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'enrollments',
     label: 'التسجيل والنقل',
-    icon: Icons.swap_horiz_outlined,
+    icon: NzIcons.review,
     group: SectionGroup.daily,
     permissions: ['enrollments.manage', 'transfers.manage'],
     builder: _enrollments,
@@ -122,7 +123,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'excuses',
     label: 'أعذار الغياب',
-    icon: Icons.mark_email_read_outlined,
+    icon: NzIcons.envelopeOpen,
     group: SectionGroup.daily,
     permissions: ['excuses.review'],
     builder: _excuses,
@@ -130,7 +131,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'catalog',
     label: 'الدورات والدوامات',
-    icon: Icons.calendar_month_outlined,
+    icon: NzIcons.calendar,
     group: SectionGroup.institute,
     permissions: ['courses.manage', 'shifts.manage', 'circles.manage'],
     builder: _catalog,
@@ -138,7 +139,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'curricula',
     label: 'المناهج',
-    icon: Icons.menu_book_outlined,
+    icon: NzIcons.mushaf,
     group: SectionGroup.institute,
     permissions: ['curricula.manage'],
     builder: _curricula,
@@ -146,7 +147,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'users',
     label: 'المستخدمون والأدوار',
-    icon: Icons.badge_outlined,
+    icon: NzIcons.badge,
     group: SectionGroup.institute,
     permissions: ['users.manage', 'users.invite'],
     builder: _users,
@@ -154,7 +155,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'credentials',
     label: 'بيانات الدخول',
-    icon: Icons.key_outlined,
+    icon: NzIcons.key,
     group: SectionGroup.institute,
     permissions: ['credentials.export', 'credentials.manage'],
     builder: _credentials,
@@ -162,7 +163,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'settings',
     label: 'بيانات المعهد',
-    icon: Icons.tune_outlined,
+    icon: NzIcons.settings,
     group: SectionGroup.institute,
     permissions: ['settings.manage'],
     builder: _settings,
@@ -170,7 +171,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'institutes',
     label: 'المعاهد',
-    icon: Icons.apartment_outlined,
+    icon: NzIcons.mosque,
     group: SectionGroup.institute,
     permissions: ['institutes.manage'],
     builder: _institutes,
@@ -178,7 +179,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'conflicts',
     label: 'التعارضات',
-    icon: Icons.rule_folder_outlined,
+    icon: NzIcons.attendance,
     group: SectionGroup.system,
     permissions: ['conflicts.review'],
     builder: _conflicts,
@@ -186,7 +187,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'backup',
     label: 'نسخٌ احتياطي',
-    icon: Icons.save_alt_outlined,
+    icon: NzIcons.save,
     group: SectionGroup.system,
     // نسخُ ملفِّ drift عملٌ محليٌّ بحت، فلا صلاحيةَ خادمية تحرسه — لكن من لا
     // يسحب لا يملك ما ينسخه، فرُبط بمن له مخزنٌ أصلاً.

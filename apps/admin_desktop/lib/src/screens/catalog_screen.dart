@@ -34,7 +34,7 @@ class CatalogScreen extends StatelessWidget {
       return const Scaffold(
         body: EmptyState(
           message: 'لا تملك صلاحيةَ تهيئةِ بنية الدورة.',
-          icon: Icons.lock_outline,
+          icon: NzIcons.lockClosed,
         ),
       );
     }
@@ -66,7 +66,7 @@ class _CoursesTab extends StatelessWidget {
     return _TabBody<CourseView>(
       stream: deps.catalog.watchCourses(),
       emptyMessage: 'لا دورات في هذا المعهد بعد.\nأنشئ الدورة الأولى لتبدأ الحلقات.',
-      emptyIcon: Icons.calendar_month_outlined,
+      emptyIcon: NzIcons.calendar,
       onCreate: () => _edit(context),
       createLabel: 'دورة جديدة',
       itemBuilder: (context, course) => ListTile(
@@ -99,7 +99,7 @@ class _CoursesTab extends StatelessWidget {
                 child: const Text('اجعلها الجارية'),
               ),
             IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 18),
+              icon: const NzIcon(NzIcons.edit, size: 18),
               onPressed: () => _edit(context, course),
             ),
           ],
@@ -241,7 +241,7 @@ class _ShiftsTab extends StatelessWidget {
       stream: deps.catalog.watchShifts(),
       emptyMessage: 'لا دوامات في الدورة الجارية.\n'
           'الدوامُ هو ما يحدّد أيامَ الحلقة وساعتَها، ولا جلسةَ بلا دوام.',
-      emptyIcon: Icons.schedule_outlined,
+      emptyIcon: NzIcons.clock,
       onCreate: () => _edit(context),
       createLabel: 'دوام جديد',
       itemBuilder: (context, shift) => ListTile(
@@ -251,7 +251,7 @@ class _ShiftsTab extends StatelessWidget {
           ' · ${shift.circlesCount} حلقة',
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.edit_outlined, size: 18),
+          icon: const NzIcon(NzIcons.edit, size: 18),
           onPressed: () => _edit(context, shift),
         ),
       ),
@@ -371,7 +371,7 @@ class _CirclesTab extends StatelessWidget {
     return _TabBody<CircleDefinitionView>(
       stream: deps.catalog.watchCircleDefinitions(),
       emptyMessage: 'لا حلقات مُعرَّفة في هذا المعهد.',
-      emptyIcon: Icons.groups_2_outlined,
+      emptyIcon: NzIcons.halaqa,
       onCreate: () => _edit(context),
       createLabel: 'حلقة جديدة',
       itemBuilder: (context, circle) => ListTile(
@@ -391,7 +391,7 @@ class _CirclesTab extends StatelessWidget {
               child: Text(circle.isRunning ? 'تشغيل في دوام آخر' : 'تشغيل'),
             ),
             IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 18),
+              icon: const NzIcon(NzIcons.edit, size: 18),
               onPressed: () => _edit(context, circle),
             ),
           ],
@@ -578,7 +578,7 @@ class _TabBody<T> extends StatelessWidget {
 
   final Stream<List<T>> stream;
   final String emptyMessage;
-  final IconData emptyIcon;
+  final String emptyIcon;
   final VoidCallback onCreate;
   final String createLabel;
   final Widget Function(BuildContext, T) itemBuilder;
@@ -588,7 +588,7 @@ class _TabBody<T> extends StatelessWidget {
     return Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: onCreate,
-        icon: const Icon(Icons.add),
+        icon: const NzIcon(NzIcons.plus),
         label: Text(createLabel),
       ),
       body: StreamBuilder<List<T>>(
@@ -650,10 +650,10 @@ class _DateField extends StatelessWidget {
           border: const OutlineInputBorder(),
           suffixIcon: clearable && value != null
               ? IconButton(
-                  icon: const Icon(Icons.clear, size: 18),
+                  icon: const NzIcon(NzIcons.close, size: 18),
                   onPressed: () => onChanged(null),
                 )
-              : const Icon(Icons.calendar_today_outlined, size: 18),
+              : const NzIcon(NzIcons.calendar, size: 18),
         ),
         child: Text(value == null ? '—' : _date(value!)),
       ),
@@ -696,7 +696,7 @@ class _TimeField extends StatelessWidget {
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
-          suffixIcon: const Icon(Icons.schedule, size: 18),
+          suffixIcon: const NzIcon(NzIcons.clock, size: 18),
         ),
         child: Text(
           '${time.hour.toString().padLeft(2, '0')}:'

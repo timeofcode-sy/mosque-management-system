@@ -1,21 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 void main() {
-  testWidgets('the logo ships inside the package bundle', (tester) async {
-    // سطرُ assets ناقصٌ في pubspec لا يكسر البناء ولا التحليل — يكسر الشاشةَ وحدها.
-    final bytes = await rootBundle.load(
-      'packages/mousqe_ui/assets/brand/nuzuln_mark.png',
-    );
-
-    expect(bytes.lengthInBytes, greaterThan(0));
-  });
-
   testWidgets('BrandMark announces the system name', (tester) async {
     await tester.pumpWidget(
-      MousqeApp(theme: MousqeTheme.fallback(), home: const BrandMark()),
+      MousqeApp(theme: MousqeTheme.light(), home: const BrandMark()),
     );
 
     expect(find.bySemanticsLabel(Brand.name), findsOneWidget);
@@ -23,7 +13,7 @@ void main() {
 
   group('SplashGate', () {
     Widget gate({required bool ready}) => MousqeApp(
-          theme: MousqeTheme.fallback(),
+          theme: MousqeTheme.light(),
           home: SplashGate(
             ready: ready,
             caption: 'تطبيق الأستاذ',
@@ -69,7 +59,7 @@ void main() {
     }) async {
       await tester.pumpWidget(
         MousqeApp(
-          theme: MousqeTheme.fallback(),
+          theme: MousqeTheme.light(),
           home: SplashGate(
             ready: ready,
             caption: 'تطبيق الأستاذ',

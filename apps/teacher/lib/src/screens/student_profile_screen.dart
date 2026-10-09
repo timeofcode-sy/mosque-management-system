@@ -60,14 +60,14 @@ class _Body extends StatelessWidget {
               child: StatCard(
                 value: rate == null ? '—' : '${rate.toStringAsFixed(1)}٪',
                 label: 'نسبة الحضور',
-                icon: Icons.percent,
+                icon: NzIcons.percent,
               ),
             ),
             Expanded(
               child: StatCard(
                 value: profile.totalPoints.toStringAsFixed(1),
                 label: 'مجموع النقاط',
-                icon: Icons.star_outline,
+                icon: NzIcons.star,
               ),
             ),
           ],

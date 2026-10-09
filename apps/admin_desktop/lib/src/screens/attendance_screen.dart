@@ -92,7 +92,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     if (session.roster.isEmpty) {
       return const EmptyState(
         message: 'لا طلاب مسجَّلون في هذه الحلقة بهذا التاريخ.',
-        icon: Icons.groups_outlined,
+        icon: NzIcons.students,
       );
     }
 
@@ -589,11 +589,11 @@ class _DateBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         spacing: 8,
         children: [
-          const Icon(Icons.event_outlined, size: 18),
+          const NzIcon(NzIcons.calendar, size: 18),
           Text(DateFormat('EEEE، d MMMM y', 'ar').format(date)),
           TextButton.icon(
             onPressed: onPick,
-            icon: const Icon(Icons.edit_calendar_outlined, size: 18),
+            icon: const NzIcon(NzIcons.edit, size: 18),
             label: const Text('تغيير اليوم'),
           ),
         ],
@@ -656,7 +656,7 @@ class _Header extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 10),
               child: _Banner(
-                icon: Icons.lock_outline,
+                icon: NzIcons.lockClosed,
                 message: session.locked
                     ? 'الجلسة مقفلة نهائياً — لا تُعدَّل ولا يُعاد فتحها.'
                     : 'الجلسة مكتملة، وتعديلُها يحتاج صلاحية «التصحيح الرجعي».',
@@ -666,7 +666,7 @@ class _Header extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 10),
               child: _Banner(
-                icon: Icons.history_edu_outlined,
+                icon: NzIcons.note,
                 // بانرٌ لا مجرّد سماحٍ صامت: من يعدّل جلسةً أُكملت يجب أن يعرف
                 // أنه يصحّح رجعياً لا يتفقّد اليوم.
                 message: 'تصحيحٌ رجعي: هذه الجلسة أُكملت، وما تحفظه الآن يُرسَل '
@@ -690,7 +690,7 @@ class _Banner extends StatelessWidget {
     this.accent = false,
   });
 
-  final IconData icon;
+  final String icon;
   final String message;
   final bool accent;
 
@@ -711,7 +711,7 @@ class _Banner extends StatelessWidget {
       child: Row(
         spacing: 8,
         children: [
-          Icon(icon, size: 18, color: color),
+          NzIcon(icon, size: 18, color: color),
           Expanded(
             child: Text(
               message,
@@ -800,8 +800,7 @@ class _StudentRow extends StatelessWidget {
                         if (entry.origin == AttendanceOrigin.pending)
                           Tooltip(
                             message: 'كتابةٌ لم تصل الخادم بعد',
-                            child: Icon(
-                              Icons.cloud_upload_outlined,
+                            child: NzIcon(NzIcons.upload,
                               size: 16,
                               color: theme.colorScheme.primary,
                             ),
@@ -809,8 +808,7 @@ class _StudentRow extends StatelessWidget {
                         else if (entry.origin == AttendanceOrigin.suggested)
                           Tooltip(
                             message: 'قيمةٌ مقترحة لم يؤكّدها أحد',
-                            child: Icon(
-                              Icons.help_outline,
+                            child: NzIcon(NzIcons.informationCircle,
                               size: 16,
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -853,14 +851,13 @@ class _StudentRow extends StatelessWidget {
                 children: [
                   if (entry.note != null)
                     Chip(
-                      avatar: const Icon(Icons.sticky_note_2_outlined, size: 16),
+                      avatar: const NzIcon(NzIcons.note, size: 16),
                       label: Text(entry.note!),
                       visualDensity: VisualDensity.compact,
                     ),
                   for (final recitation in entry.recitations)
                     InputChip(
-                      avatar: const Icon(
-                        Icons.record_voice_over_outlined,
+                      avatar: const NzIcon(NzIcons.mushaf,
                         size: 16,
                       ),
                       label: Text(
@@ -874,7 +871,7 @@ class _StudentRow extends StatelessWidget {
                     ),
                   for (final award in entry.points)
                     InputChip(
-                      avatar: const Icon(Icons.star_outline, size: 16),
+                      avatar: const NzIcon(NzIcons.star, size: 16),
                       label: Text(
                         '${pointsLabel(award)}'
                         '${award.pending ? ' (بانتظار المزامنة)' : ''}',
@@ -945,29 +942,29 @@ class _RowMenu extends StatelessWidget {
     return MenuAnchor(
       menuChildren: [
         MenuItemButton(
-          leadingIcon: const Icon(Icons.person_outline, size: 18),
+          leadingIcon: const NzIcon(NzIcons.user, size: 18),
           onPressed: onProfile,
           child: const Text('ملف الطالب'),
         ),
         MenuItemButton(
-          leadingIcon: const Icon(Icons.record_voice_over_outlined, size: 18),
+          leadingIcon: const NzIcon(NzIcons.mushaf, size: 18),
           onPressed: onRecitation,
           child: const Text('تسجيل تسميع'),
         ),
         MenuItemButton(
-          leadingIcon: const Icon(Icons.star_outline, size: 18),
+          leadingIcon: const NzIcon(NzIcons.star, size: 18),
           onPressed: onPoints,
           child: const Text('منح نقاط'),
         ),
         MenuItemButton(
-          leadingIcon: const Icon(Icons.sticky_note_2_outlined, size: 18),
+          leadingIcon: const NzIcon(NzIcons.note, size: 18),
           onPressed: editable ? onNote : null,
           child: const Text('ملاحظة'),
         ),
       ],
       builder: (context, controller, _) => IconButton(
         tooltip: 'إجراءات',
-        icon: const Icon(Icons.more_horiz),
+        icon: const NzIcon(NzIcons.more),
         onPressed: () =>
             controller.isOpen ? controller.close() : controller.open(),
       ),
@@ -1003,7 +1000,7 @@ class _TeacherSection extends StatelessWidget {
           Row(
             spacing: 8,
             children: [
-              const Icon(Icons.co_present_outlined, size: 18),
+              const NzIcon(NzIcons.students, size: 18),
               Text('تفقّد الأساتذة', style: theme.textTheme.titleSmall),
             ],
           ),
@@ -1043,15 +1040,13 @@ class _TeacherSection extends StatelessWidget {
                               // لا حضورَ بالسكوت: الخادم يزرع صفوف الطلاب عند
                               // فتح الجلسة ولا يزرع للأساتذة شيئاً.
                               message: 'لم يُسجَّل بعد',
-                              child: Icon(
-                                Icons.radio_button_unchecked,
+                              child: NzIcon(NzIcons.radioOff,
                                 size: 16,
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
                             )
                           else if (entry.pending)
-                            Icon(
-                              Icons.cloud_upload_outlined,
+                            NzIcon(NzIcons.upload,
                               size: 16,
                               color: theme.colorScheme.primary,
                             ),
@@ -1111,7 +1106,7 @@ class _ActionBar extends StatelessWidget {
             Expanded(
               child: FilledButton.icon(
                 onPressed: saving || !(dirty || !session.exists) ? null : onSave,
-                icon: const Icon(Icons.save_outlined),
+                icon: const NzIcon(NzIcons.save),
                 // «فتح الجلسة» و«حفظ» فعلٌ واحد: الفتحُ يصفّ
                 // `attendance.session.open` وحدها، والحفظُ يُتبعها
                 // `attendance.take` بنفس الطابور وبنفس الترتيب.
@@ -1129,7 +1124,7 @@ class _ActionBar extends StatelessWidget {
           if (editable && !session.completed)
             OutlinedButton.icon(
               onPressed: saving ? null : onComplete,
-              icon: const Icon(Icons.check_circle_outline),
+              icon: const NzIcon(NzIcons.checkCircle),
               label: const Text('إكمال'),
             ),
           // ما لا يملكه المستخدم لا يظهر أصلاً — نفسُ قاعدة القائمة الجانبية
@@ -1137,7 +1132,7 @@ class _ActionBar extends StatelessWidget {
           if (canLock && !session.locked)
             OutlinedButton.icon(
               onPressed: saving || !session.exists ? null : onLock,
-              icon: const Icon(Icons.lock_outline),
+              icon: const NzIcon(NzIcons.lockClosed),
               label: const Text('قفل نهائي'),
             ),
         ],

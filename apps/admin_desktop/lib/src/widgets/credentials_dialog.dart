@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mousqe_ui/mousqe_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 
@@ -49,7 +50,7 @@ Future<void> showCredentialsDialog(
               const SnackBar(content: Text('نُسخت بيانات الدخول.')),
             );
           },
-          icon: const Icon(Icons.copy, size: 18),
+          icon: const NzIcon(NzIcons.copy, size: 18),
           label: const Text('نسخ'),
         ),
         FilledButton(

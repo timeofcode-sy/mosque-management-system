@@ -252,7 +252,7 @@ void main() {
     await tester.pumpWidget(
       AppScope(
         dependencies: dependencies,
-        child: MousqeApp(theme: MousqeTheme.fallback(), home: home),
+        child: MousqeApp(theme: MousqeTheme.light(), home: home),
       ),
     );
     await tester.pump();

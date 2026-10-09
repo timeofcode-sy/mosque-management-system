@@ -29,7 +29,7 @@ class DashboardScreen extends StatelessWidget {
             padding: const EdgeInsetsDirectional.only(end: 16),
             child: TextButton.icon(
               onPressed: deps.sync.syncNow,
-              icon: const Icon(Icons.refresh, size: 18),
+              icon: const NzIcon(NzIcons.review, size: 18),
               label: const Text('مزامنة الآن'),
             ),
           ),
@@ -55,7 +55,7 @@ class DashboardScreen extends StatelessWidget {
                   message:
                       'لا دورةَ جاريةٌ في هذا المعهد بعد. تُهيَّأ الدورةُ ودواماتُها '
                       'وحلقاتُها من باب «الدورات والدوامات»، ثم تظهر أرقامُها هنا.',
-                  icon: Icons.calendar_month_outlined,
+                  icon: NzIcons.calendar,
                 )
               else ...[
                 Row(
@@ -100,28 +100,28 @@ class _Counters extends StatelessWidget {
           child: StatCard(
             value: '${counters.students}',
             label: 'طالبٌ في المعهد',
-            icon: Icons.school_outlined,
+            icon: NzIcons.certificate,
           ),
         ),
         Expanded(
           child: StatCard(
             value: '${counters.enrolled}',
             label: 'مسجَّلٌ في الدورة الجارية',
-            icon: Icons.how_to_reg_outlined,
+            icon: NzIcons.attendance,
           ),
         ),
         Expanded(
           child: StatCard(
             value: '${counters.circles}',
             label: 'حلقةٌ مشغَّلة',
-            icon: Icons.groups_2_outlined,
+            icon: NzIcons.halaqa,
           ),
         ),
         Expanded(
           child: StatCard(
             value: '${counters.teachers}',
             label: 'أستاذاً',
-            icon: Icons.person_outline,
+            icon: NzIcons.user,
           ),
         ),
       ],
@@ -282,7 +282,7 @@ class _StandingsCard extends StatelessWidget {
     if (standings.isEmpty) {
       return const EmptyState(
         message: 'لا حلقةَ مشغَّلةٌ في الدورة الجارية بعد.',
-        icon: Icons.groups_2_outlined,
+        icon: NzIcons.halaqa,
       );
     }
 

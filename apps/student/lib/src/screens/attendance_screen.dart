@@ -57,14 +57,14 @@ class _SummaryGrid extends StatelessWidget {
                   // الذي يقرؤه صاحبُها.
                   value: summary.rate == null ? '—' : '${summary.rate!.toStringAsFixed(1)}٪',
                   label: 'نسبتي',
-                  icon: Icons.percent,
+                  icon: NzIcons.percent,
                 ),
               ),
               Expanded(
                 child: StatCard(
                   value: '${summary.total}',
                   label: 'مجموع الجلسات',
-                  icon: Icons.event_available_outlined,
+                  icon: NzIcons.calendar,
                 ),
               ),
             ],

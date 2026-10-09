@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nuzul_ui/nuzul_ui.dart';
 
 /// نص + عدد معلّق، بلا منطق مزامنة داخله — يستقبل حالة جاهزة.
 class SyncStatusIndicator extends StatelessWidget {
@@ -21,8 +22,8 @@ class SyncStatusIndicator extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          pendingCount == 0 ? Icons.cloud_done_outlined : Icons.cloud_sync_outlined,
+        NzIcon(
+          pendingCount == 0 ? NzIcons.checkCircle : NzIcons.review,
           size: 16,
           color: theme.colorScheme.primary,
         ),

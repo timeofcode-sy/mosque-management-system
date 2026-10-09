@@ -41,7 +41,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
             return EmptyState(
               message: 'لا حلقات في الدورة الجارية.\n'
                   'هيّئ الدورةَ ودواماتِها وحلقاتِها أوّلاً من باب «الدورات والدوامات».',
-              icon: Icons.groups_2_outlined,
+              icon: NzIcons.halaqa,
               onRetry: deps.sync.syncNow,
             );
           }
@@ -128,7 +128,7 @@ class _CircleList extends StatelessWidget {
       children: [
         ListTile(
           selected: selected == null,
-          leading: const Icon(Icons.person_search_outlined),
+          leading: const NzIcon(NzIcons.students),
           title: const Text('بلا حلقة'),
           trailing: Text('$unassignedCount'),
           onTap: () => onSelect(null),
@@ -148,8 +148,7 @@ class _CircleList extends StatelessWidget {
                     circle.studentsCount >= circle.capacity!
                 ? Tooltip(
                     message: 'بلغت طاقتها الاستيعابية',
-                    child: Icon(
-                      Icons.block,
+                    child: NzIcon(NzIcons.xCircle,
                       size: 18,
                       color: Theme.of(context).colorScheme.error,
                     ),
@@ -178,7 +177,7 @@ class _Unassigned extends StatelessWidget {
     if (students.isEmpty) {
       return const EmptyState(
         message: 'كلُّ طالبٍ فعّال مسجَّلٌ في حلقة.',
-        icon: Icons.done_all,
+        icon: NzIcons.check,
       );
     }
 
@@ -267,7 +266,7 @@ class _Roster extends StatelessWidget {
           child: roster.isEmpty
               ? const EmptyState(
                   message: 'لا طلاب في هذه الحلقة بعد.',
-                  icon: Icons.person_off_outlined,
+                  icon: NzIcons.userMinus,
                 )
               : ListView.separated(
                   padding: const EdgeInsets.all(16),
@@ -279,7 +278,7 @@ class _Roster extends StatelessWidget {
                     trailing: canTransfer
                         ? IconButton(
                             tooltip: 'نقل إلى حلقة أخرى',
-                            icon: const Icon(Icons.swap_horiz),
+                            icon: const NzIcon(NzIcons.review),
                             onPressed: () => showTransferDialog(
                               context,
                               student: roster[index],

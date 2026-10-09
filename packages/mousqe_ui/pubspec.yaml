@@ -1,6 +1,6 @@
 name: mousqe_ui
 description: >
-  الهوية البصرية المشتركة لتطبيقات نزلاً الأربعة — ثيم مشتق من ألوان المعهد،
+  الهوية البصرية المشتركة لتطبيقات نزلاً الأربعة — ثيم v3 (فاتح وليلي) فوق nuzul_ui،
   تعريب وRTL، ومكوّنات واجهة دنيا.
 version: 0.1.0
 publish_to: none
@@ -14,6 +14,7 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
+  nuzul_ui: ^1.0.0
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.3
@@ -23,19 +24,5 @@ dev_dependencies:
     sdk: flutter
 
 flutter:
-  # الشعارُ مولَّدٌ من design/logo — لا يُحرَّر هنا بل يُعاد توليدُه من هناك.
-  assets:
-    - assets/brand/
-  fonts:
-    - family: Reem Kufi
-      fonts:
-        - asset: lib/src/fonts/ReemKufi-Regular.ttf
-        - asset: lib/src/fonts/ReemKufi-Bold.ttf
-          weight: 700
-    - family: IBM Plex Sans Arabic
-      fonts:
-        - asset: lib/src/fonts/IBMPlexSansArabic-Regular.ttf
-        - asset: lib/src/fonts/IBMPlexSansArabic-Medium.ttf
-          weight: 500
-        - asset: lib/src/fonts/IBMPlexSansArabic-Bold.ttf
-          weight: 700
+  # الخطوط والأيقونات والشعار تأتي من حزمة nuzul_ui (هوية نزلاً v3) فلا أصول هنا.
+  uses-material-design: true

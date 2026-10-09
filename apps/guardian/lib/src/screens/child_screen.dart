@@ -20,8 +20,8 @@ class ChildScreen extends StatelessWidget {
           title: Text(child.fullName),
           bottom: const TabBar(
             tabs: [
-              Tab(text: 'الحضور', icon: Icon(Icons.fact_check_outlined)),
-              Tab(text: 'الحفظ', icon: Icon(Icons.menu_book_outlined)),
+              Tab(text: 'الحضور', icon: NzIcon(NzIcons.attendance)),
+              Tab(text: 'الحفظ', icon: NzIcon(NzIcons.mushaf)),
             ],
           ),
         ),
@@ -29,7 +29,7 @@ class ChildScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => SubmitExcuseScreen(child: child)),
           ),
-          icon: const Icon(Icons.event_busy_outlined),
+          icon: const NzIcon(NzIcons.calendar),
           label: const Text('تقديم إذن'),
         ),
         body: TabBarView(
@@ -94,14 +94,14 @@ class _SummaryGrid extends StatelessWidget {
                 child: StatCard(
                   value: summary.rate == null ? '—' : '${summary.rate!.toStringAsFixed(1)}٪',
                   label: 'نسبة الحضور',
-                  icon: Icons.percent,
+                  icon: NzIcons.percent,
                 ),
               ),
               Expanded(
                 child: StatCard(
                   value: '${summary.total}',
                   label: 'مجموع الجلسات',
-                  icon: Icons.event_available_outlined,
+                  icon: NzIcons.calendar,
                 ),
               ),
             ],

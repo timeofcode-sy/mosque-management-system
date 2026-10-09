@@ -92,7 +92,7 @@ void main() {
           // على `fallback()` منذ م.6.3 لأن أبوابه كانت placeholder بلا زرّ، ثم
           // مُلئت في م.6.5 فظهر الفرق: ثيمُ الهاتف يعطي كلَّ زرٍّ عرضاً لا
           // نهائياً، فينكسر شريطُ الأدوات.
-          theme: MousqeTheme.forDesktop(MousqeTheme.fallback()),
+          theme: MousqeTheme.light(density: NzDensity.desktop),
           home: const DesktopShell(),
         ),
       );

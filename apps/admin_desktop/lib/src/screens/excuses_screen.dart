@@ -64,7 +64,7 @@ class _ExcusesScreenState extends State<ExcusesScreen> {
               message: _filter == 'pending'
                   ? 'لا إذنَ ينتظر المراجعة.'
                   : 'لم يصل أيُّ إذنِ غيابٍ بعد.',
-              icon: Icons.mark_email_read_outlined,
+              icon: NzIcons.envelopeOpen,
               onRetry: deps.sync.syncNow,
             );
           }
@@ -127,12 +127,12 @@ class _ExcuseCard extends StatelessWidget {
                 children: [
                   FilledButton.icon(
                     onPressed: () => _review(context, approve: true),
-                    icon: const Icon(Icons.check, size: 18),
+                    icon: const NzIcon(NzIcons.check, size: 18),
                     label: const Text('قبول'),
                   ),
                   OutlinedButton.icon(
                     onPressed: () => _review(context, approve: false),
-                    icon: const Icon(Icons.close, size: 18),
+                    icon: const NzIcon(NzIcons.close, size: 18),
                     label: const Text('رفض'),
                   ),
                   Text(
@@ -235,7 +235,7 @@ class _StatusChip extends StatelessWidget {
         spacing: 4,
         children: [
           if (excuse.pending)
-            Icon(Icons.cloud_upload_outlined, size: 14, color: foreground),
+            NzIcon(NzIcons.upload, size: 14, color: foreground),
           Text(
             excuse.statusLabel,
             style: TextStyle(color: foreground, fontSize: 12),

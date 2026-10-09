@@ -50,7 +50,7 @@ Map<String, dynamic> _standing({int? rank = 5, double? rate = 87.5, int peers = 
 
 Widget _wrap(AppDependencies dependencies, Widget home) => AppScope(
       dependencies: dependencies,
-      child: MousqeApp(theme: MousqeTheme.fromHexes(), home: home),
+      child: MousqeApp(theme: MousqeTheme.light(), home: home),
     );
 
 void main() {

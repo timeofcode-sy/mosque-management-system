@@ -27,7 +27,7 @@ class CirclesScreen extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: 'سجل الجلسات',
-            icon: const Icon(Icons.history),
+            icon: const NzIcon(NzIcons.clock),
             onPressed: teacherUuid == null
                 ? null
                 : () => Navigator.of(context).push(
@@ -38,7 +38,7 @@ class CirclesScreen extends StatelessWidget {
           ),
           IconButton(
             tooltip: 'تسجيل الخروج',
-            icon: const Icon(Icons.logout),
+            icon: const NzIcon(NzIcons.logout),
             onPressed: () => _confirmSignOut(context),
           ),
         ],
@@ -60,7 +60,7 @@ class CirclesScreen extends StatelessWidget {
       // حسابٌ ليس حساب أستاذ، أو لقطةٌ من خادمٍ أقدم لا يبعث `teacher_uuid`.
       return const EmptyState(
         message: 'هذا الحساب ليس حساب أستاذ، أو لم تصل بياناتُه بعد.\nجرّب المزامنة ثم أعد الفتح.',
-        icon: Icons.person_off_outlined,
+        icon: NzIcons.userMinus,
       );
     }
 
@@ -79,7 +79,7 @@ class CirclesScreen extends StatelessWidget {
             message: courseName == null
                 ? 'لا دورة جارية في المعهد الآن.\nستظهر حلقاتك فور أن تبدأ الدورة.'
                 : 'لم تُسنَد إليك حلقةٌ في «$courseName» بعد.',
-            icon: Icons.school_outlined,
+            icon: NzIcons.certificate,
             onRetry: deps.sync.syncNow,
           );
         }
@@ -156,7 +156,7 @@ class _CircleCard extends StatelessWidget {
             ].join(' — '),
           ),
         ),
-        trailing: const Icon(Icons.chevron_left),
+        trailing: const NzIcon(NzIcons.chevronLeft),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (_) =>

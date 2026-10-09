@@ -56,7 +56,8 @@ class _AdminDesktopAppState extends State<AdminDesktopApp> {
     return AppScope(
       dependencies: widget.dependencies,
       child: MousqeApp(
-        theme: _theme,
+        theme: MousqeTheme.light(),
+        darkTheme: MousqeTheme.dark(),
         home: SplashGate(
           ready: _session.stage != SessionStage.starting,
           caption: AppConfig.label,
@@ -94,17 +95,4 @@ class _AdminDesktopAppState extends State<AdminDesktopApp> {
     );
   }
 
-  /// ثيمُ المعهد الثلاثي بمقاسات المكتب — نفسُ هوية اللوحة وتطبيقِ الأستاذ،
-  /// فلا يبدو البرنامجان من بيتين.
-  ThemeData get _theme {
-    final theme = _session.snapshot?.institute.theme;
-
-    return MousqeTheme.forDesktop(
-      MousqeTheme.fromHexes(
-        primary: theme?.primary,
-        secondary: theme?.secondary,
-        surface: theme?.surface,
-      ),
-    );
-  }
 }

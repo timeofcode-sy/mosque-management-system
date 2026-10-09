@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mousqe_ui/mousqe_ui.dart';
 import '../di/app_scope.dart';
 import '../widgets/color_field.dart';
 import '../widgets/connected_action.dart';
@@ -81,7 +82,7 @@ class _InstituteSettingsScreenState extends State<InstituteSettingsScreen> {
             padding: const EdgeInsetsDirectional.only(end: 12),
             child: FilledButton.icon(
               onPressed: _saving ? null : _save,
-              icon: const Icon(Icons.save_outlined, size: 18),
+              icon: const NzIcon(NzIcons.save, size: 18),
               label: const Text('حفظ'),
             ),
           ),
@@ -144,7 +145,7 @@ class _InstituteSettingsScreenState extends State<InstituteSettingsScreen> {
           ),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.image_outlined),
+              leading: const NzIcon(NzIcons.image),
               title: const Text('شعار المعهد'),
               subtitle: const Text(
                 'يُرفع من لوحة التحكّم — رفعُ الملفات عقدٌ لم يُفتح في الـAPI بعد.',

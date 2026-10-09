@@ -52,7 +52,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               message:
                   'لا حلقةَ مشغَّلةٌ في الدورة الجارية، فلا تقريرَ يُبنى. '
                   'تُشغَّل الحلقاتُ من باب «الدورات والدوامات».',
-              icon: Icons.print_outlined,
+              icon: NzIcons.printer,
               onRetry: deps.sync.syncNow,
             );
           }
@@ -171,7 +171,7 @@ class _Toolbar extends StatelessWidget {
                   onDate(picked);
                 }
               },
-              icon: const Icon(Icons.event_outlined, size: 18),
+              icon: const NzIcon(NzIcons.calendar, size: 18),
               label: Text(_date(date)),
             )
           else
@@ -188,7 +188,7 @@ class _Toolbar extends StatelessWidget {
                   onRange(picked);
                 }
               },
-              icon: const Icon(Icons.date_range_outlined, size: 18),
+              icon: const NzIcon(NzIcons.calendar, size: 18),
               label: Text('${_date(range.start)} ← ${_date(range.end)}'),
             ),
         ],

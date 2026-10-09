@@ -204,7 +204,7 @@ void main() {
           // ثيمُ المكتب لا ثيمُ الهاتف: أزرارُ الأخير `Size.fromHeight` — عريضةٌ
           // بعرض الشاشة، فتنفجر داخل صفٍّ فيه أكثرُ من زرّ. وهو ما يبنيه
           // `app.dart` فعلاً، فاختبارٌ بغيره يقيس شاشةً لا وجود لها.
-          theme: MousqeTheme.forDesktop(MousqeTheme.fallback()),
+          theme: MousqeTheme.light(density: NzDensity.desktop),
           home: AttendanceScreen(circle: circle, date: day),
         ),
       ),

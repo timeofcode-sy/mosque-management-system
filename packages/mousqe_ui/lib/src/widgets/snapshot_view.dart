@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nuzul_ui/nuzul_ui.dart';
 import 'package:intl/intl.dart';
 
 import 'empty_state.dart';
@@ -142,7 +143,7 @@ class StaleNotice extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.cloud_off_outlined, size: 18, color: theme.colorScheme.onSecondaryContainer),
+          NzIcon(NzIcons.offline, size: 18, color: theme.colorScheme.onSecondaryContainer),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

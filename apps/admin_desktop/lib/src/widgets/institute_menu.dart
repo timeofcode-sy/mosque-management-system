@@ -59,7 +59,7 @@ class InstituteMenu extends StatelessWidget {
               if (switcher.hasChoice)
                 IconButton(
                   tooltip: 'بدّل المعهد',
-                  icon: const Icon(Icons.unfold_more, size: 20),
+                  icon: const NzIcon(NzIcons.chevronsUpDown, size: 20),
                   onPressed: () => _open(context, dependencies),
                 ),
             ],
@@ -127,10 +127,10 @@ class _InstitutePicker extends StatelessWidget {
                 children: [
                   for (final option in options)
                     ListTile(
-                      leading: Icon(
+                      leading: NzIcon(
                         option.uuid == currentUuid
-                            ? Icons.radio_button_checked
-                            : Icons.radio_button_unchecked,
+                            ? NzIcons.radioOn
+                            : NzIcons.radioOff,
                       ),
                       title: Text(option.name),
                       subtitle: option.isActive ? null : const Text('موقوف'),

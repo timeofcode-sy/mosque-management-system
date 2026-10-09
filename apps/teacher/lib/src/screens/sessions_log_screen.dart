@@ -41,7 +41,7 @@ class SessionsLogScreen extends StatelessWidget {
                       if (entries.isEmpty) {
                         return const EmptyState(
                           message: 'لم تُفتح جلساتٌ في حلقاتك بعد.',
-                          icon: Icons.event_note_outlined,
+                          icon: NzIcons.calendar,
                         );
                       }
 

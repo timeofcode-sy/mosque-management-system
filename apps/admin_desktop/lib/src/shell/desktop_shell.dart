@@ -222,7 +222,7 @@ class _SidebarTile extends StatelessWidget {
         selectedTileColor: theme.colorScheme.primary.withValues(alpha: 0.12),
         selectedColor: theme.colorScheme.primary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        leading: Icon(section.icon, size: 20),
+        leading: NzIcon(section.icon, size: 20),
         title: Text(section.label, style: theme.textTheme.bodyMedium),
         onTap: onTap,
       ),
@@ -242,7 +242,7 @@ class _AccountFooter extends StatelessWidget {
 
     return ListTile(
       dense: true,
-      leading: const Icon(Icons.account_circle_outlined),
+      leading: const NzIcon(NzIcons.user),
       title: Text(
         snapshot?.userName ?? '',
         style: theme.textTheme.bodyMedium,
@@ -255,7 +255,7 @@ class _AccountFooter extends StatelessWidget {
       ),
       trailing: IconButton(
         tooltip: 'خروج',
-        icon: const Icon(Icons.logout, size: 18),
+        icon: const NzIcon(NzIcons.logout, size: 18),
         onPressed: session.signOut,
       ),
     );
@@ -281,7 +281,7 @@ class _NoDoors extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const EmptyState(
-                icon: Icons.lock_outline,
+                icon: NzIcons.lockClosed,
                 message: 'لا تملك صلاحيةً واحدة في هذا المعهد.\n'
                     'راجِع مديرَ المعهد ليُسند إليك دوراً.',
               ),
@@ -290,7 +290,7 @@ class _NoDoors extends StatelessWidget {
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: session.signOut,
-                icon: const Icon(Icons.logout, size: 18),
+                icon: const NzIcon(NzIcons.logout, size: 18),
                 label: const Text('خروج'),
               ),
             ],

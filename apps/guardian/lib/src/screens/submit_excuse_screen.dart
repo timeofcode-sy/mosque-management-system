@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mousqe_ui/mousqe_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 
@@ -92,7 +93,7 @@ class _SubmitExcuseScreenState extends State<SubmitExcuseScreen> {
                       height: 16,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(Icons.send_outlined),
+                  : const NzIcon(NzIcons.send),
               label: const Text('إرسال الطلب'),
             ),
             const SizedBox(height: 12),
@@ -184,7 +185,7 @@ class _DateField extends StatelessWidget {
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
-          suffixIcon: const Icon(Icons.calendar_today_outlined),
+          suffixIcon: const NzIcon(NzIcons.calendar),
         ),
         child: Text(DateFormat('EEEE d MMMM yyyy', 'ar').format(value)),
       ),

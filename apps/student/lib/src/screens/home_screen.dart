@@ -25,7 +25,7 @@ class HomeScreen extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: 'خروج',
-            icon: const Icon(Icons.logout),
+            icon: const NzIcon(NzIcons.logout),
             onPressed: scope.session.signOut,
           ),
         ],
@@ -78,14 +78,14 @@ class _StandingCard extends StatelessWidget {
                       ? '—'
                       : '${standing.rate!.toStringAsFixed(1)}٪',
                   label: 'نسبة حضوري',
-                  icon: Icons.percent,
+                  icon: NzIcons.percent,
                 ),
               ),
               Expanded(
                 child: StatCard(
                   value: '${standing.points}',
                   label: 'نقاطي',
-                  icon: Icons.star_outline,
+                  icon: NzIcons.star,
                 ),
               ),
             ],
@@ -98,7 +98,7 @@ class _StandingCard extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(Icons.leaderboard_outlined, color: theme.colorScheme.primary),
+                  NzIcon(NzIcons.reports, color: theme.colorScheme.primary),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -129,10 +129,10 @@ class _Doors extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final doors = <({IconData icon, String label, Widget screen})>[
-      (icon: Icons.fact_check_outlined, label: 'حضوري', screen: const AttendanceScreen()),
-      (icon: Icons.menu_book_outlined, label: 'حفظي', screen: const ProgressScreen()),
-      (icon: Icons.campaign_outlined, label: 'الإعلانات', screen: const AnnouncementsScreen()),
+    final doors = <({String icon, String label, Widget screen})>[
+      (icon: NzIcons.attendance, label: 'حضوري', screen: const AttendanceScreen()),
+      (icon: NzIcons.mushaf, label: 'حفظي', screen: const ProgressScreen()),
+      (icon: NzIcons.megaphone, label: 'الإعلانات', screen: const AnnouncementsScreen()),
     ];
 
     return Column(
@@ -142,9 +142,9 @@ class _Doors extends StatelessWidget {
           Card(
             margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: ListTile(
-              leading: Icon(door.icon),
+              leading: NzIcon(door.icon),
               title: Text(door.label),
-              trailing: const Icon(Icons.chevron_left),
+              trailing: const NzIcon(NzIcons.chevronLeft),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => door.screen),
               ),

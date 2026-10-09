@@ -25,14 +25,14 @@ class ChildrenScreen extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: 'أذونات الغياب',
-            icon: const Icon(Icons.event_busy_outlined),
+            icon: const NzIcon(NzIcons.calendar),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const ExcusesScreen()),
             ),
           ),
           IconButton(
             tooltip: 'خروج',
-            icon: const Icon(Icons.logout),
+            icon: const NzIcon(NzIcons.logout),
             onPressed: scope.session.signOut,
           ),
         ],
@@ -86,7 +86,7 @@ class _ChildCard extends StatelessWidget {
         subtitle: child.registrationNo == null
             ? null
             : Text('رقم المعرف ${child.registrationNo}'),
-        trailing: const Icon(Icons.chevron_left),
+        trailing: const NzIcon(NzIcons.chevronLeft),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(builder: (_) => ChildScreen(child: child)),
         ),

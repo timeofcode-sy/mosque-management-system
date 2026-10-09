@@ -181,7 +181,7 @@ void main() {
         dependencies: dependencies,
         child: MousqeApp(
           // ثيمُ المكتب لا ثيمُ الهاتف — درسُ [CHECKPOINT-PHASE-6.4.MD §7].
-          theme: MousqeTheme.forDesktop(MousqeTheme.fallback()),
+          theme: MousqeTheme.light(density: NzDensity.desktop),
           home: screen,
         ),
       ),

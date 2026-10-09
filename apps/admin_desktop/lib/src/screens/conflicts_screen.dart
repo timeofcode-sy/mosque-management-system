@@ -72,7 +72,7 @@ class _ConflictsScreenState extends State<ConflictsScreen> {
                 ),
                 IconButton(
                   onPressed: _reload,
-                  icon: const Icon(Icons.refresh),
+                  icon: const NzIcon(NzIcons.review),
                   tooltip: 'تحديث',
                 ),
               ],
@@ -106,7 +106,7 @@ class _ConflictsScreenState extends State<ConflictsScreen> {
               message: _status == 'pending'
                   ? 'لا تعارضَ ينتظر المراجعة — وهذا هو الحال المعتاد.'
                   : 'لا تعارضَ في هذا المعهد.',
-              icon: Icons.rule_folder_outlined,
+              icon: NzIcons.attendance,
               onRetry: _reload,
             );
           }
@@ -195,13 +195,13 @@ class _ConflictCard extends StatelessWidget {
                   FilledButton.icon(
                     onPressed: () =>
                         _resolve(context, ConflictDecision.clientWins),
-                    icon: const Icon(Icons.smartphone_outlined, size: 18),
+                    icon: const NzIcon(NzIcons.phone, size: 18),
                     label: Text(ConflictDecision.clientWins.label),
                   ),
                   OutlinedButton.icon(
                     onPressed: () =>
                         _resolve(context, ConflictDecision.serverWins),
-                    icon: const Icon(Icons.dns_outlined, size: 18),
+                    icon: const NzIcon(NzIcons.server, size: 18),
                     label: Text(ConflictDecision.serverWins.label),
                   ),
                   Expanded(

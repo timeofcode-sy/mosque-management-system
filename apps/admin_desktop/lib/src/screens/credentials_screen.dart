@@ -58,7 +58,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
         actions: [
           IconButton(
             tooltip: 'تحديث',
-            icon: const Icon(Icons.refresh),
+            icon: const NzIcon(NzIcons.review),
             onPressed: _reload,
           ),
           const SizedBox(width: 8),
@@ -78,7 +78,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
                     onSubmitted: (_) => _reload(),
                     decoration: const InputDecoration(
                       isDense: true,
-                      prefixIcon: Icon(Icons.search, size: 20),
+                      prefixIcon: NzIcon(NzIcons.search, size: 20),
                       hintText: 'ابحث بالاسم ثم اضغط Enter',
                       border: OutlineInputBorder(),
                     ),
@@ -119,7 +119,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
                     message: isOffline(snapshot.error!)
                         ? 'البطاقاتُ لا تُخزَّن على الجهاز — تحتاج اتصالاً.'
                         : messageFor(snapshot.error!),
-                    icon: Icons.wifi_off_outlined,
+                    icon: NzIcons.offline,
                     onRetry: _reload,
                   );
                 }
@@ -133,7 +133,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
                 if (cards.isEmpty) {
                   return const EmptyState(
                     message: 'لا بطاقاتِ دخولٍ مطابقة.',
-                    icon: Icons.key_outlined,
+                    icon: NzIcons.key,
                   );
                 }
 
@@ -184,8 +184,7 @@ class _Card extends StatelessWidget {
                   ),
                 ),
                 if (!card.isActive)
-                  Icon(
-                    Icons.lock_outline,
+                  NzIcon(NzIcons.lockClosed,
                     size: 16,
                     color: theme.colorScheme.error,
                   ),
@@ -225,7 +224,7 @@ class _Card extends StatelessWidget {
                           const SnackBar(content: Text('نُسخت البطاقة.')),
                         );
                       },
-                icon: const Icon(Icons.copy, size: 16),
+                icon: const NzIcon(NzIcons.copy, size: 16),
                 label: const Text('نسخ'),
               ),
             ),

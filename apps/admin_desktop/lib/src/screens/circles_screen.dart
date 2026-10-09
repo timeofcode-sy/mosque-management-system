@@ -45,7 +45,7 @@ class _CirclesScreenState extends State<CirclesScreen> {
         actions: [
           IconButton(
             tooltip: 'سجل الجلسات',
-            icon: const Icon(Icons.history),
+            icon: const NzIcon(NzIcons.clock),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => const SessionsLogScreen(),
@@ -69,7 +69,7 @@ class _CirclesScreenState extends State<CirclesScreen> {
               // المشرفَ يظنّ الجهازَ معطّلاً: لا دورةَ جارية، أو لم تصل بعد.
               message: 'لا حلقات في الدورة الجارية.\n'
                   'إن كانت الدورة قد بدأت للتوّ فزامِن الجهازَ ليصلك كشفُها.',
-              icon: Icons.groups_2_outlined,
+              icon: NzIcons.halaqa,
               onRetry: deps.sync.syncNow,
             );
           }
@@ -94,7 +94,7 @@ class _CirclesScreenState extends State<CirclesScreen> {
                 child: circles.isEmpty
                     ? const EmptyState(
                         message: 'لا حلقة تطابق البحث.',
-                        icon: Icons.search_off_outlined,
+                        icon: NzIcons.search,
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.all(16),
@@ -164,7 +164,7 @@ class _Filters extends StatelessWidget {
               onChanged: onQuery,
               decoration: const InputDecoration(
                 isDense: true,
-                prefixIcon: Icon(Icons.search, size: 20),
+                prefixIcon: NzIcon(NzIcons.search, size: 20),
                 hintText: 'ابحث باسم الحلقة أو الأستاذ أو القاعة',
                 border: OutlineInputBorder(),
               ),
@@ -225,7 +225,7 @@ class _CircleCard extends StatelessWidget {
             ].join(' — '),
           ),
         ),
-        trailing: const Icon(Icons.chevron_left),
+        trailing: const NzIcon(NzIcons.chevronLeft),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (_) =>

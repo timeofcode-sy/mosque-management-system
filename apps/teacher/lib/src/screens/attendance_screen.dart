@@ -89,7 +89,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     if (session.roster.isEmpty) {
       return const EmptyState(
         message: 'لا طلاب مسجَّلون في هذه الحلقة بهذا التاريخ.',
-        icon: Icons.groups_outlined,
+        icon: NzIcons.students,
       );
     }
 
@@ -138,7 +138,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       onPressed: _saving || !(dirty || !session.exists)
                           ? null
                           : () => _save(session),
-                      icon: const Icon(Icons.save_outlined),
+                      icon: const NzIcon(NzIcons.save),
                       // «فتح الجلسة» و«حفظ» فعلٌ واحد: الفتحُ يصفّ
                       // attendance.session.open وحدها، والحفظ يُتبعها
                       // attendance.take بنفس الطابور وبنفس الترتيب.
@@ -160,7 +160,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                       onPressed: _saving
                           ? null
                           : () => _confirmComplete(session),
-                      icon: const Icon(Icons.lock_outline),
+                      icon: const NzIcon(NzIcons.lockClosed),
                       label: const Text('إقفال'),
                     ),
                   ),
@@ -256,29 +256,29 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             ),
             const Divider(height: 1),
             ListTile(
-              leading: const Icon(Icons.person_outline),
+              leading: const NzIcon(NzIcons.user),
               title: const Text('ملف الطالب'),
               onTap: () => Navigator.of(context).pop('profile'),
             ),
             ListTile(
-              leading: const Icon(Icons.record_voice_over_outlined),
+              leading: const NzIcon(NzIcons.mushaf),
               title: const Text('تسجيل تسميع'),
               onTap: () => Navigator.of(context).pop('recitation'),
             ),
             ListTile(
-              leading: const Icon(Icons.star_outline),
+              leading: const NzIcon(NzIcons.star),
               title: const Text('منح نقاط'),
               onTap: () => Navigator.of(context).pop('points'),
             ),
             if (editable) ...[
               ListTile(
-                leading: const Icon(Icons.timer_outlined),
+                leading: const NzIcon(NzIcons.clock),
                 title: const Text('تعديل دقائق التأخير'),
                 enabled: entry.status == AttendanceStatus.late,
                 onTap: () => Navigator.of(context).pop('late'),
               ),
               ListTile(
-                leading: const Icon(Icons.sticky_note_2_outlined),
+                leading: const NzIcon(NzIcons.note),
                 title: const Text('ملاحظة'),
                 onTap: () => Navigator.of(context).pop('note'),
               ),
@@ -619,11 +619,11 @@ class _DateBar extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.event, size: 18),
+                const NzIcon(NzIcons.calendar, size: 18),
                 const SizedBox(width: 8),
                 Text(DateFormat('yyyy-MM-dd').format(date)),
                 const SizedBox(width: 4),
-                const Icon(Icons.arrow_drop_down, size: 18),
+                const NzIcon(NzIcons.chevronDown, size: 18),
               ],
             ),
           ),
@@ -737,11 +737,11 @@ class _StudentTile extends StatelessWidget {
                 child: Text(entry.fullName, style: theme.textTheme.titleSmall),
               ),
               if (entry.origin == AttendanceOrigin.pending)
-                const Icon(Icons.schedule, size: 16)
+                const NzIcon(NzIcons.clock, size: 16)
               else if (entry.origin == AttendanceOrigin.suggested)
-                Icon(Icons.help_outline, size: 16, color: theme.disabledColor),
+                NzIcon(NzIcons.informationCircle, size: 16, color: theme.disabledColor),
               IconButton(
-                icon: const Icon(Icons.more_horiz),
+                icon: const NzIcon(NzIcons.more),
                 onPressed: onMore,
                 visualDensity: VisualDensity.compact,
               ),
@@ -870,14 +870,14 @@ class _RecordChip extends StatelessWidget {
 
     return InputChip(
       label: Text(label, style: TextStyle(color: color)),
-      avatar: pending ? const Icon(Icons.schedule, size: 16) : null,
+      avatar: pending ? const NzIcon(NzIcons.clock, size: 16) : null,
       visualDensity: VisualDensity.compact,
       labelStyle: theme.textTheme.bodySmall,
       // جلسةٌ مقفلة تُعرَض ولا تُحرَّر: الأستاذ لا يملك attendance.amend، وعمليةٌ
       // مصيرُها الرفض بعد ساعات لا تُصفّ من الأصل.
       onPressed: editable ? onTap : null,
       onDeleted: editable ? onDelete : null,
-      deleteIcon: const Icon(Icons.close, size: 16),
+      deleteIcon: const NzIcon(NzIcons.close, size: 16),
       tooltip: editable ? 'اضغط للتعديل' : null,
     );
   }

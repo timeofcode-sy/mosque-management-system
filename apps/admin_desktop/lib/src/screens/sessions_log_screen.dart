@@ -39,7 +39,7 @@ class _SessionsLogScreenState extends State<SessionsLogScreen> {
           if (all.isEmpty) {
             return const EmptyState(
               message: 'لم تُفتح جلساتٌ في المعهد بعد.',
-              icon: Icons.event_note_outlined,
+              icon: NzIcons.calendar,
             );
           }
 
@@ -82,7 +82,7 @@ class _SessionsLogScreenState extends State<SessionsLogScreen> {
                 child: entries.isEmpty
                     ? const EmptyState(
                         message: 'لا جلسة بهذه الحالة.',
-                        icon: Icons.filter_alt_off_outlined,
+                        icon: NzIcons.funnel,
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.all(16),
@@ -184,7 +184,7 @@ class _StatusChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: 4,
         children: [
-          if (locked) Icon(Icons.lock, size: 12, color: theme.colorScheme.error),
+          if (locked) NzIcon(NzIcons.lockClosed, size: 12, color: theme.colorScheme.error),
           Text(
             switch (status) {
               'completed' => 'مكتملة',

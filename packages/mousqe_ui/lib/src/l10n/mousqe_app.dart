@@ -3,18 +3,24 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../brand/brand.dart';
 
-/// غلافُ `MaterialApp` تصدّره الحزمة — `ar` اللغة الوحيدة في 5.2، RTL مضبوطة،
-/// وأرقام لاتينية بلا أرقام هندية (`MaterialLocalizations` الافتراضية).
+/// غلافُ `MaterialApp` تصدّره الحزمة — `ar` اللغة الوحيدة، RTL مضبوطة، وأرقام لاتينية (0–9)،
+/// وسمتان (فاتحة وليلية) تتبعان نظام الجهاز.
 class MousqeApp extends StatelessWidget {
   const MousqeApp({
     super.key,
     required this.home,
     required this.theme,
+    this.darkTheme,
+    this.themeMode = ThemeMode.system,
     this.title = Brand.name,
   });
 
   final Widget home;
   final ThemeData theme;
+
+  /// السمةُ الليلية — تُتَّبع من نظام الجهاز ما لم يُحدَّد [themeMode].
+  final ThemeData? darkTheme;
+  final ThemeMode themeMode;
 
   /// ما يقرؤه النظامُ اسماً للنافذة — بطاقةُ التطبيق في قائمة المهامّ على أندرويد.
   final String title;
@@ -25,6 +31,8 @@ class MousqeApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: title,
       theme: theme,
+      darkTheme: darkTheme,
+      themeMode: themeMode,
       locale: const Locale('ar'),
       supportedLocales: const [Locale('ar')],
       localizationsDelegates: const [

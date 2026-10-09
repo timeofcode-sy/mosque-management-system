@@ -49,7 +49,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
               padding: const EdgeInsetsDirectional.only(end: 12),
               child: FilledButton.icon(
                 onPressed: () => _openForm(context),
-                icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
+                icon: const NzIcon(NzIcons.userPlus, size: 18),
                 label: const Text('تسجيل طالب'),
               ),
             ),
@@ -68,7 +68,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
             return EmptyState(
               message: 'لا طلاب في هذا المعهد بعد.\n'
                   'سجّل أوّلَ طالب، أو زامِن الجهازَ إن كان المعهد قائماً.',
-              icon: Icons.school_outlined,
+              icon: NzIcons.certificate,
               onRetry: deps.sync.syncNow,
             );
           }
@@ -90,7 +90,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                 child: students.isEmpty
                     ? const EmptyState(
                         message: 'لا طالب يطابق البحث.',
-                        icon: Icons.search_off_outlined,
+                        icon: NzIcons.search,
                       )
                     : _StudentTable(
                         students: students,
@@ -190,7 +190,7 @@ class _Filters extends StatelessWidget {
               onChanged: onQuery,
               decoration: const InputDecoration(
                 isDense: true,
-                prefixIcon: Icon(Icons.search, size: 20),
+                prefixIcon: NzIcon(NzIcons.search, size: 20),
                 hintText: 'ابحث بالاسم أو رقم البطاقة أو الجوّال أو الحلقة',
                 border: OutlineInputBorder(),
               ),
@@ -283,8 +283,7 @@ class _StudentTable extends StatelessWidget {
                   if (student.pending)
                     Tooltip(
                       message: 'كتابةٌ لم تصل الخادمَ بعد',
-                      child: Icon(
-                        Icons.cloud_upload_outlined,
+                      child: NzIcon(NzIcons.upload,
                         size: 16,
                         color: theme.colorScheme.primary,
                       ),
@@ -299,13 +298,13 @@ class _StudentTable extends StatelessWidget {
                   if (canManage)
                     IconButton(
                       tooltip: 'تحرير الاستمارة',
-                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      icon: const NzIcon(NzIcons.edit, size: 18),
                       onPressed: () => onEdit(student),
                     ),
                   if (canTransfer)
                     IconButton(
                       tooltip: 'نقل إلى حلقة أخرى',
-                      icon: const Icon(Icons.swap_horiz, size: 18),
+                      icon: const NzIcon(NzIcons.review, size: 18),
                       onPressed: () => onTransfer(student),
                     ),
                 ],

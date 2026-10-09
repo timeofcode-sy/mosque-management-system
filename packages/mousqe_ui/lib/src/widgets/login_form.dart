@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nuzul_ui/nuzul_ui.dart';
 
 import '../brand/brand.dart';
 
@@ -85,87 +86,116 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.nz;
 
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: widget.maxWidth),
-          child: Form(
-            key: _formKey,
+    // شاشة الدخول في جرد الشاشات: النموذجُ في وسط الصفحة على أرضية night بالنقش، والبطاقةُ raised فتبقى
+    // مقروءةً في السمتين، والعلامةُ بنحاسها وبياضها على الليل وحده.
+    return NzPattern(
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(NzSpace.s4),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: widget.maxWidth),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Center(child: BrandMark(size: 80)),
-                const SizedBox(height: 16),
-                Text(
-                  widget.title,
-                  style: theme.textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  widget.subtitle,
-                  style: theme.textTheme.bodySmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                if (widget.notice != null) ...[
-                  _Banner(
-                    message: widget.notice!,
-                    tone: theme.colorScheme.error,
+                const Center(child: BrandGlyph(height: 96)),
+                const SizedBox(height: NzSpace.s5),
+                Container(
+                  padding: const EdgeInsets.all(NzSpace.s5),
+                  decoration: BoxDecoration(
+                    color: c.surfaceRaised,
+                    border: Border.all(color: c.line),
+                    borderRadius: BorderRadius.circular(NzRadius.md),
                   ),
-                  const SizedBox(height: 12),
-                ],
-                TextFormField(
-                  controller: _username,
-                  autocorrect: false,
-                  autofocus: true,
-                  textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(
-                    labelText: 'اسم المستخدم',
-                    prefixIcon: Icon(Icons.person_outline),
-                  ),
-                  validator: (value) =>
-                      (value ?? '').trim().isEmpty ? 'أدخل اسم المستخدم' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _password,
-                  obscureText: _obscure,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _submit(),
-                  decoration: InputDecoration(
-                    labelText: 'كلمة المرور',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      onPressed: () => setState(() => _obscure = !_obscure),
-                      icon: Icon(
-                        _obscure
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          widget.title,
+                          style: NzType.display3.copyWith(color: c.ink),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: NzSpace.s1),
+                        Text(
+                          widget.subtitle,
+                          style: NzType.body.copyWith(color: c.inkMuted),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: NzSpace.s5),
+                        if (widget.notice != null) ...[
+                          _Banner(message: widget.notice!, error: true),
+                          const SizedBox(height: NzSpace.s3),
+                        ],
+                        TextFormField(
+                          controller: _username,
+                          autocorrect: false,
+                          autofocus: true,
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'اسم المستخدم',
+                            prefixIcon: NzIcon(NzIcons.user, size: 20),
+                          ),
+                          validator: (value) => (value ?? '').trim().isEmpty
+                              ? 'أدخل اسم المستخدم'
+                              : null,
+                        ),
+                        const SizedBox(height: NzSpace.s3),
+                        TextFormField(
+                          controller: _password,
+                          obscureText: _obscure,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _submit(),
+                          decoration: InputDecoration(
+                            labelText: 'كلمة المرور',
+                            prefixIcon:
+                                const NzIcon(NzIcons.lockClosed, size: 20),
+                            suffixIcon: IconButton(
+                              tooltip: _obscure
+                                  ? 'إظهار كلمة المرور'
+                                  : 'إخفاء كلمة المرور',
+                              onPressed: () =>
+                                  setState(() => _obscure = !_obscure),
+                              icon: NzIcon(
+                                _obscure ? NzIcons.eye : NzIcons.eyeSlash,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                          validator: (value) =>
+                              (value ?? '').isEmpty ? 'أدخل كلمة المرور' : null,
+                        ),
+                        if (_error != null) ...[
+                          const SizedBox(height: NzSpace.s3),
+                          _Banner(message: _error!, error: true),
+                        ],
+                        const SizedBox(height: NzSpace.s5),
+                        FilledButton(
+                          onPressed: _busy ? null : _submit,
+                          child: _busy
+                              ? SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: c.onPrimary,
+                                  ),
+                                )
+                              : const Text('تسجيل الدخول'),
+                        ),
+                      ],
                     ),
                   ),
-                  validator: (value) =>
-                      (value ?? '').isEmpty ? 'أدخل كلمة المرور' : null,
                 ),
-                if (_error != null) ...[
-                  const SizedBox(height: 12),
-                  _Banner(message: _error!, tone: theme.colorScheme.error),
-                ],
-                const SizedBox(height: 20),
-                FilledButton(
-                  onPressed: _busy ? null : _submit,
-                  child: _busy
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('دخول'),
+                const SizedBox(height: NzSpace.s4),
+                Text(
+                  'الحسابات تُنشئها إدارة المعهد — راجع مشرفك إن لم تصلك بيانات دخولك.',
+                  style: NzType.caption.copyWith(color: const Color(0xFFA8BBB2)),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -177,21 +207,39 @@ class _LoginFormState extends State<LoginForm> {
 }
 
 class _Banner extends StatelessWidget {
-  const _Banner({required this.message, required this.tone});
+  const _Banner({required this.message, required this.error});
 
   final String message;
-  final Color tone;
+  final bool error;
 
   @override
   Widget build(BuildContext context) {
+    final c = context.nz;
+
+    // خطأٌ بزوج الهوية: danger على danger-soft، بأيقونة وكلمات تقول ما حدث — لا لونٌ وحده.
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(NzSpace.s3),
       decoration: BoxDecoration(
-        color: tone.withValues(alpha: 0.10),
-        border: Border.all(color: tone.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(8),
+        color: error ? c.dangerSoft : c.infoSoft,
+        borderRadius: BorderRadius.circular(NzRadius.sm),
       ),
-      child: Text(message, style: TextStyle(color: tone)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          NzIcon(
+            error ? NzIcons.warning : NzIcons.informationCircle,
+            size: 18,
+            color: error ? c.danger : c.info,
+          ),
+          const SizedBox(width: NzSpace.s2),
+          Expanded(
+            child: Text(
+              message,
+              style: NzType.body.copyWith(color: error ? c.danger : c.info),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

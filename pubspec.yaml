@@ -8,6 +8,7 @@ dev_dependencies:
   melos: ^8.0.0
 
 workspace:
+  - packages/nuzul_ui
   - packages/mousqe_core
   - packages/mousqe_ui
   - apps/guardian

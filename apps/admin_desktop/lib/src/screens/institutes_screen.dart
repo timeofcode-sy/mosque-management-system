@@ -46,14 +46,14 @@ class _InstitutesScreenState extends State<InstitutesScreen> {
         actions: [
           IconButton(
             tooltip: 'تحديث',
-            icon: const Icon(Icons.refresh),
+            icon: const NzIcon(NzIcons.review),
             onPressed: _reload,
           ),
           Padding(
             padding: const EdgeInsetsDirectional.only(start: 8, end: 12),
             child: FilledButton.icon(
               onPressed: () => _edit(context),
-              icon: const Icon(Icons.add_business_outlined, size: 18),
+              icon: const NzIcon(NzIcons.mosque, size: 18),
               label: const Text('معهد جديد'),
             ),
           ),
@@ -67,7 +67,7 @@ class _InstitutesScreenState extends State<InstitutesScreen> {
               message: isOffline(snapshot.error!)
                   ? 'قائمةُ المعاهد تحتاج اتصالاً.'
                   : messageFor(snapshot.error!),
-              icon: Icons.wifi_off_outlined,
+              icon: NzIcons.offline,
               onRetry: _reload,
             );
           }
@@ -81,7 +81,7 @@ class _InstitutesScreenState extends State<InstitutesScreen> {
           if (institutes.isEmpty) {
             return const EmptyState(
               message: 'لا معاهد بعد.',
-              icon: Icons.apartment_outlined,
+              icon: NzIcons.mosque,
             );
           }
 
@@ -93,7 +93,7 @@ class _InstitutesScreenState extends State<InstitutesScreen> {
               final institute = institutes[index];
 
               return ListTile(
-                leading: const Icon(Icons.apartment_outlined),
+                leading: const NzIcon(NzIcons.mosque),
                 title: Row(
                   spacing: 8,
                   children: [
@@ -108,7 +108,7 @@ class _InstitutesScreenState extends State<InstitutesScreen> {
                 ),
                 subtitle: Text(institute.isActive ? 'فعّال' : 'موقوف'),
                 trailing: IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  icon: const NzIcon(NzIcons.edit, size: 18),
                   onPressed: () => _edit(context, institute),
                 ),
               );
