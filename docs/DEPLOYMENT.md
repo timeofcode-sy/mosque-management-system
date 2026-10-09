@@ -214,6 +214,9 @@ php artisan config:cache && php artisan route:cache && php artisan view:cache
 .\scripts\export-apps.ps1 -SkipPubGet                   # حين يتعذر الوصول إلى pub.dev
 ```
 
+> إن منع ويندوز تشغيل السكربت («running scripts is disabled») فشغّله بسياقٍ مؤقت لهذه النافذة فقط: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` ثم الأمر. ولتمرير ملاحظات عربية استعمل المتغيّر: `$notes = 'ملاحظة 1','ملاحظة 2'; .\scripts\export-apps.ps1 -Notes $notes`.
+> يمرّ التصدير باختبارات كل تطبيق قبل بنائه، ولا يكتب في `VERSION.md` إن فشل أيّ بناء. أنشئ ملفات السجلّ خارج المستودع (أو التزم قبل التصدير) وإلا عُدَّ المستودع «غير نظيف».
+
 الناتج في `dist/`: ثلاث حزم APK (الأستاذ وولي الأمر والطالب) ومجلد ويندوز مضغوط لبرنامج المكتب. ويُسجَّل كل تصدير ناجح في [`VERSION.md`](../VERSION.md). يلزم لبناء APK حزمة Android SDK (`flutter doctor`)، ولبناء ويندوز Visual Studio بحمل «Desktop development with C++».
 
 **تثبيت APK على الهاتف:** انسخ الملف وافتحه (فعّل «تثبيت من مصادر غير معروفة» لتطبيق الملفات). التوقيع حالياً بمفتاح التصحيح (debug)؛ نشر المتجر يحتاج مفتاح توقيع خاصاً.
