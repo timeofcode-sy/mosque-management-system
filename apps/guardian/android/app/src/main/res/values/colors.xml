@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Logo ground (design/design-tokens.json -> color.logo). -->
-    <color name="nuzuln_ground">#0E2925</color>
-    <color name="nuzuln_ground_light">#1B3C35</color>
-    <color name="nuzuln_ground_dark">#0A221E</color>
+    <!-- Brand ground (night, v3 tokens: color.night). The native splash and the adaptive icon ground. -->
+    <color name="nuzuln_ground">#0A241F</color>
 </resources>
