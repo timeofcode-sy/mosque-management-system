@@ -190,8 +190,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('—'), findsWidgets);
-    expect(find.text('0.0٪'), findsNothing);
-    expect(find.text('٠٪'), findsNothing);
+    expect(find.text('0.0%'), findsNothing);
+    expect(find.text('٠%'), findsNothing);
   });
 
   /// 🔴 الحاجبُ الذي فتح المرحلة: السجلُّ يُعرض بيوم الجلسة لا بيوم كتابته.

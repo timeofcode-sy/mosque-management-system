@@ -216,32 +216,18 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    final (background, foreground) = switch (excuse.status) {
-      'approved' => (scheme.primaryContainer, scheme.onPrimaryContainer),
-      'rejected' => (scheme.errorContainer, scheme.onErrorContainer),
-      _ => (scheme.surfaceContainerHighest, scheme.onSurfaceVariant),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: 4,
-        children: [
-          if (excuse.pending)
-            NzIcon(NzIcons.upload, size: 14, color: foreground),
-          Text(
-            excuse.statusLabel,
-            style: TextStyle(color: foreground, fontSize: 12),
-          ),
-        ],
-      ),
+    return StatusBadge(
+      excuse.statusLabel,
+      tone: switch (excuse.status) {
+        'approved' => StatusTone.success,
+        'rejected' => StatusTone.danger,
+        _ => StatusTone.warning,
+      },
+      icon: switch (excuse.status) {
+        'approved' => NzIcons.checkCircle,
+        'rejected' => NzIcons.xCircle,
+        _ => NzIcons.clock,
+      },
     );
   }
 }

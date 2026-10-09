@@ -249,7 +249,7 @@ class ReportDocuments {
   };
 
   static String _percent(double? value) =>
-      value == null ? '—' : '${value.toStringAsFixed(1)}٪';
+      value == null ? '—' : '${value.toStringAsFixed(1)}%';
 
   static String _number(double value) =>
       value == value.roundToDouble() ? '${value.round()}' : value.toStringAsFixed(2);

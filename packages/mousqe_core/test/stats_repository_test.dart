@@ -12,7 +12,7 @@ import 'support/test_institute.dart';
 /// وما يُقاس هنا ليس «هل يجمع الأرقام؟» بل ثلاثةُ أحكامٍ يسهل أن تُخالَف بلا أن
 /// يشكوَ أحد:
 ///
-/// 1. **ما لم يُسجَّل لا يُفترض** — جلسةٌ فُتحت بلا تفقّدٍ ليست ١٠٠٪.
+/// 1. **ما لم يُسجَّل لا يُفترض** — جلسةٌ فُتحت بلا تفقّدٍ ليست ١٠٠%.
 /// 2. **`null` ليست صفراً** — «لم تُقَس» خبرٌ غيرُ «قِيست فكانت صفراً».
 /// 3. **رقمُ الجهاز يساوي رقمَ اللوحة** — نفسُ المعادلة ونفسُ قيم المعهد.
 void main() {
@@ -47,7 +47,7 @@ void main() {
         () async {
       // 🔑 الحكمُ الأوّل: الخادمُ يزرع صفوفَ الطلاب عند الفتح، وقبل أن تصل
       // الجهازَ يعرض `CircleRepository` حالةً **مقترحة** لكل طالب. ولو دخلت
-      // الإحصاءَ لَقرأ المشرفُ ١٠٠٪ عن يومٍ لم يُتفقَّد فيه أحد.
+      // الإحصاءَ لَقرأ المشرفُ ١٠٠% عن يومٍ لم يُتفقَّد فيه أحد.
       await fixture.syncSession(id: 1, uuid: 'ses-1', day: today);
 
       final overview = await stats.loadOverview(today: today);
@@ -140,7 +140,7 @@ void main() {
 
   group('the standings', () {
     setUp(() async {
-      // الفرقان: حاضرٌ من حاضرَين ⇒ ١٠٠٪ · النهار: حاضرٌ من اثنين ⇒ ٥٠٪ ·
+      // الفرقان: حاضرٌ من حاضرَين ⇒ ١٠٠% · النهار: حاضرٌ من اثنين ⇒ ٥٠% ·
       // العصر: بلا جلسةٍ أصلاً.
       await fixture.syncSession(id: 1, uuid: 'ses-1', day: today);
       await fixture.syncSession(
@@ -196,7 +196,7 @@ void main() {
 
     test('a tie takes the same rank, and the order holds between two reads',
         () async {
-      // النهار يصير ١٠٠٪ أيضاً: تعادلٌ يأخذ الرتبةَ نفسَها.
+      // النهار يصير ١٠٠% أيضاً: تعادلٌ يأخذ الرتبةَ نفسَها.
       await (db.update(db.attendances)
             ..where((t) => t.uuid.equals('att-3')))
           .write(const AttendancesCompanion(status: Value('present')));
@@ -291,7 +291,7 @@ void main() {
 
     test('the cumulative rate runs to the report date, not to the present day',
         () async {
-      // أمسِ: حاضرٌ واحد. واليوم: غائبٌ واحد. فتقريرُ أمسِ يجب أن يقرأ ١٠٠٪
+      // أمسِ: حاضرٌ واحد. واليوم: غائبٌ واحد. فتقريرُ أمسِ يجب أن يقرأ ١٠٠%
       // مهما طُبع بعده — وإلا تغيّر تقريرٌ مطبوع بعد أن طُبع.
       await fixture.syncSession(
         id: 1,

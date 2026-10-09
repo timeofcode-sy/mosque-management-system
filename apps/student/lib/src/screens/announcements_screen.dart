@@ -58,18 +58,7 @@ class _Card extends StatelessWidget {
                 // «لحلقتي» شارةٌ تقول للقارئ إن الإعلانَ يخصّه هو لا المعهدَ
                 // كلَّه — فيقدّر أهميّتَه بلا أن يعرف بقيّةَ المشمولين.
                 if (announcement.isForMyCircle)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      'لحلقتي',
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: theme.colorScheme.onSecondaryContainer),
-                    ),
-                  ),
+                  const StatusBadge('لحلقتي', tone: StatusTone.bronze),
               ],
             ),
             const SizedBox(height: 8),

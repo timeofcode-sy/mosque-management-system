@@ -76,7 +76,7 @@ class _CoursesTab extends StatelessWidget {
             Text(course.name),
             if (course.isCurrent)
               const Chip(
-                label: Text('الجارية', style: TextStyle(fontSize: 11)),
+                label: Text('الجارية', style: TextStyle(fontSize: 12)),
                 padding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
               ),

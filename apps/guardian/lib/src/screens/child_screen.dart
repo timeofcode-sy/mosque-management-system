@@ -88,11 +88,11 @@ class _SummaryGrid extends StatelessWidget {
         children: [
           Row(
             children: [
-              // 🔑 نسبةٌ `null` تُكتب «لا قياس» لا «٠٪»: طالبٌ كلُّ سجلّاته
+              // 🔑 نسبةٌ `null` تُكتب «لا قياس» لا «٠%»: طالبٌ كلُّ سجلّاته
               // أعذارٌ لا مقامَ له، وصفرٌ ههنا يقول إنه لم يحضر يوماً.
               Expanded(
                 child: StatCard(
-                  value: summary.rate == null ? '—' : '${summary.rate!.toStringAsFixed(1)}٪',
+                  value: summary.rate == null ? '—' : '${summary.rate!.toStringAsFixed(1)}%',
                   label: 'نسبة الحضور',
                   icon: NzIcons.percent,
                 ),

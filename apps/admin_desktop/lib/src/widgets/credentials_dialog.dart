@@ -77,7 +77,7 @@ class _Field extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(NzRadius.sm),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

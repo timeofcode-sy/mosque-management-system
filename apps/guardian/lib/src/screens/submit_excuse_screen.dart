@@ -187,7 +187,7 @@ class _DateField extends StatelessWidget {
           border: const OutlineInputBorder(),
           suffixIcon: const NzIcon(NzIcons.calendar),
         ),
-        child: Text(DateFormat('EEEE d MMMM yyyy', 'ar').format(value)),
+        child: Text(formatLongDate(value)),
       ),
     );
   }

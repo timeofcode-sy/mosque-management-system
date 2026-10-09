@@ -35,6 +35,13 @@ class MousqeTheme {
         WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? on : off);
 
     return base.copyWith(
+      // السهمُ للخلف يشير إلى اليمين لأن الواجهة من اليمين إلى اليسار (قاعدة الأيقونات).
+      actionIconTheme: ActionIconThemeData(
+        backButtonIconBuilder: (context) => const NzIcon(NzIcons.back),
+        closeButtonIconBuilder: (context) => const NzIcon(NzIcons.close),
+        drawerButtonIconBuilder: (context) => const NzIcon(NzIcons.menu),
+        endDrawerButtonIconBuilder: (context) => const NzIcon(NzIcons.menu),
+      ),
       dialogTheme: DialogThemeData(
         backgroundColor: c.surfaceRaised,
         surfaceTintColor: Colors.transparent,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
@@ -590,7 +589,7 @@ class _DateBar extends StatelessWidget {
         spacing: 8,
         children: [
           const NzIcon(NzIcons.calendar, size: 18),
-          Text(DateFormat('EEEE، d MMMM y', 'ar').format(date)),
+          Text(formatLongDate(date)),
           TextButton.icon(
             onPressed: onPick,
             icon: const NzIcon(NzIcons.edit, size: 18),
@@ -696,30 +695,10 @@ class _Banner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = accent
-        ? theme.colorScheme.primary
-        : theme.colorScheme.onSurfaceVariant;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        spacing: 8,
-        children: [
-          NzIcon(icon, size: 18, color: color),
-          Expanded(
-            child: Text(
-              message,
-              style: theme.textTheme.bodySmall?.copyWith(color: color),
-            ),
-          ),
-        ],
-      ),
+    return NoticeBanner(
+      message,
+      tone: accent ? StatusTone.success : StatusTone.info,
+      icon: icon,
     );
   }
 }

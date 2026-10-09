@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:nuzul_ui/nuzul_ui.dart';
 import 'package:intl/intl.dart';
 
+import '../format/dates.dart';
+
 import 'empty_state.dart';
 
 /// قراءةٌ جاهزةٌ للعرض: القيمةُ ومتى قُرئت وهل هي طازجة.
@@ -132,26 +134,26 @@ class StaleNotice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.nz;
 
+    // «دون اتصال» (جرد الشاشات): شريطٌ هادئ بـ info-soft، بأيقونةٍ وكلمات.
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      margin: const EdgeInsets.fromLTRB(NzSpace.s4, NzSpace.s3, NzSpace.s4, NzSpace.s1),
+      padding: const EdgeInsets.symmetric(horizontal: NzSpace.s3, vertical: NzSpace.s3),
       decoration: BoxDecoration(
-        color: theme.colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(12),
+        color: c.infoSoft,
+        borderRadius: BorderRadius.circular(NzRadius.sm),
       ),
       child: Row(
         children: [
-          NzIcon(NzIcons.offline, size: 18, color: theme.colorScheme.onSecondaryContainer),
-          const SizedBox(width: 8),
+          NzIcon(NzIcons.offline, size: 18, color: c.info),
+          const SizedBox(width: NzSpace.s2),
           Expanded(
             child: Text(
               fetchedAt == null
                   ? 'لا اتصال — هذه نسخةٌ محفوظة على الجهاز.'
                   : 'لا اتصال — آخر تحديث ${formatStamp(fetchedAt!)}.',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSecondaryContainer),
+              style: NzType.body.copyWith(color: c.info),
             ),
           ),
         ],
@@ -186,5 +188,5 @@ String formatDay(String isoDate) {
     return isoDate;
   }
 
-  return DateFormat('EEEE d MMMM', 'ar').format(parsed);
+  return formatLongDate(parsed, withYear: false);
 }

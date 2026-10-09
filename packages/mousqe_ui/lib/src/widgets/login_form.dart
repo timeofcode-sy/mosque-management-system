@@ -74,7 +74,8 @@ class _LoginFormState extends State<LoginForm> {
       }
 
       setState(() {
-        _error = widget.errorMessageBuilder?.call(failure) ??
+        _error =
+            widget.errorMessageBuilder?.call(failure) ??
             'تعذّر الدخول. تحقّق من البيانات والاتصال.';
       });
     } finally {
@@ -90,114 +91,122 @@ class _LoginFormState extends State<LoginForm> {
 
     // شاشة الدخول في جرد الشاشات: النموذجُ في وسط الصفحة على أرضية night بالنقش، والبطاقةُ raised فتبقى
     // مقروءةً في السمتين، والعلامةُ بنحاسها وبياضها على الليل وحده.
-    return NzPattern(
-      child: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(NzSpace.s4),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: widget.maxWidth),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Center(child: BrandGlyph(height: 96)),
-                const SizedBox(height: NzSpace.s5),
-                Container(
-                  padding: const EdgeInsets.all(NzSpace.s5),
-                  decoration: BoxDecoration(
-                    color: c.surfaceRaised,
-                    border: Border.all(color: c.line),
-                    borderRadius: BorderRadius.circular(NzRadius.md),
-                  ),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          widget.title,
-                          style: NzType.display3.copyWith(color: c.ink),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: NzSpace.s1),
-                        Text(
-                          widget.subtitle,
-                          style: NzType.body.copyWith(color: c.inkMuted),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: NzSpace.s5),
-                        if (widget.notice != null) ...[
-                          _Banner(message: widget.notice!, error: true),
-                          const SizedBox(height: NzSpace.s3),
-                        ],
-                        TextFormField(
-                          controller: _username,
-                          autocorrect: false,
-                          autofocus: true,
-                          textInputAction: TextInputAction.next,
-                          decoration: const InputDecoration(
-                            labelText: 'اسم المستخدم',
-                            prefixIcon: NzIcon(NzIcons.user, size: 20),
+    return Material(
+      type: MaterialType.transparency,
+      child: NzPattern(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(NzSpace.s4),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: widget.maxWidth),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Center(child: BrandGlyph(height: 96)),
+                  const SizedBox(height: NzSpace.s5),
+                  Container(
+                    padding: const EdgeInsets.all(NzSpace.s5),
+                    decoration: BoxDecoration(
+                      color: c.surfaceRaised,
+                      border: Border.all(color: c.line),
+                      borderRadius: BorderRadius.circular(NzRadius.md),
+                    ),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            widget.title,
+                            style: NzType.display3.copyWith(color: c.ink),
+                            textAlign: TextAlign.center,
                           ),
-                          validator: (value) => (value ?? '').trim().isEmpty
-                              ? 'أدخل اسم المستخدم'
-                              : null,
-                        ),
-                        const SizedBox(height: NzSpace.s3),
-                        TextFormField(
-                          controller: _password,
-                          obscureText: _obscure,
-                          textInputAction: TextInputAction.done,
-                          onFieldSubmitted: (_) => _submit(),
-                          decoration: InputDecoration(
-                            labelText: 'كلمة المرور',
-                            prefixIcon:
-                                const NzIcon(NzIcons.lockClosed, size: 20),
-                            suffixIcon: IconButton(
-                              tooltip: _obscure
-                                  ? 'إظهار كلمة المرور'
-                                  : 'إخفاء كلمة المرور',
-                              onPressed: () =>
-                                  setState(() => _obscure = !_obscure),
-                              icon: NzIcon(
-                                _obscure ? NzIcons.eye : NzIcons.eyeSlash,
+                          const SizedBox(height: NzSpace.s1),
+                          Text(
+                            widget.subtitle,
+                            style: NzType.body.copyWith(color: c.inkMuted),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: NzSpace.s5),
+                          if (widget.notice != null) ...[
+                            _Banner(message: widget.notice!, error: true),
+                            const SizedBox(height: NzSpace.s3),
+                          ],
+                          TextFormField(
+                            controller: _username,
+                            autocorrect: false,
+                            autofocus: true,
+                            textInputAction: TextInputAction.next,
+                            decoration: const InputDecoration(
+                              labelText: 'اسم المستخدم',
+                              prefixIcon: NzIcon(NzIcons.user, size: 20),
+                            ),
+                            validator: (value) => (value ?? '').trim().isEmpty
+                                ? 'أدخل اسم المستخدم'
+                                : null,
+                          ),
+                          const SizedBox(height: NzSpace.s3),
+                          TextFormField(
+                            controller: _password,
+                            obscureText: _obscure,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _submit(),
+                            decoration: InputDecoration(
+                              labelText: 'كلمة المرور',
+                              prefixIcon: const NzIcon(
+                                NzIcons.lockClosed,
                                 size: 20,
                               ),
+                              suffixIcon: IconButton(
+                                tooltip: _obscure
+                                    ? 'إظهار كلمة المرور'
+                                    : 'إخفاء كلمة المرور',
+                                onPressed: () =>
+                                    setState(() => _obscure = !_obscure),
+                                icon: NzIcon(
+                                  _obscure ? NzIcons.eye : NzIcons.eyeSlash,
+                                  size: 20,
+                                ),
+                              ),
                             ),
+                            validator: (value) => (value ?? '').isEmpty
+                                ? 'أدخل كلمة المرور'
+                                : null,
                           ),
-                          validator: (value) =>
-                              (value ?? '').isEmpty ? 'أدخل كلمة المرور' : null,
-                        ),
-                        if (_error != null) ...[
-                          const SizedBox(height: NzSpace.s3),
-                          _Banner(message: _error!, error: true),
+                          if (_error != null) ...[
+                            const SizedBox(height: NzSpace.s3),
+                            _Banner(message: _error!, error: true),
+                          ],
+                          const SizedBox(height: NzSpace.s5),
+                          FilledButton(
+                            onPressed: _busy ? null : _submit,
+                            child: _busy
+                                ? SizedBox(
+                                    height: 18,
+                                    width: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: c.onPrimary,
+                                    ),
+                                  )
+                                : const Text('تسجيل الدخول'),
+                          ),
                         ],
-                        const SizedBox(height: NzSpace.s5),
-                        FilledButton(
-                          onPressed: _busy ? null : _submit,
-                          child: _busy
-                              ? SizedBox(
-                                  height: 18,
-                                  width: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: c.onPrimary,
-                                  ),
-                                )
-                              : const Text('تسجيل الدخول'),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: NzSpace.s4),
-                Text(
-                  'الحسابات تُنشئها إدارة المعهد — راجع مشرفك إن لم تصلك بيانات دخولك.',
-                  style: NzType.caption.copyWith(color: const Color(0xFFA8BBB2)),
-                  textAlign: TextAlign.center,
-                ),
-              ],
+                  const SizedBox(height: NzSpace.s4),
+                  Text(
+                    'الحسابات تُنشئها إدارة المعهد — راجع مشرفك إن لم تصلك بيانات دخولك.',
+                    style: NzType.caption.copyWith(
+                      color: const Color(0xFFA8BBB2),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

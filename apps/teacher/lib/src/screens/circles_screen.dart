@@ -23,6 +23,8 @@ class CirclesScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leadingWidth: 64,
+        leading: const Center(child: BrandMark(size: 40)),
         title: Text(snapshot?.institute.name ?? 'حلقاتي'),
         actions: [
           IconButton(

@@ -33,7 +33,16 @@ class NzIcon extends StatelessWidget {
     final c = color ?? theme.color ?? const Color(0xFF0A241F);
     final strokes = _nzIconAll[name];
     assert(strokes != null, 'Unknown Nuzulan icon "$name"');
-    final paint = CustomPaint(size: Size.square(s), painter: _NzIconPainter(strokes ?? const [], c));
+    // الحجمُ ثابتٌ مهما ضيّق الأبُ أو وسّع (حقول الإدخال تفرض حدّاً أدنى 48px على prefixIcon):
+    // Center بعاملَي 1 يعطي الرسمَ قيداً مرناً فيبقى s×s ويتوسّط داخل المساحة الأكبر.
+    final paint = Center(
+      widthFactor: 1,
+      heightFactor: 1,
+      child: SizedBox.square(
+        dimension: s,
+        child: CustomPaint(painter: _NzIconPainter(strokes ?? const [], c)),
+      ),
+    );
     final label = semanticLabel;
     return label == null ? ExcludeSemantics(child: paint) : Semantics(label: label, image: true, child: paint);
   }

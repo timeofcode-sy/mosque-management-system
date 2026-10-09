@@ -81,7 +81,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('ترتيبي في الحلقة: 5 من 20'), findsOneWidget);
-      expect(find.text('87.5٪'), findsOneWidget);
+      expect(find.text('87.5%'), findsOneWidget);
       expect(find.text('حلقة أبي بن كعب'), findsOneWidget);
     });
 
@@ -95,7 +95,7 @@ void main() {
 
       expect(find.textContaining('لم يُقَس ترتيبي بعد'), findsOneWidget);
       expect(find.text('—'), findsOneWidget);
-      expect(find.textContaining('0.0٪'), findsNothing);
+      expect(find.textContaining('0.0%'), findsNothing);
     });
 
     testWidgets('a student in no circle is told so, not shown a rank of zero', (tester) async {

@@ -17,7 +17,6 @@ class InstituteMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dependencies = AppScope.of(context);
-    final theme = Theme.of(context);
 
     return ListenableBuilder(
       listenable: Listenable.merge([
@@ -32,10 +31,20 @@ class InstituteMenu extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
+        // رأسُ SideNav في الهوية: علامةُ النظام ثم اسمُ المعهد وسطرُ الدورة. العلامةُ ثابتةٌ لا يغيّرها معهد.
+        final c = context.nz;
+
         return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 8, 12),
+          padding: const EdgeInsetsDirectional.fromSTEB(
+            NzSpace.s4,
+            NzSpace.s4,
+            NzSpace.s2,
+            NzSpace.s3,
+          ),
           child: Row(
             children: [
+              const BrandMark(size: 44),
+              const SizedBox(width: NzSpace.s3),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,14 +52,15 @@ class InstituteMenu extends StatelessWidget {
                   children: [
                     Text(
                       snapshot?.institute.name ?? Brand.name,
-                      style: theme.textTheme.titleMedium,
+                      style: NzType.body.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: c.ink,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       snapshot?.courseName ?? 'لا دورةَ جارية',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
+                      style: NzType.caption.copyWith(color: c.inkMuted),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],

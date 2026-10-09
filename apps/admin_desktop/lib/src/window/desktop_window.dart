@@ -22,7 +22,7 @@ class DesktopWindow with WindowListener {
 
   /// أدنى من هذا تنكسر الشاشاتُ ذاتُ القائمة الجانبية + الجدول: القائمةُ 240
   /// بكسلاً وحدها، والجدولُ خلفها يحتاج ما يكفي لأربعة أعمدة وأزرارِ صفّ.
-  static const Size minimumSize = Size(1024, 640);
+  static const Size minimumSize = Size(1024, 700);
 
   static const Size defaultSize = Size(1360, 860);
 

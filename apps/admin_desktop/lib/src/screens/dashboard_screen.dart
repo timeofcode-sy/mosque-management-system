@@ -222,7 +222,7 @@ class _TrendBar extends StatelessWidget {
               // فراغٌ موسوم: خطٌّ رفيعٌ يقول «هنا يومٌ لم يُقَس» بدل عمودٍ يكذب.
               Container(height: 2, color: scheme.outlineVariant),
             const SizedBox(height: 4),
-            Text('${point.date.day}', style: const TextStyle(fontSize: 10)),
+            Text('${point.date.day}', style: const TextStyle(fontSize: 12)),
           ],
         ),
       ),
@@ -341,4 +341,4 @@ class _StandingsCard extends StatelessWidget {
 }
 
 String _percent(double? value) =>
-    value == null ? '—' : '${value.toStringAsFixed(1)}٪';
+    value == null ? '—' : '${value.toStringAsFixed(1)}%';

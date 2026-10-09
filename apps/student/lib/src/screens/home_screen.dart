@@ -21,6 +21,8 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leadingWidth: 64,
+        leading: const Center(child: BrandMark(size: 40)),
         title: Text(snapshot?.userName ?? 'حسابي'),
         actions: [
           IconButton(
@@ -72,11 +74,11 @@ class _StandingCard extends StatelessWidget {
             children: [
               Expanded(
                 child: StatCard(
-                  // 🔑 نسبةٌ `null` تُكتب «—» لا «٠٪»: طالبٌ لم يُتفقَّد بعد لم
+                  // 🔑 نسبةٌ `null` تُكتب «—» لا «٠%»: طالبٌ لم يُتفقَّد بعد لم
                   // يغب، وصفرٌ ههنا يقول إنه لم يحضر يوماً.
                   value: standing.rate == null
                       ? '—'
-                      : '${standing.rate!.toStringAsFixed(1)}٪',
+                      : '${standing.rate!.toStringAsFixed(1)}%',
                   label: 'نسبة حضوري',
                   icon: NzIcons.percent,
                 ),

@@ -53,9 +53,9 @@ class _SummaryGrid extends StatelessWidget {
             children: [
               Expanded(
                 child: StatCard(
-                  // نسبةٌ `null` تُكتب «—» لا «٠٪» — قاعدةُ م.6.6 على السطح
+                  // نسبةٌ `null` تُكتب «—» لا «٠%» — قاعدةُ م.6.6 على السطح
                   // الذي يقرؤه صاحبُها.
-                  value: summary.rate == null ? '—' : '${summary.rate!.toStringAsFixed(1)}٪',
+                  value: summary.rate == null ? '—' : '${summary.rate!.toStringAsFixed(1)}%',
                   label: 'نسبتي',
                   icon: NzIcons.percent,
                 ),

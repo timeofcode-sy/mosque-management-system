@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nuzul_ui/nuzul_ui.dart';
 
 /// يومٌ في منحنى الحضور — **سجلٌّ لا نموذجٌ مستورَد** (انظر [Loaded] في
 /// `snapshot_view.dart`): `rate` بـ`null` تعني «لم يُقَس».
@@ -26,7 +27,7 @@ class AttendanceTrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.nz;
     final measured = days.where((day) => day.rate != null).toList(growable: false);
 
     return Card(
@@ -39,9 +40,9 @@ class AttendanceTrendChart extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(heading, style: theme.textTheme.titleSmall),
+                Text(heading, style: NzType.label.copyWith(fontSize: 15, fontWeight: FontWeight.w600, color: c.ink)),
                 if (measured.isNotEmpty)
-                  Text('${measured.length} يوم تفقّد', style: theme.textTheme.bodySmall),
+                  Text('${measured.length} يوم تفقّد', style: NzType.caption.copyWith(color: c.inkMuted)),
               ],
             ),
             const SizedBox(height: 12),
@@ -50,7 +51,7 @@ class AttendanceTrendChart extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Text(
                   'لا جلساتٍ مغلقة بعد — يظهر المنحنى بعد أوّل تفقّد مكتمل.',
-                  style: theme.textTheme.bodyMedium,
+                  style: NzType.body.copyWith(color: c.inkMuted),
                   textAlign: TextAlign.center,
                 ),
               )
@@ -60,9 +61,9 @@ class AttendanceTrendChart extends StatelessWidget {
                 child: CustomPaint(
                   painter: _TrendPainter(
                     days: days,
-                    line: theme.colorScheme.primary,
-                    grid: theme.colorScheme.outlineVariant,
-                    fill: theme.colorScheme.primary.withValues(alpha: 0.12),
+                    line: c.primary,
+                    grid: c.line,
+                    fill: c.primary.withValues(alpha: 0.12),
                   ),
                   child: const SizedBox.expand(),
                 ),

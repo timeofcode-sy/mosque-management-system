@@ -60,16 +60,19 @@ class SyncBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.nz;
 
     return Material(
-      color: theme.colorScheme.surface,
+      color: c.surfaceRaised,
+      shape: Border(top: BorderSide(color: c.line)),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // حالة «دون اتصال» (جرد الشاشات): شريطٌ هادئ بـ info-soft يقول إن العمل مستمر وإن التغييرات ستُزامَن.
+          if (offline) const _OfflineStrip(),
           if (failures.isNotEmpty) _FailureStrip(failures: failures, onOpen: () => _openFailures(context)),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: NzSpace.s3, vertical: NzSpace.s1),
             child: Row(
               children: [
                 Expanded(
@@ -132,14 +135,12 @@ class _Detail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.nz;
 
     if (errorMessage != null) {
       return Text(
         errorMessage!,
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: theme.colorScheme.error,
-        ),
+        style: NzType.caption.copyWith(color: c.danger),
       );
     }
 
@@ -150,7 +151,35 @@ class _Detail extends StatelessWidget {
 
     return Text(
       offline ? '$label · بلا اتصال' : label,
-      style: theme.textTheme.bodySmall,
+      style: NzType.caption.copyWith(color: c.inkMuted),
+    );
+  }
+}
+
+/// شريطُ «دون اتصال»: هادئٌ ومعلوماتي لا إنذاري — العملُ مستمرٌّ على الجهاز.
+class _OfflineStrip extends StatelessWidget {
+  const _OfflineStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.nz;
+
+    return Container(
+      width: double.infinity,
+      color: c.infoSoft,
+      padding: const EdgeInsets.symmetric(horizontal: NzSpace.s3, vertical: NzSpace.s1),
+      child: Row(
+        children: [
+          NzIcon(NzIcons.offline, size: 16, color: c.info),
+          const SizedBox(width: NzSpace.s2),
+          Expanded(
+            child: Text(
+              'تعمل دون اتصال. ستُزامَن التغييرات تلقائيًا.',
+              style: NzType.caption.copyWith(color: c.info),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -164,25 +193,27 @@ class _FailureStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.nz;
 
     return Container(
       width: double.infinity,
-      color: theme.colorScheme.error.withValues(alpha: 0.10),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      color: c.dangerSoft,
+      padding: const EdgeInsets.symmetric(horizontal: NzSpace.s3, vertical: NzSpace.s1),
       child: Row(
         children: [
-          NzIcon(NzIcons.warning, size: 16, color: theme.colorScheme.error),
-          const SizedBox(width: 6),
+          NzIcon(NzIcons.warning, size: 16, color: c.danger),
+          const SizedBox(width: NzSpace.s2),
           Expanded(
             child: Text(
               '${failures.length} عملية رفضها الخادم ولن يُعاد إرسالها',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
-              ),
+              style: NzType.caption.copyWith(color: c.danger),
             ),
           ),
-          TextButton(onPressed: onOpen, child: const Text('راجِعها')),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: c.danger),
+            onPressed: onOpen,
+            child: const Text('راجِعها'),
+          ),
         ],
       ),
     );

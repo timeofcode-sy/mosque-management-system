@@ -170,31 +170,22 @@ class _StatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final locked = status == 'locked';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: (locked ? theme.colorScheme.error : theme.colorScheme.primary)
-            .withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: 4,
-        children: [
-          if (locked) NzIcon(NzIcons.lockClosed, size: 12, color: theme.colorScheme.error),
-          Text(
-            switch (status) {
-              'completed' => 'مكتملة',
-              'locked' => 'مقفلة',
-              _ => 'مسودّة',
-            },
-            style: theme.textTheme.bodySmall,
-          ),
-        ],
-      ),
+    return StatusBadge(
+      switch (status) {
+        'completed' => 'مكتملة',
+        'locked' => 'مقفلة',
+        _ => 'مسودّة',
+      },
+      tone: switch (status) {
+        'completed' => StatusTone.success,
+        'locked' => StatusTone.danger,
+        _ => StatusTone.neutral,
+      },
+      icon: switch (status) {
+        'completed' => NzIcons.check,
+        'locked' => NzIcons.lockClosed,
+        _ => NzIcons.edit,
+      },
     );
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
@@ -45,7 +44,7 @@ class _AttendanceHubScreenState extends State<AttendanceHubScreen> {
           TextButton.icon(
             onPressed: _pickDate,
             icon: const NzIcon(NzIcons.calendar, size: 18),
-            label: Text(DateFormat('EEEE، d MMMM y', 'ar').format(_date)),
+            label: Text(formatLongDate(_date)),
           ),
           IconButton(
             tooltip: 'اليوم التالي',

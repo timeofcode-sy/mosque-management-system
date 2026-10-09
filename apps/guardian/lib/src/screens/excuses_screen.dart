@@ -41,7 +41,7 @@ class _ExcuseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tone = _toneOf(theme, excuse.status);
+    final tone = _toneOf(excuse.status);
 
     return Card(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -61,17 +61,14 @@ class _ExcuseCard extends StatelessWidget {
                 // 🔑 الحالةُ بلونها الصريح: «قيد المراجعة» ليست قبولاً، ولو
                 // عُرضت بلا تمييزٍ لَقرأ مقدِّمُها التقديمَ إذناً
                 // ([PHASE-7-STAGES.MD §4] القاعدة الثانية).
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: tone.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: tone),
-                  ),
-                  child: Text(
-                    excuse.statusLabel,
-                    style: theme.textTheme.labelMedium?.copyWith(color: tone),
-                  ),
+                StatusBadge(
+                  excuse.statusLabel,
+                  tone: tone,
+                  icon: switch (excuse.status) {
+                    ExcuseStatus.pending => NzIcons.clock,
+                    ExcuseStatus.approved => NzIcons.checkCircle,
+                    ExcuseStatus.rejected => NzIcons.xCircle,
+                  },
                 ),
               ],
             ),
@@ -88,7 +85,7 @@ class _ExcuseCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'ينتظر مراجعةَ المعهد — الغيابُ لا يُحتسب مأذوناً قبل القبول.',
-                style: theme.textTheme.bodySmall?.copyWith(color: tone),
+                style: NzType.caption.copyWith(color: context.nz.warning),
               ),
             ],
             // جوابُ المراجِع: بدونه يرى وليُّ الأمر «مرفوض» بلا سبب فيعاود
@@ -97,10 +94,10 @@ class _ExcuseCard extends StatelessWidget {
               const SizedBox(height: 8),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(NzSpace.s3),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(10),
+                  color: context.nz.surfaceSunken,
+                  borderRadius: BorderRadius.circular(NzRadius.sm),
                 ),
                 child: Text(excuse.reviewNote!, style: theme.textTheme.bodySmall),
               ),
@@ -111,9 +108,9 @@ class _ExcuseCard extends StatelessWidget {
     );
   }
 
-  Color _toneOf(ThemeData theme, ExcuseStatus status) => switch (status) {
-        ExcuseStatus.pending => const Color(0xFFC9A227),
-        ExcuseStatus.approved => const Color(0xFF177F5C),
-        ExcuseStatus.rejected => const Color(0xFFB42318),
+  StatusTone _toneOf(ExcuseStatus status) => switch (status) {
+        ExcuseStatus.pending => StatusTone.warning,
+        ExcuseStatus.approved => StatusTone.success,
+        ExcuseStatus.rejected => StatusTone.danger,
       };
 }

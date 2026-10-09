@@ -82,7 +82,7 @@ class _CurriculumCard extends StatelessWidget {
               Tooltip(
                 message: 'منهجٌ مزروعٌ لكل المعاهد — يُرى ولا يُحرَّر وعاؤه',
                 child: Chip(
-                  label: const Text('عامّ', style: TextStyle(fontSize: 11)),
+                  label: const Text('عامّ', style: TextStyle(fontSize: 12)),
                   padding: EdgeInsets.zero,
                   visualDensity: VisualDensity.compact,
                   backgroundColor: theme.colorScheme.surfaceContainerHighest,

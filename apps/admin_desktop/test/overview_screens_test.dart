@@ -208,7 +208,7 @@ void main() {
     }
   }
 
-  /// جلسةُ اليوم: حاضرٌ وغائب ⇒ ٥٠٪.
+  /// جلسةُ اليوم: حاضرٌ وغائب ⇒ ٥٠%.
   Future<void> seedToday() async {
     final today = DateTime.now();
     final day = DateTime(today.year, today.month, today.day);
@@ -271,7 +271,7 @@ void main() {
 
       expect(find.text('طالبٌ في المعهد'), findsOneWidget);
       expect(find.text('مسجَّلٌ في الدورة الجارية'), findsOneWidget);
-      expect(find.text('اليوم: 50.0٪'), findsOneWidget);
+      expect(find.text('اليوم: 50.0%'), findsOneWidget);
       expect(find.text('حلقة الفرقان'), findsOneWidget);
       expect(find.text('أحمد بن سعيد'), findsOneWidget);
 
@@ -285,7 +285,7 @@ void main() {
       await pump(tester, const DashboardScreen());
       await tester.pump();
 
-      // 🔑 لا صفرَ ولا ١٠٠٪: الحلقةُ لم تُقَس، والترتيبُ لا يشملها. ولو رُسمت
+      // 🔑 لا صفرَ ولا ١٠٠%: الحلقةُ لم تُقَس، والترتيبُ لا يشملها. ولو رُسمت
       // صفراً لَبدت أسوأَ من حلقةٍ غاب طلابُها كلُّهم.
       expect(find.text('اليوم: لم يُسجَّل تفقّدٌ بعد'), findsOneWidget);
       expect(find.text('لم تُقَس'), findsOneWidget);

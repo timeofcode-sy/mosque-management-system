@@ -100,7 +100,7 @@ class _InstitutesScreenState extends State<InstitutesScreen> {
                     Text(institute.name),
                     if (institute.uuid == active)
                       const Chip(
-                        label: Text('المعهد العامل', style: TextStyle(fontSize: 11)),
+                        label: Text('المعهد العامل', style: TextStyle(fontSize: 12)),
                         padding: EdgeInsets.zero,
                         visualDensity: VisualDensity.compact,
                       ),

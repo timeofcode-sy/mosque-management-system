@@ -276,7 +276,7 @@ class _UserRow extends StatelessWidget {
           Text(user.name),
           if (!user.isActive)
             Chip(
-              label: const Text('مقفل', style: TextStyle(fontSize: 11)),
+              label: const Text('مقفل', style: TextStyle(fontSize: 12)),
               padding: EdgeInsets.zero,
               visualDensity: VisualDensity.compact,
               backgroundColor: theme.colorScheme.errorContainer,

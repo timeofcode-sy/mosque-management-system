@@ -21,6 +21,8 @@ class ChildrenScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leadingWidth: 64,
+        leading: const Center(child: BrandMark(size: 40)),
         title: const Text('أبنائي'),
         actions: [
           IconButton(

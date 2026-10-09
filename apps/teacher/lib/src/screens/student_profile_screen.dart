@@ -58,7 +58,7 @@ class _Body extends StatelessWidget {
           children: [
             Expanded(
               child: StatCard(
-                value: rate == null ? '—' : '${rate.toStringAsFixed(1)}٪',
+                value: rate == null ? '—' : '${rate.toStringAsFixed(1)}%',
                 label: 'نسبة الحضور',
                 icon: NzIcons.percent,
               ),

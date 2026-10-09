@@ -70,6 +70,9 @@ class _DesktopShellState extends State<DesktopShell> {
 
     _visited.add(selected);
 
+    // الهوية: القائمةُ الكاملة (264px) من 1024px فما فوق، ودونها شريطُ التنقّل المطويّ (80px).
+    final rail = MediaQuery.sizeOf(context).width < NzBreakpoint.expanded;
+
     return Scaffold(
       body: Column(
         children: [
@@ -79,9 +82,9 @@ class _DesktopShellState extends State<DesktopShell> {
                 _Sidebar(
                   sections: sections,
                   selectedId: selected,
+                  rail: rail,
                   onSelect: (id) => setState(() => _selectedId = id),
                 ),
-                const VerticalDivider(width: 1),
                 Expanded(
                   child: IndexedStack(
                     index: sections.indexWhere((s) => s.id == selected),
@@ -104,7 +107,6 @@ class _DesktopShellState extends State<DesktopShell> {
               ],
             ),
           ),
-          const Divider(height: 1),
           const AppSyncBar(),
         ],
       ),
@@ -136,64 +138,85 @@ class _SectionHost extends StatelessWidget {
   }
 }
 
+/// القائمةُ الجانبية (`SideNav` في الهوية): 264px بعناوين أقسامٍ بحجم 12 وعناصرَ بارتفاع 40، والعنصرُ
+/// الحاليّ bronze-soft بخطٍّ أثقل. وتحت 1024px تطوى إلى شريطٍ بعرض 80px أيقوناتُه وحدها (مع تلميح).
 class _Sidebar extends StatelessWidget {
   const _Sidebar({
     required this.sections,
     required this.selectedId,
     required this.onSelect,
+    required this.rail,
   });
-
-  static const double width = 248;
 
   final List<DesktopSection> sections;
   final String selectedId;
   final ValueChanged<String> onSelect;
+  final bool rail;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.nz;
     final groups = <SectionGroup, List<DesktopSection>>{};
 
     for (final section in sections) {
       groups.putIfAbsent(section.group, () => []).add(section);
     }
 
-    return SizedBox(
-      width: width,
-      child: Material(
-        color: theme.colorScheme.surfaceContainerLow,
-        child: Column(
-          children: [
+    return Container(
+      width: rail ? NzSize.railWidth : NzSize.sidenavWidth,
+      decoration: BoxDecoration(
+        color: c.surfaceRaised,
+        border: BorderDirectional(end: BorderSide(color: c.line)),
+      ),
+      child: Column(
+        children: [
+          if (rail)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: NzSpace.s4),
+              child: BrandMark(size: 40),
+            )
+          else
             const InstituteMenu(),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                children: [
-                  for (final entry in groups.entries) ...[
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: NzSpace.s3,
+                vertical: NzSpace.s2,
+              ),
+              children: [
+                for (final entry in groups.entries) ...[
+                  if (!rail)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        NzSpace.s3,
+                        NzSpace.s4,
+                        NzSpace.s3,
+                        NzSpace.s1,
+                      ),
                       child: Text(
                         entry.key.label,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                        style: NzType.caption.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: c.inkMuted,
                         ),
                       ),
+                    )
+                  else
+                    const SizedBox(height: NzSpace.s3),
+                  for (final section in entry.value)
+                    _SidebarTile(
+                      section: section,
+                      selected: section.id == selectedId,
+                      rail: rail,
+                      onTap: () => onSelect(section.id),
                     ),
-                    for (final section in entry.value)
-                      _SidebarTile(
-                        section: section,
-                        selected: section.id == selectedId,
-                        onTap: () => onSelect(section.id),
-                      ),
-                  ],
                 ],
-              ),
+              ],
             ),
-            const Divider(height: 1),
-            const _AccountFooter(),
-          ],
-        ),
+          ),
+          Divider(height: 1, color: c.line),
+          _AccountFooter(rail: rail),
+        ],
       ),
     );
   }
@@ -203,42 +226,95 @@ class _SidebarTile extends StatelessWidget {
   const _SidebarTile({
     required this.section,
     required this.selected,
+    required this.rail,
     required this.onTap,
   });
 
   final DesktopSection section;
   final bool selected;
+  final bool rail;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.nz;
+    final fg = selected ? c.bronzeInk : c.ink;
+    final radius = BorderRadius.circular(NzRadius.sm);
+
+    final tile = Semantics(
+      selected: selected,
+      button: true,
+      label: section.label,
+      child: Material(
+        color: selected ? c.bronzeSoft : Colors.transparent,
+        borderRadius: radius,
+        child: InkWell(
+          borderRadius: radius,
+          hoverColor: c.surfaceSunken,
+          onTap: onTap,
+          child: SizedBox(
+            height: rail ? 48 : 40,
+            child: Padding(
+              padding: EdgeInsetsDirectional.symmetric(
+                horizontal: rail ? 0 : NzSpace.s3,
+              ),
+              child: Row(
+                mainAxisAlignment:
+                    rail ? MainAxisAlignment.center : MainAxisAlignment.start,
+                children: [
+                  NzIcon(section.icon, size: 22, color: fg),
+                  if (!rail) ...[
+                    const SizedBox(width: NzSpace.s3),
+                    Expanded(
+                      child: Text(
+                        section.label,
+                        overflow: TextOverflow.ellipsis,
+                        style: NzType.label.copyWith(
+                          fontSize: 14,
+                          color: fg,
+                          fontWeight:
+                              selected ? FontWeight.w600 : FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
-      child: ListTile(
-        dense: true,
-        selected: selected,
-        selectedTileColor: theme.colorScheme.primary.withValues(alpha: 0.12),
-        selectedColor: theme.colorScheme.primary,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        leading: NzIcon(section.icon, size: 20),
-        title: Text(section.label, style: theme.textTheme.bodyMedium),
-        onTap: onTap,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: rail ? Tooltip(message: section.label, child: tile) : tile,
     );
   }
 }
 
 /// اسمُ صاحب الجهاز وخروجُه — أسفلَ القائمة كما في كل برنامج مكتبي.
 class _AccountFooter extends StatelessWidget {
-  const _AccountFooter();
+  const _AccountFooter({this.rail = false});
+
+  final bool rail;
 
   @override
   Widget build(BuildContext context) {
     final session = AppScope.of(context).session;
     final theme = Theme.of(context);
     final snapshot = session.snapshot;
+
+    if (rail) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: NzSpace.s2),
+        child: IconButton(
+          tooltip: 'خروج — ${snapshot?.userName ?? ''}',
+          icon: const NzIcon(NzIcons.logout, size: 22),
+          onPressed: session.signOut,
+        ),
+      );
+    }
 
     return ListTile(
       dense: true,
