@@ -1,72 +1,548 @@
 {
-  "$schema": "https://design-tokens.org/schema.json",
-  "meta": {
-    "name": "Nuzuln Design Tokens",
-    "version": "0.1.0",
-    "note": "اللوحة الاحتياطية لنظام نزلاً (nuzuln.com) — يستهلكها Tailwind 4 (@theme) وmousqe_ui (ThemeData). 🔄 م.5.1: صارت الافتراضيَّ لا المفروض؛ لكل معهد ثلاثة ألوان في institutes.settings.theme تُشتقّ منها سلالمُه. ولا تُصبَغ هذه بألوان معهد بعينه، وإلا صار كل معهد جديد بلونه. وألوان شعار النظام في color.logo ثابتة لا يغيّرها ثيم المعهد؛ وملفاته وشعار العميل في design/logo/."
-  },
+  "name": "نزلاً",
+  "version": 1,
   "color": {
-    "logo": {
-      "ground":      "#0E2925",
-      "groundLight": "#1B3C35",
-      "groundDark":  "#0A221E",
-      "ribbon":      "#D8C0A2",
-      "celestial":   "#FFFFFF"
-    },
-    "brand": {
-      "50":  "#E8F2ED",
-      "100": "#C6E0D4",
-      "200": "#9CCAB6",
-      "300": "#6DB295",
-      "400": "#419A7A",
-      "500": "#177F5C",
-      "600": "#0F5132",
-      "700": "#0C4128",
-      "800": "#08301E",
-      "900": "#052014"
-    },
-    "gold": {
-      "300": "#E4CE7F",
-      "400": "#D6BA53",
-      "500": "#C9A227",
-      "600": "#A5841F",
-      "700": "#7C6317"
-    },
-    "sand": {
-      "50":  "#FDFBF6",
-      "100": "#F7F3EA",
-      "200": "#EDE5D4",
-      "300": "#DED2B8"
-    },
-    "ink": {
-      "500": "#4A4844",
-      "700": "#2E2C29",
-      "900": "#1C1B19"
-    },
-    "status": {
-      "present": "#177F5C",
-      "absent":  "#B42318",
-      "late":    "#C9A227",
-      "excused": "#2563EB"
-    },
-    "semantic": {
-      "success": "#177F5C",
-      "warning": "#C9A227",
-      "danger":  "#B42318",
-      "info":    "#2563EB"
-    }
+    "themes": [
+      {
+        "id": "light",
+        "name": "Light · فاتح"
+      },
+      {
+        "id": "dark",
+        "name": "Dark · ليلي"
+      }
+    ],
+    "tokens": [
+      {
+        "name": "surface",
+        "value": {
+          "light": "#F3F5F2",
+          "dark": "#0A241F"
+        },
+        "usage": "Page background. Light: mist, a grey biased to the brand green. Dark: night, the logo's ground."
+      },
+      {
+        "name": "surface-raised",
+        "value": {
+          "light": "#FFFFFF",
+          "dark": "#12352E"
+        },
+        "usage": "Cards, sheets, the app bar, inputs; sits on surface."
+      },
+      {
+        "name": "surface-sunken",
+        "value": {
+          "light": "#E6ECE7",
+          "dark": "#071A16"
+        },
+        "usage": "Wells inside a card: empty juz segments, read-only fields, table stripes."
+      },
+      {
+        "name": "line",
+        "value": {
+          "light": "#C9D3CC",
+          "dark": "#2C5649"
+        },
+        "usage": "Hairlines, card and input borders, dividers. Decorative only; never the only cue for a control."
+      },
+      {
+        "name": "ink",
+        "value": {
+          "light": "#0E2420",
+          "dark": "#EEF1EC"
+        },
+        "usage": "Primary text and icons on surface, surface-raised and surface-sunken."
+      },
+      {
+        "name": "ink-muted",
+        "value": {
+          "light": "#4D605A",
+          "dark": "#A8BBB2"
+        },
+        "usage": "Secondary text, captions, metadata, placeholder text on surface and surface-raised."
+      },
+      {
+        "name": "primary",
+        "value": {
+          "light": "#134236",
+          "dark": "#D6BC9C"
+        },
+        "usage": "Primary buttons, selected states, memorised juz segments. Deep green in light, bronze in dark."
+      },
+      {
+        "name": "on-primary",
+        "value": {
+          "light": "#FFFFFF",
+          "dark": "#0A241F"
+        },
+        "usage": "Text and icons on primary and primary-hover."
+      },
+      {
+        "name": "primary-hover",
+        "value": {
+          "light": "#0A241F",
+          "dark": "#E6D0B2"
+        },
+        "usage": "Hover and pressed state of primary fills."
+      },
+      {
+        "name": "bronze-ink",
+        "value": {
+          "light": "#6E5440",
+          "dark": "#D6BC9C"
+        },
+        "usage": "Bronze text that must read: eyebrows, tags, the hadith source, in-progress juz label. On surface, surface-raised and bronze-soft."
+      },
+      {
+        "name": "bronze-soft",
+        "value": {
+          "light": "#EFE4D6",
+          "dark": "#2B3B31"
+        },
+        "usage": "Quiet bronze fill behind bronze-ink: tags, the current juz, highlighted rows."
+      },
+      {
+        "name": "success",
+        "value": {
+          "light": "#1F6B4F",
+          "dark": "#7FCFA6"
+        },
+        "usage": "Present (حاضر) and completed states: text and icon on success-soft or surface-raised."
+      },
+      {
+        "name": "success-soft",
+        "value": {
+          "light": "#DDEFE5",
+          "dark": "#173F33"
+        },
+        "usage": "Background of the present badge and success notices."
+      },
+      {
+        "name": "warning",
+        "value": {
+          "light": "#8A5A12",
+          "dark": "#E5B866"
+        },
+        "usage": "Late (متأخر): text and icon on warning-soft."
+      },
+      {
+        "name": "warning-soft",
+        "value": {
+          "light": "#F6E7C8",
+          "dark": "#3E3420"
+        },
+        "usage": "Background of the late badge and warning notices."
+      },
+      {
+        "name": "danger",
+        "value": {
+          "light": "#A33A2A",
+          "dark": "#F09A8A"
+        },
+        "usage": "Absent (غائب), destructive actions, errors: text and icon on danger-soft or surface-raised."
+      },
+      {
+        "name": "danger-soft",
+        "value": {
+          "light": "#F6DDD7",
+          "dark": "#47261F"
+        },
+        "usage": "Background of the absent badge and error notices."
+      },
+      {
+        "name": "info",
+        "value": {
+          "light": "#25597F",
+          "dark": "#8CC1E6"
+        },
+        "usage": "Excused (مستأذن) and neutral notices: text and icon on info-soft."
+      },
+      {
+        "name": "info-soft",
+        "value": {
+          "light": "#DCE8F1",
+          "dark": "#1A3A4A"
+        },
+        "usage": "Background of the excused badge and info notices."
+      },
+      {
+        "name": "progress-current",
+        "value": {
+          "light": "#9A7A5A",
+          "dark": "#F4EADC"
+        },
+        "usage": "The juz being memorised now in JuzProgress: bronze beside green in light, cream beside bronze in dark. At least 3:1 on surface-raised."
+      },
+      {
+        "name": "tag-bg",
+        "value": {
+          "light": "#0A241F",
+          "dark": "#1B4A40"
+        },
+        "usage": "Background of the night Tag: night in light, night-line in dark so it stays visible on night."
+      },
+      {
+        "name": "tag-ink",
+        "value": {
+          "light": "#D6BC9C",
+          "dark": "#D6BC9C"
+        },
+        "usage": "Text of the night Tag, on tag-bg."
+      },
+      {
+        "name": "focus",
+        "value": {
+          "light": "#1F6B57",
+          "dark": "#E8CFA8"
+        },
+        "usage": "Keyboard focus ring: 2px solid, offset 2px, on every interactive element. At least 3:1 on every surface."
+      },
+      {
+        "name": "night",
+        "value": "#0A241F",
+        "usage": "Brand ground (ليل المسجد): splash, app icon, covers, print backgrounds. The only ground for the gradient logo."
+      },
+      {
+        "name": "night-raised",
+        "value": "#12352E",
+        "usage": "A panel on night, e.g. a card on the splash or a social post."
+      },
+      {
+        "name": "night-line",
+        "value": "#1B4A40",
+        "usage": "The house-lattice pattern and hairlines on night."
+      },
+      {
+        "name": "bronze",
+        "value": "#D6BC9C",
+        "usage": "The logo ribbons (نحاس). Brand art, the ribbon device, text on night (8.97:1). Never text on light grounds (1.66:1 on mist)."
+      },
+      {
+        "name": "bronze-shade",
+        "value": "#967C62",
+        "usage": "Fold shading inside the logo and the ribbon device. Brand art only, not text."
+      },
+      {
+        "name": "bronze-deep",
+        "value": "#7A5F46",
+        "usage": "Deepest fold of the logo; the diagonal light on the ribbons. Brand art only."
+      },
+      {
+        "name": "star",
+        "value": "#FFFFFF",
+        "usage": "The crescent and the two stars (the dots of nun and zay); text on night."
+      },
+      {
+        "name": "mist",
+        "value": "#F3F5F2",
+        "usage": "Light brand ground for print and social: letterhead footer, registration post, roll-up base."
+      }
+    ]
   },
-  "font": {
-    "display": ["Reem Kufi", "Noto Kufi Arabic", "sans-serif"],
-    "body": ["IBM Plex Sans Arabic", "Tajawal", "system-ui", "sans-serif"],
-    "mono": ["JetBrains Mono", "monospace"]
+  "type": {
+    "fonts": [
+      {
+        "family": "Reem Kufi",
+        "file": "fonts/ReemKufi-Variable.woff2",
+        "weight": "400 700"
+      },
+      {
+        "family": "IBM Plex Sans Arabic",
+        "file": "fonts/IBMPlexSansArabic-Light.woff2",
+        "weight": "300"
+      },
+      {
+        "family": "IBM Plex Sans Arabic",
+        "file": "fonts/IBMPlexSansArabic-Regular.woff2",
+        "weight": "400"
+      },
+      {
+        "family": "IBM Plex Sans Arabic",
+        "file": "fonts/IBMPlexSansArabic-Medium.woff2",
+        "weight": "500"
+      },
+      {
+        "family": "IBM Plex Sans Arabic",
+        "file": "fonts/IBMPlexSansArabic-SemiBold.woff2",
+        "weight": "600"
+      },
+      {
+        "family": "IBM Plex Sans Arabic",
+        "file": "fonts/IBMPlexSansArabic-Bold.woff2",
+        "weight": "700"
+      },
+      {
+        "family": "Amiri",
+        "file": "fonts/Amiri-Regular.woff2",
+        "weight": "400"
+      },
+      {
+        "family": "Amiri",
+        "file": "fonts/Amiri-Bold.woff2",
+        "weight": "700"
+      }
+    ],
+    "families": {
+      "display": "\"Reem Kufi\", \"IBM Plex Sans Arabic\", system-ui, sans-serif",
+      "sans": "\"IBM Plex Sans Arabic\", \"Segoe UI\", Tahoma, system-ui, sans-serif",
+      "quote": "Amiri, \"Traditional Arabic\", \"Times New Roman\", serif"
+    },
+    "groups": [
+      {
+        "name": "Display · كوفي",
+        "family": "display",
+        "styles": [
+          {
+            "name": "display-1",
+            "fontSize": "48px",
+            "lineHeight": "60px",
+            "fontWeight": 700,
+            "sample": "حلقات المسجد",
+            "usage": "One headline per screen or poster. No tashkeel in Reem Kufi."
+          },
+          {
+            "name": "display-2",
+            "fontSize": "34px",
+            "lineHeight": "46px",
+            "fontWeight": 700,
+            "sample": "التسجيل مفتوح",
+            "usage": "Section openers, certificate titles, social headlines."
+          },
+          {
+            "name": "display-3",
+            "fontSize": "26px",
+            "lineHeight": "38px",
+            "fontWeight": 600,
+            "sample": "حلقة أبي بن كعب",
+            "usage": "Screen titles in the app bar, card headlines. Smallest size for Reem Kufi."
+          }
+        ]
+      },
+      {
+        "name": "Text · واجهة",
+        "family": "sans",
+        "styles": [
+          {
+            "name": "title",
+            "fontSize": "20px",
+            "lineHeight": "32px",
+            "fontWeight": 600,
+            "sample": "طلاب الحلقة اليوم",
+            "usage": "Card titles, dialog titles, list headers."
+          },
+          {
+            "name": "body-lg",
+            "fontSize": "17px",
+            "lineHeight": "30px",
+            "fontWeight": 400,
+            "sample": "التسميع: سورة الملك من الآية ١ إلى ١٥",
+            "usage": "Lead paragraphs, parent-facing messages."
+          },
+          {
+            "name": "body",
+            "fontSize": "15px",
+            "lineHeight": "26px",
+            "fontWeight": 400,
+            "sample": "أتمّ الطالب حفظ الجزء الثلاثين بإتقان.",
+            "usage": "Default UI and reading text."
+          },
+          {
+            "name": "label",
+            "fontSize": "13px",
+            "lineHeight": "20px",
+            "fontWeight": 500,
+            "sample": "الحضور · متأخر",
+            "usage": "Buttons, badges, field labels, tabs."
+          },
+          {
+            "name": "caption",
+            "fontSize": "12px",
+            "lineHeight": "18px",
+            "fontWeight": 400,
+            "sample": "آخر تسميع قبل يومين",
+            "usage": "Metadata, timestamps, helper text. Never below 12px."
+          }
+        ]
+      },
+      {
+        "name": "Quote · نص مأثور",
+        "family": "quote",
+        "styles": [
+          {
+            "name": "hadith",
+            "fontSize": "24px",
+            "lineHeight": "46px",
+            "fontWeight": 400,
+            "sample": "مَن غدا إلى المسجدِ أو راحَ، أعدَّ اللهُ له نُزُلَهُ من الجنّةِ",
+            "usage": "The hadith, Quranic text and other quoted sources, always with full tashkeel and a source line."
+          }
+        ]
+      }
+    ]
   },
-  "radius": { "sm": "6px", "md": "10px", "lg": "16px", "xl": "24px", "full": "9999px" },
-  "spacing": { "xs": "4px", "sm": "8px", "md": "16px", "lg": "24px", "xl": "40px" },
+  "spacing": {
+    "tokens": [
+      {
+        "name": "space-1",
+        "value": "4px",
+        "usage": "Icon to label inside a badge; segment gap in the juz bar."
+      },
+      {
+        "name": "space-2",
+        "value": "8px",
+        "usage": "Icon to label in buttons; gap between badges."
+      },
+      {
+        "name": "space-3",
+        "value": "12px",
+        "usage": "Field label to input; list row vertical padding."
+      },
+      {
+        "name": "space-4",
+        "value": "16px",
+        "usage": "Card padding on phones; the page side gutter."
+      },
+      {
+        "name": "space-5",
+        "value": "24px",
+        "usage": "Card padding on tablets; gap between cards."
+      },
+      {
+        "name": "space-6",
+        "value": "32px",
+        "usage": "Gap between sections."
+      },
+      {
+        "name": "space-7",
+        "value": "48px",
+        "usage": "Space above a screen title; print margins at 1:1."
+      },
+      {
+        "name": "space-8",
+        "value": "64px",
+        "usage": "Hero and poster breathing room."
+      }
+    ]
+  },
+  "radius": {
+    "tokens": [
+      {
+        "name": "radius-0",
+        "value": "0px",
+        "usage": "Brand art, tags, the juz segments, the ribbon. The identity is angular."
+      },
+      {
+        "name": "radius-sm",
+        "value": "3px",
+        "usage": "Buttons, inputs, badges: just enough to soften the pixel edge."
+      },
+      {
+        "name": "radius-md",
+        "value": "6px",
+        "usage": "Cards and sheets."
+      }
+    ]
+  },
   "shadow": {
-    "card": "0 1px 3px rgba(28,27,25,.08), 0 1px 2px rgba(28,27,25,.06)",
-    "float": "0 10px 30px rgba(28,27,25,.12)"
+    "tokens": [
+      {
+        "name": "shadow-card",
+        "value": {
+          "light": "0 1px 2px rgba(10,36,31,0.08), 0 4px 14px rgba(10,36,31,0.06)",
+          "dark": "0 1px 2px rgba(0,0,0,0.45)"
+        },
+        "usage": "Raised cards on surface. Prefer the line border; add the shadow only to cards that move or overlay."
+      }
+    ]
   },
-  "direction": "rtl",
-  "locale": "ar"
+  "size": {
+    "note": "Fixed sizes shared by Flutter, the web and the desktop app.",
+    "tokens": [
+      {
+        "name": "touch-target",
+        "value": "48px",
+        "usage": "Minimum hit area on phones and tablets (bottom nav, rows, chips)."
+      },
+      {
+        "name": "control-height",
+        "value": "44px",
+        "usage": "Buttons and inputs on touch screens."
+      },
+      {
+        "name": "control-height-dense",
+        "value": "36px",
+        "usage": "Buttons and inputs on desktop (mouse and keyboard)."
+      },
+      {
+        "name": "appbar-height",
+        "value": "64px",
+        "usage": "Top app bar on every platform."
+      },
+      {
+        "name": "sidenav-width",
+        "value": "264px",
+        "usage": "Side navigation on desktop and on the web app (≥ 1024px)."
+      },
+      {
+        "name": "rail-width",
+        "value": "80px",
+        "usage": "Collapsed side navigation (navigation rail) on tablets, 600–1023px."
+      },
+      {
+        "name": "content-max",
+        "value": "1200px",
+        "usage": "Maximum width of reading and form content on wide screens."
+      }
+    ]
+  },
+  "breakpoint": {
+    "note": "Window-size classes (Material 3 names) used by every platform.",
+    "tokens": [
+      {
+        "name": "bp-compact",
+        "value": "0px",
+        "usage": "Phones: bottom navigation, one column, 16px margins."
+      },
+      {
+        "name": "bp-medium",
+        "value": "600px",
+        "usage": "Tablets and small windows: navigation rail, two columns, 24px margins."
+      },
+      {
+        "name": "bp-expanded",
+        "value": "1024px",
+        "usage": "Desktop app and desktop web: side navigation, list + detail panes, 32px margins."
+      },
+      {
+        "name": "bp-large",
+        "value": "1440px",
+        "usage": "Wide monitors: content stops at content-max, extra space goes to the margins."
+      }
+    ]
+  },
+  "geometry": {
+    "note": "The angles every brand drawing is built from (logo, pattern, icons, ribbon, chamfers).",
+    "tokens": [
+      {
+        "name": "angle-roof",
+        "value": "35deg",
+        "usage": "The roof and ribbon slope: tan 35° = 0.7. Use for every diagonal."
+      },
+      {
+        "name": "slope",
+        "value": "0.7",
+        "usage": "Rise per unit run of every diagonal (logo, lattice, ribbon)."
+      },
+      {
+        "name": "chamfer",
+        "value": "12px",
+        "usage": "Corner cut of tags and labels (clip-path), at the roof angle."
+      },
+      {
+        "name": "stroke-ratio",
+        "value": "0.2",
+        "usage": "Tanween and fine rules are one fifth of the main stroke."
+      }
+    ]
+  }
 }

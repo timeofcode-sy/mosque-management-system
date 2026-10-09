@@ -22,6 +22,7 @@
         }
 
         @media print {
+            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .no-print { display: none !important; }
             body { background: #fff !important; }
             .sheet { box-shadow: none !important; border: 0 !important; margin: 0 !important; max-width: none !important; padding: 0 !important; }

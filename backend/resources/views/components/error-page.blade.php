@@ -14,7 +14,7 @@
 
             <div class="w-full max-w-[460px] rounded-xl border border-line bg-raised p-6 shadow-card sm:p-8">
                 <p class="latin-numerals font-display text-5xl font-bold text-primary" dir="ltr">{{ $code }}</p>
-                <h1 class="mt-2 text-2xl font-bold">{{ $title }}</h1>
+                <h1 class="mt-2 text-[26px] leading-[38px] font-bold">{{ $title }}</h1>
                 <p class="mt-2 text-muted">{{ $message }}</p>
 
                 @if ($action)
