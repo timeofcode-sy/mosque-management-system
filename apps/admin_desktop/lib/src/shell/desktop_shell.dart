@@ -5,6 +5,7 @@ import '../di/app_scope.dart';
 import '../widgets/institute_menu.dart';
 import '../widgets/sync_bar.dart';
 import 'destinations.dart';
+import 'sidebar_prefs.dart';
 
 /// هيكلُ النافذة: قائمةٌ جانبية دائمة على اليمين، والشاشةُ الجارية إلى جانبها،
 /// وشريطُ المزامنة أسفلَ الاثنين.
@@ -55,6 +56,24 @@ class _DesktopShellState extends State<DesktopShell> {
   /// كما كان، والثمنُ يُدفع لِما يُفتح وحده.
   final Set<String> _visited = {};
 
+  /// طيُّ القائمة بخيار المشرف (يُحفظ). ودون 1024px تُطوى القائمةُ وحدها مهما كان الخيار.
+  bool _collapsed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    SidebarPrefs.loadCollapsed().then((value) {
+      if (mounted && value != _collapsed) {
+        setState(() => _collapsed = value);
+      }
+    });
+  }
+
+  void _toggleSidebar() {
+    setState(() => _collapsed = !_collapsed);
+    SidebarPrefs.saveCollapsed(_collapsed);
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = AppScope.of(context).session;
@@ -70,8 +89,10 @@ class _DesktopShellState extends State<DesktopShell> {
 
     _visited.add(selected);
 
-    // الهوية: القائمةُ الكاملة (264px) من 1024px فما فوق، ودونها شريطُ التنقّل المطويّ (80px).
-    final rail = MediaQuery.sizeOf(context).width < NzBreakpoint.expanded;
+    // الهوية: القائمةُ الكاملة (264px) من 1024px فما فوق، ودونها شريطُ التنقّل المطويّ (80px)؛
+    // وفوقها يطويها المشرفُ بزرّ الطيّ ويوسّعها متى شاء.
+    final narrow = MediaQuery.sizeOf(context).width < NzBreakpoint.expanded;
+    final rail = narrow || _collapsed;
 
     return Scaffold(
       body: Column(
@@ -83,6 +104,7 @@ class _DesktopShellState extends State<DesktopShell> {
                   sections: sections,
                   selectedId: selected,
                   rail: rail,
+                  onToggle: narrow ? null : _toggleSidebar,
                   onSelect: (id) => setState(() => _selectedId = id),
                 ),
                 Expanded(
@@ -130,10 +152,8 @@ class _SectionHost extends StatelessWidget {
   Widget build(BuildContext context) {
     return Navigator(
       key: navigatorKey,
-      onGenerateRoute: (settings) => MaterialPageRoute<void>(
-        settings: settings,
-        builder: section.builder,
-      ),
+      onGenerateRoute: (settings) =>
+          MaterialPageRoute<void>(settings: settings, builder: section.builder),
     );
   }
 }
@@ -146,12 +166,16 @@ class _Sidebar extends StatelessWidget {
     required this.selectedId,
     required this.onSelect,
     required this.rail,
+    required this.onToggle,
   });
 
   final List<DesktopSection> sections;
   final String selectedId;
   final ValueChanged<String> onSelect;
   final bool rail;
+
+  /// `null` حين لا يملك المشرفُ الخيار (النافذةُ ضيّقة فالقائمةُ مطويّةٌ قسراً).
+  final VoidCallback? onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -162,8 +186,11 @@ class _Sidebar extends StatelessWidget {
       groups.putIfAbsent(section.group, () => []).add(section);
     }
 
+    // بلا تحريكٍ للعرض عمداً: المحتوى يتبدّل بين القائمة الكاملة والأيقونات، والتحريكُ يُظهر الاثنين
+    // في عرضٍ وسيط فيفيض أحدُهما. والتبديلُ الفوريّ أوضحُ وأرخص.
     return Container(
       width: rail ? NzSize.railWidth : NzSize.sidenavWidth,
+      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         color: c.surfaceRaised,
         border: BorderDirectional(end: BorderSide(color: c.line)),
@@ -214,9 +241,74 @@ class _Sidebar extends StatelessWidget {
               ],
             ),
           ),
+          if (onToggle != null) _CollapseTile(rail: rail, onTap: onToggle!),
           Divider(height: 1, color: c.line),
           _AccountFooter(rail: rail),
         ],
+      ),
+    );
+  }
+}
+
+/// زرُّ طيّ القائمة وتوسيعها: عنصرٌ في أسفل القائمة بالارتفاع نفسه (40px) وتلميحٍ في الحالتين.
+class _CollapseTile extends StatelessWidget {
+  const _CollapseTile({required this.rail, required this.onTap});
+
+  final bool rail;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.nz;
+    final label = rail ? 'توسيع القائمة' : 'طيّ القائمة';
+    final radius = BorderRadius.circular(NzRadius.sm);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: NzSpace.s3,
+        vertical: NzSpace.s1,
+      ),
+      child: Tooltip(
+        message: label,
+        child: Semantics(
+          button: true,
+          label: label,
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: radius,
+            child: InkWell(
+              borderRadius: radius,
+              hoverColor: c.surfaceSunken,
+              onTap: onTap,
+              child: SizedBox(
+                height: 40,
+                child: Padding(
+                  padding: EdgeInsetsDirectional.symmetric(
+                    horizontal: rail ? 0 : NzSpace.s3,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: rail
+                        ? MainAxisAlignment.center
+                        : MainAxisAlignment.start,
+                    children: [
+                      NzIcon(NzIcons.menu, size: 22, color: c.inkMuted),
+                      if (!rail) ...[
+                        const SizedBox(width: NzSpace.s3),
+                        Text(
+                          label,
+                          style: NzType.label.copyWith(
+                            fontSize: 14,
+                            color: c.inkMuted,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -259,8 +351,9 @@ class _SidebarTile extends StatelessWidget {
                 horizontal: rail ? 0 : NzSpace.s3,
               ),
               child: Row(
-                mainAxisAlignment:
-                    rail ? MainAxisAlignment.center : MainAxisAlignment.start,
+                mainAxisAlignment: rail
+                    ? MainAxisAlignment.center
+                    : MainAxisAlignment.start,
                 children: [
                   NzIcon(section.icon, size: 22, color: fg),
                   if (!rail) ...[
@@ -272,8 +365,9 @@ class _SidebarTile extends StatelessWidget {
                         style: NzType.label.copyWith(
                           fontSize: 14,
                           color: fg,
-                          fontWeight:
-                              selected ? FontWeight.w600 : FontWeight.w500,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w500,
                         ),
                       ),
                     ),
@@ -358,7 +452,8 @@ class _NoDoors extends StatelessWidget {
             children: [
               const EmptyState(
                 icon: NzIcons.lockClosed,
-                message: 'لا تملك صلاحيةً واحدة في هذا المعهد.\n'
+                message:
+                    'لا تملك صلاحيةً واحدة في هذا المعهد.\n'
                     'راجِع مديرَ المعهد ليُسند إليك دوراً.',
               ),
               const SizedBox(height: 12),

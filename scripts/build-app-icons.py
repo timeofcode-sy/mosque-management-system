@@ -2,7 +2,7 @@
 
 Run from the repo root: python scripts/build-app-icons.py
 
-Why the adaptive layers are drawn here and not copied from v3/identity/app-icons: the delivered
+Why the adaptive layers are drawn here and not copied from brand-v3/identity/app-icons: the delivered
 `android-adaptive-*-432.png` files are shifted 60px to the right (the mark's centre sits at x=276 of 432
 and the background has a white 60px strip on the left), so the icon would look off-centre on a device.
 The layers below are rebuilt from `nuzuln_v3_logo_transparent_2048.png` with the mark centred.
@@ -12,7 +12,7 @@ import pathlib
 from PIL import Image, ImageChops, ImageDraw
 
 ROOT = pathlib.Path('.')
-V3 = ROOT / 'v3'
+V3 = ROOT / 'brand-v3'
 NIGHT = (10, 36, 31)
 GROUND_LIGHT = (27, 60, 53)
 LOGO = Image.open(V3 / 'nuzuln_v3_logo_transparent_2048.png').convert('RGBA')

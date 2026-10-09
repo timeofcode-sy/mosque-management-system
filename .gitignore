@@ -48,3 +48,7 @@ firebase-credentials.json
 
 # مخرجاتُ scripts/export-apps.ps1
 dist/
+
+# Brand identity source delivered by the designer (videos, mock-ups, reference images: 24MB).
+# Generated outputs are committed; scripts/build-*.mjs|py read from it.
+/brand-v3/

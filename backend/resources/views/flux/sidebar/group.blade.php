@@ -30,8 +30,9 @@
         </div>
     </ui-disclosure>
 <?php elseif ($heading): ?>
-    <div {{ $attributes->class('flex flex-col in-data-flux-sidebar-collapsed-desktop:hidden') }} data-flux-sidebar-group>
-        <div class="px-3 pt-4 pb-1">
+    {{-- مطويّةً: يختفي العنوان وتبقى الأيقونات، ويفصل بين المجموعات خطٌّ رفيع. --}}
+    <div {{ $attributes->class('flex flex-col in-data-flux-sidebar-collapsed-desktop:mt-2 in-data-flux-sidebar-collapsed-desktop:border-t in-data-flux-sidebar-collapsed-desktop:border-line in-data-flux-sidebar-collapsed-desktop:pt-2 in-data-flux-sidebar-collapsed-desktop:first:mt-0 in-data-flux-sidebar-collapsed-desktop:first:border-t-0 in-data-flux-sidebar-collapsed-desktop:first:pt-0') }} data-flux-sidebar-group>
+        <div class="px-3 pt-4 pb-1 in-data-flux-sidebar-collapsed-desktop:hidden">
             <div class="text-xs font-semibold leading-[18px] text-muted">{{ $heading }}</div>
         </div>
 
@@ -40,7 +41,7 @@
         </div>
     </div>
 <?php else: ?>
-    <div {{ $attributes->class('flex flex-col in-data-flux-sidebar-collapsed-desktop:hidden') }} data-flux-sidebar-group>
+    <div {{ $attributes->class('flex flex-col') }} data-flux-sidebar-group>
         {{ $slot }}
     </div>
 <?php endif; ?>

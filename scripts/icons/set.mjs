@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs';
 
 const v3 = (name) => {
-  const svg = readFileSync(`v3/identity/icons/icon-${name}.svg`, 'utf8');
+  const svg = readFileSync(`brand-v3/identity/icons/icon-${name}.svg`, 'utf8');
   const inner = svg.replace(/<svg[^>]*>/, '').replace(/<\/svg>/, '').replace(/<title>[^<]*<\/title>/, '');
   const paths = [];
   const solid = [];

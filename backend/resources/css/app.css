@@ -12,7 +12,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /**
- * هوية «نزلاً» الإصدار الثالث (v3/identity).
+ * هوية «نزلاً» الإصدار الثالث (brand-v3/identity).
  *
  * الألوان في nuzul-tokens.css مولَّدةً من tokens.json: متغيّراتٌ تنقلب بين الفاتح (`:root`)
  * والليلي (`.dark`) وحدها، فلا يحتاج الصنفُ إلى زوج `dark:`. هنا نعرّف أسماءها لـ Tailwind

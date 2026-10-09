@@ -13,13 +13,21 @@
             روابطَ تؤدّي به إلى 403، فتصير الأدوار عقوبةً مفاجئة بدل أن تكون شكلاً
             للوحة يفهمه من نظرة.
         --}}
-        <flux:sidebar sticky collapsible="mobile" class="w-[264px] border-e border-line bg-raised" aria-label="التنقّل الرئيسي">
-            <flux:sidebar.header>
+        <flux:sidebar sticky collapsible class="w-[264px] border-e border-line bg-raised transition-[width] duration-200 data-flux-sidebar-collapsed-desktop:w-20 motion-reduce:transition-none" aria-label="التنقّل الرئيسي">
+            {{--
+                طيّ القائمة وتوسيعها أفقياً: على الحاسوب تنكمش من 264px إلى شريطٍ بعرض 80px أيقوناتُه وحدها (مع تلميحٍ باسم كل
+                بند)، وعلى الجوال تُغلق. الحالةُ يحفظها Flux في المتصفّح فتبقى كما تركها المستخدم.
+            --}}
+            <flux:sidebar.header class="shrink-0 in-data-flux-sidebar-collapsed-desktop:flex-col in-data-flux-sidebar-collapsed-desktop:gap-2">
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
-                <flux:sidebar.collapse class="lg:hidden" aria-label="إغلاق القائمة" />
+                <flux:sidebar.collapse
+                    class="in-data-flux-sidebar-collapsed-desktop:static! in-data-flux-sidebar-collapsed-desktop:opacity-100!"
+                    :tooltip="'طيّ القائمة أو توسيعها'"
+                    aria-label="طيّ القائمة أو توسيعها"
+                />
             </flux:sidebar.header>
 
-            <div class="px-2 pb-2">
+            <div class="px-2 pb-2 in-data-flux-sidebar-collapsed-desktop:hidden">
                 <livewire:institute-switcher />
             </div>
 

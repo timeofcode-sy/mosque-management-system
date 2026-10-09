@@ -141,6 +141,34 @@ void main() {
     await settle(tester);
   });
 
+  testWidgets('the sidebar collapses to a rail and expands back, keeping the doors',
+      (tester) async {
+    await boot(SeededRoles.supervisor);
+    await pumpShell(tester);
+
+    double width() => tester.getSize(find.byType(DesktopShell).first).width;
+    Finder tile(String label) => find.byTooltip(label);
+
+    // مفتوحةً: العناوين مكتوبة وزرُّ الطيّ يعرض فعلَه.
+    expect(find.text('التفقّد'), findsOneWidget);
+    expect(tile('طيّ القائمة'), findsOneWidget);
+    expect(width(), 1440);
+
+    await tester.tap(tile('طيّ القائمة'));
+    await tester.pump();
+
+    // مطويّةً: الأيقوناتُ وحدها، وتبقى الأبوابُ بتلميحها ولا يضيع منها شيء.
+    expect(find.text('التفقّد'), findsNothing);
+    expect(tile('التفقّد'), findsWidgets);
+    expect(tile('توسيع القائمة'), findsOneWidget);
+
+    await tester.tap(tile('توسيع القائمة'));
+    await tester.pump();
+
+    expect(find.text('التفقّد'), findsOneWidget);
+    await settle(tester);
+  });
+
   testWidgets('the institute admin gets the institute doors, minus institutes',
       (tester) async {
     await boot(SeededRoles.admin);

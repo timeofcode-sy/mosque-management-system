@@ -13,9 +13,9 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/manifest.webmanifest">
 
-{{-- الخطوط محلية (public/fonts): نسبقُ تحميل الاثنين الأكثر استعمالاً فلا يومض النص ببديلٍ عند أول رسم. --}}
-<link rel="preload" href="/fonts/IBMPlexSansArabic-Regular.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/fonts/IBMPlexSansArabic-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
+{{-- الخطوط محلية (resources/fonts، تُبنى بتجزئةٍ في الاسم): نسبقُ تحميل الاثنين الأكثر استعمالاً فلا يومض النص ببديلٍ عند أول رسم. --}}
+<link rel="preload" href="{{ Vite::asset('resources/fonts/IBMPlexSansArabic-Regular.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="{{ Vite::asset('resources/fonts/IBMPlexSansArabic-SemiBold.woff2') }}" as="font" type="font/woff2" crossorigin>
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 

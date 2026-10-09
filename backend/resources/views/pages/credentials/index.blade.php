@@ -218,7 +218,7 @@ new #[Title('بيانات الدخول')] class extends Component {
                             <flux:table.cell>
                                 @can('credentials.manage')
                                     <flux:button
-                                        wire:click="openPasswordForm({{ $row['id'] }}, @js($row['name']))"
+                                        wire:click="openPasswordForm({{ $row['id'] }}, {{ \Illuminate\Support\Js::from($row['name']) }})"
                                         size="sm"
                                         variant="subtle"
                                         icon="key"

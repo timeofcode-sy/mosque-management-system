@@ -19,7 +19,7 @@
 <a {{ $attributes->class('flex min-w-0 items-center gap-3 rounded-sm py-1 text-ink') }} data-flux-sidebar-brand>
     <x-app-logo-icon :small="true" class="size-11" :alt="config('app.name')" />
 
-    <span class="flex min-w-0 items-center gap-2">
+    <span class="flex min-w-0 items-center gap-2 in-data-flux-sidebar-collapsed-desktop:hidden">
         @if ($institute?->logo_path)
             <img src="{{ Storage::url($institute->logo_path) }}" alt="" class="size-7 shrink-0 rounded-sm object-contain" />
         @endif
