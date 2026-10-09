@@ -2,7 +2,16 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import 'report_brand.dart';
 import 'report_fonts.dart';
+
+// ألوانُ الهوية v3 للورق (tokens.json): الحبر والنحاس وسطوح الضباب والحدّ.
+const _ink = PdfColor.fromInt(0xFF0E2420);
+const _inkMuted = PdfColor.fromInt(0xFF4D605A);
+const _bronze = PdfColor.fromInt(0xFFD6BC9C);
+const _mist = PdfColor.fromInt(0xFFF3F5F2);
+const _sunken = PdfColor.fromInt(0xFFE6ECE7);
+const _line = PdfColor.fromInt(0xFFC9D3CC);
 
 /// بناءُ مستندَي التقرير — ✅ م.6.6، **من الجهاز لا من الخادم**.
 ///
@@ -41,6 +50,7 @@ class ReportDocuments {
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
             _header(
+              display: fonts.display,
               instituteName: instituteName,
               title: 'تقريرُ التفقّد اليومي',
               subtitle: '${report.circleName} · ${report.shiftName}'
@@ -94,6 +104,7 @@ class ReportDocuments {
         textDirection: pw.TextDirection.rtl,
         build: (context) => [
           _header(
+            display: fonts.display,
             instituteName: instituteName,
             title: 'تقريرُ النقاط',
             subtitle: '${report.circleName} · ${report.shiftName}',
@@ -101,8 +112,9 @@ class ReportDocuments {
           ),
           pw.SizedBox(height: 12),
           pw.TableHelper.fromTextArray(
-            headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
-            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+            headerDecoration: const pw.BoxDecoration(color: _sunken),
+      border: pw.TableBorder.all(color: _line, width: 0.5),
+            headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: _inkMuted),
             cellStyle: const pw.TextStyle(fontSize: 10),
             cellAlignment: pw.Alignment.center,
             headers: const [
@@ -140,7 +152,7 @@ class ReportDocuments {
           pw.Text(
             'نقاطُ التسميع والمناهج كما حسبها الخادم؛ ونقاطُ الحضور محسوبةٌ بقيم '
             'المعهد. وتسميعٌ لم يصل الخادمَ بعد لا نقاطَ له حتى تكتمل المزامنة.',
-            style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+            style: const pw.TextStyle(fontSize: 8, color: _inkMuted),
           ),
           pw.SizedBox(height: 12),
           _footer(),
@@ -153,7 +165,10 @@ class ReportDocuments {
 
   // ------------------------------------------------------------ القطع
 
+  /// الورق الرسمي (`letterhead-a4` في الهوية): العلامةُ يمينَ الرأس واسمُ المعهد والتاريخ، ثم خطٌّ نحاسيّ،
+  /// ثم عنوانُ التقرير بالكوفي (Reem Kufi للعناوين فقط).
   static pw.Widget _header({
+    required pw.Font display,
     required String instituteName,
     required String title,
     required String subtitle,
@@ -164,21 +179,31 @@ class ReportDocuments {
       children: [
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
           children: [
-            pw.Text(
-              instituteName,
-              style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+            pw.Row(
+              children: [
+                pw.SvgImage(svg: reportMarkSvg, height: 44),
+                pw.SizedBox(width: 10),
+                pw.Text(
+                  instituteName,
+                  style: pw.TextStyle(
+                    fontSize: 14,
+                    fontWeight: pw.FontWeight.bold,
+                    color: _ink,
+                  ),
+                ),
+              ],
             ),
-            pw.Text(date, style: const pw.TextStyle(fontSize: 11)),
+            pw.Text(date, style: const pw.TextStyle(fontSize: 11, color: _inkMuted)),
           ],
         ),
-        pw.SizedBox(height: 4),
-        pw.Text(title, style: const pw.TextStyle(fontSize: 13)),
-        pw.Text(
-          subtitle,
-          style: const pw.TextStyle(fontSize: 11, color: PdfColors.grey700),
-        ),
-        pw.Divider(),
+        pw.SizedBox(height: 8),
+        pw.Container(height: 1.5, color: _bronze),
+        pw.SizedBox(height: 10),
+        pw.Text(title, style: pw.TextStyle(font: display, fontSize: 20, color: _ink)),
+        pw.Text(subtitle, style: const pw.TextStyle(fontSize: 11, color: _inkMuted)),
+        pw.SizedBox(height: 6),
       ],
     );
   }
@@ -199,8 +224,9 @@ class ReportDocuments {
 
   static pw.Widget _countsTable(StatusBreakdown breakdown) {
     return pw.TableHelper.fromTextArray(
-      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10),
+      headerDecoration: const pw.BoxDecoration(color: _sunken),
+      border: pw.TableBorder.all(color: _line, width: 0.5),
+      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: _inkMuted),
       cellStyle: const pw.TextStyle(fontSize: 10),
       cellAlignment: pw.Alignment.center,
       headers: const ['حاضر', 'متأخّر', 'غائب', 'مأذون', 'المجموع'],
@@ -236,9 +262,20 @@ class ReportDocuments {
     );
   }
 
-  static pw.Widget _footer() => pw.Text(
-    'طُبع من تطبيق المشرف — mousqe',
-    style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+  /// تذييلُ الورق: شريطٌ بلون الضباب تحت خطٍّ نحاسيّ، باسم النظام ونطاقه.
+  static pw.Widget _footer() => pw.Container(
+    padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+    decoration: const pw.BoxDecoration(
+      color: _mist,
+      border: pw.Border(top: pw.BorderSide(color: _bronze, width: 1.5)),
+    ),
+    child: pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      children: [
+        pw.Text('نزلاً · نظام إدارة الحلقات في المساجد والمعاهد', style: const pw.TextStyle(fontSize: 8, color: _inkMuted)),
+        pw.Text('nuzuln.com', style: const pw.TextStyle(fontSize: 8, color: _inkMuted), textDirection: pw.TextDirection.ltr),
+      ],
+    ),
   );
 
   static String _sessionLabel(String? status) => switch (status) {
