@@ -16,6 +16,33 @@
     default. The user can switch between nuzuln.com and a local server at any time
     by tapping the logo three times on the splash screen.
 
+    Every export is a new version of the whole system, recorded in VERSION.md:
+    the script reads the last versions there, computes the next one, builds all
+    apps with it, and only if every build succeeded adds the entry at the top of
+    its section (Release or Beta). A failed export records nothing.
+
+.PARAMETER Channel
+    beta (default) or release.
+      beta    : X.Y.Z-beta.N. Continues the open beta (beta.1 -> beta.2), or opens
+                a new one on the next version (see -Bump) after a release.
+      release : X.Y.Z. Takes the number of the open beta (1.1.0-beta.3 -> 1.1.0),
+                or bumps the last release (see -Bump) when there is no beta.
+    The build number is one counter for both channels and always goes up.
+    A release refuses to run on uncommitted changes.
+
+.PARAMETER Bump
+    minor (default), major or patch: how the version moves when a new number is
+    needed. A hotfix straight to release: -Channel release -Bump patch
+
+.PARAMETER Notes
+    Highlights of this version, one per item. When omitted, they are taken from
+    the feat/fix/perf commit subjects since the previous version. From cmd or
+    "pwsh -File", separate items with ';'.
+
+.PARAMETER DryRun
+    Print the next version, build number and notes, then stop: nothing is built
+    and VERSION.md is not touched.
+
 .PARAMETER Only
     Build only these apps (teacher, admin_desktop, guardian, student), e.g.
     -Only teacher,admin_desktop
@@ -37,7 +64,13 @@
     Do not run "flutter test" in each app before building.
 
 .EXAMPLE
-    .\scripts\export-apps.ps1
+    .\scripts\export-apps.ps1 -DryRun
+
+.EXAMPLE
+    .\scripts\export-apps.ps1 -Notes 'first note','second note'
+
+.EXAMPLE
+    .\scripts\export-apps.ps1 -Channel release
 
 .EXAMPLE
     .\scripts\export-apps.ps1 -Only teacher -BaseUrl http://192.168.1.10:8000/api/v1
@@ -45,6 +78,16 @@
 [CmdletBinding()]
 param(
     [string[]]$Only,
+
+    [ValidateSet('beta', 'release')]
+    [string]$Channel = 'beta',
+
+    [ValidateSet('major', 'minor', 'patch')]
+    [string]$Bump = 'minor',
+
+    [string[]]$Notes,
+
+    [switch]$DryRun,
 
     [string]$BaseUrl = 'https://nuzuln.com/api/v1',
 
@@ -60,6 +103,7 @@ $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
 if (-not $OutDir) { $OutDir = Join-Path $root 'dist' }
+$versionFile = Join-Path $root 'VERSION.md'
 
 $apps = @(
     @{ Name = 'teacher';       Dir = 'apps/teacher';       Kind = 'apk' },
@@ -85,21 +129,124 @@ function Invoke-Native([string]$what, [scriptblock]$command) {
     if ($LASTEXITCODE -ne 0) { throw "$what failed (exit code $LASTEXITCODE)" }
 }
 
-function Get-AppVersion([string]$appDir) {
-    $line = Select-String -Path (Join-Path $appDir 'pubspec.yaml') -Pattern '^version:\s*(\S+)' |
-        Select-Object -First 1
-    if (-not $line) { return '0.0.0' }
-    return ($line.Matches[0].Groups[1].Value -replace '\+', '-b')
+# --- VERSION.md -------------------------------------------------------------
+# Read and written as UTF-8 explicitly: Windows PowerShell 5.1 would otherwise
+# read the Arabic text as ANSI. This script stays ASCII-only for the same reason.
+
+$entryPattern = '(?m)^### (\d+)\.(\d+)\.(\d+)(?:-beta\.(\d+))? - build (\d+) - \S+\s*\r?\n\s*\r?\nCommit `([0-9a-f]+)`'
+
+function Read-Versions([string]$text) {
+    foreach ($m in [regex]::Matches($text, $entryPattern)) {
+        $g = $m.Groups
+        [pscustomobject]@{
+            Base   = [version]"$($g[1].Value).$($g[2].Value).$($g[3].Value)"
+            Beta   = if ($g[4].Success) { [int]$g[4].Value } else { $null }
+            Build  = [int]$g[5].Value
+            Commit = $g[6].Value
+        }
+    }
 }
+
+function Step-Version([version]$v, [string]$how) {
+    switch ($how) {
+        'major' { return [version]"$($v.Major + 1).0.0" }
+        'minor' { return [version]"$($v.Major).$($v.Minor + 1).0" }
+        default { return [version]"$($v.Major).$($v.Minor).$($v.Build + 1)" }
+    }
+}
+
+# The next version of the system, from what VERSION.md says shipped already.
+function Get-NextVersion($entries, [string]$channel, [string]$bump) {
+    $releases = @($entries | Where-Object { $null -eq $_.Beta } | Sort-Object Base)
+    $betas = @($entries | Where-Object { $null -ne $_.Beta } | Sort-Object Base, Beta)
+
+    $lastRelease = if ($releases.Count) { $releases[-1].Base } else { [version]'0.0.0' }
+    $lastBeta = if ($betas.Count) { $betas[-1] } else { $null }
+    # A beta is open while no release has taken its number yet.
+    $openBeta = $lastBeta -and $lastBeta.Base -gt $lastRelease
+
+    if ($channel -eq 'release') {
+        $base = if ($openBeta) { $lastBeta.Base } else { Step-Version $lastRelease $bump }
+        $label = "$base"
+    }
+    else {
+        if ($openBeta) { $base = $lastBeta.Base; $n = $lastBeta.Beta + 1 }
+        else { $base = Step-Version $lastRelease $bump; $n = 1 }
+        $label = "$base-beta.$n"
+    }
+
+    $build = 1
+    if (@($entries).Count) { $build = (@($entries) | Measure-Object -Property Build -Maximum).Maximum + 1 }
+
+    [pscustomobject]@{ Base = "$base"; Label = $label; Build = [int]$build }
+}
+
+# Highlights: the -Notes given, or the feat/fix/perf subjects since the last version.
+function Get-ReleaseNotes($given, $entries) {
+    $items = @($given | ForEach-Object { $_ -split ';' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    if ($items.Count) { return $items }
+
+    $last = @($entries | Sort-Object Build)
+    $range = 'HEAD'
+    if ($last.Count) { $range = "$($last[-1].Commit)..HEAD" }
+
+    $subjects = @(git -C $root log --no-merges --format=%s $range 2>$null)
+    $prefix = '^(feat|fix|perf)(\([^)]*\))?!?: '
+    $items = @($subjects | Where-Object { $_ -match $prefix } | ForEach-Object { $_ -replace $prefix, '' })
+    if ($items.Count) { return $items }
+    return @('(no highlights recorded)')
+}
+
+function Add-VersionEntry([string]$path, [string]$channel, [string[]]$lines) {
+    $text = [IO.File]::ReadAllText($path, [Text.Encoding]::UTF8)
+    $nl = if ($text.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $all = New-Object System.Collections.Generic.List[string]
+    $all.AddRange([string[]]($text -split '\r?\n'))
+
+    $marker = "<!-- $channel-entries -->"
+    $at = $all.IndexOf($marker)
+    if ($at -lt 0) { throw "VERSION.md has no '$marker' line." }
+
+    # The "nothing yet" line of this section goes once it has an entry.
+    for ($i = $at + 1; $i -lt $all.Count -and -not $all[$i].StartsWith('## '); $i++) {
+        if ($all[$i].EndsWith('<!-- placeholder -->')) { $all.RemoveAt($i); break }
+    }
+
+    $all.InsertRange($at + 1, [string[]](@('') + $lines))
+    [IO.File]::WriteAllText($path, ($all -join $nl), (New-Object Text.UTF8Encoding($false)))
+}
+
+if (-not (Test-Path $versionFile)) { throw "VERSION.md not found at $versionFile" }
+
+$entries = @(Read-Versions ([IO.File]::ReadAllText($versionFile, [Text.Encoding]::UTF8)))
+$next = Get-NextVersion $entries $Channel $Bump
+$notes = @(Get-ReleaseNotes $Notes $entries)
+
+# A version names a commit: a release must be exactly one, a beta may say it is not.
+$commit = (git -C $root rev-parse --short HEAD).Trim()
+$dirty = @(git -C $root status --porcelain -- . ':(exclude)VERSION.md')
+$commitLine = "Commit ``$commit``"
+if ($dirty.Count) {
+    if ($Channel -eq 'release' -and -not $DryRun) {
+        throw 'A release is built from a commit: commit or stash the changes first (git status).'
+    }
+    Write-Host 'WARNING: uncommitted changes - this version is not exactly any commit.' -ForegroundColor Yellow
+    $commitLine += ' (+ uncommitted changes)'
+}
+
+Write-Host "Version                    : $($next.Label) (build $($next.Build), $Channel)"
+Write-Host "Server baked in as default : $BaseUrl"
+Write-Host "Output folder              : $OutDir"
+Write-Host 'Highlights                 :'
+$notes | ForEach-Object { Write-Host "  - $_" }
+
+if ($DryRun) { Write-Host "`nDry run: nothing built, VERSION.md untouched."; exit 0 }
 
 if (-not (Get-Command flutter -ErrorAction SilentlyContinue)) {
     throw 'flutter was not found on PATH. Install Flutter or open a terminal where it works.'
 }
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
-
-Write-Host "Server baked in as default : $BaseUrl"
-Write-Host "Output folder              : $OutDir"
 
 if (-not $SkipPubGet) {
     Write-Step 'flutter pub get (workspace root)'
@@ -122,10 +269,18 @@ foreach ($app in $apps) {
     Write-Step "$name ($($app.Kind))"
 
     try {
-        $version = Get-AppVersion $dir
+        $stem = "nuzuln-$($name -replace '_', '-')-$($next.Label)-b$($next.Build)"
         $pub = @()
         if ($SkipPubGet) { $pub = @('--no-pub') }
-        $buildArgs = @('--release', "--dart-define=MOUSQE_API_BASE_URL=$BaseUrl") + $pub
+        # Windows version resources take numbers only, so the exe carries X.Y.Z;
+        # Android's versionName is free text and carries the beta label.
+        $buildName = if ($app.Kind -eq 'apk') { $next.Label } else { $next.Base }
+        $buildArgs = @(
+            '--release',
+            "--dart-define=MOUSQE_API_BASE_URL=$BaseUrl",
+            "--build-name=$buildName",
+            "--build-number=$($next.Build)"
+        ) + $pub
 
         Push-Location $dir
         try {
@@ -137,13 +292,13 @@ foreach ($app in $apps) {
             if ($app.Kind -eq 'apk') {
                 Invoke-Native "$name apk build" { flutter build apk @buildArgs }
                 $built = Join-Path $dir 'build/app/outputs/flutter-apk/app-release.apk'
-                $target = Join-Path $OutDir "nuzuln-$($name -replace '_', '-')-$version.apk"
+                $target = Join-Path $OutDir "$stem.apk"
                 Copy-Item -Force $built $target
             }
             else {
                 Invoke-Native "$name windows build" { flutter build windows @buildArgs }
                 $built = Join-Path $dir 'build/windows/x64/runner/Release'
-                $target = Join-Path $OutDir "nuzuln-$($name -replace '_', '-')-$version-windows.zip"
+                $target = Join-Path $OutDir "$stem-windows.zip"
                 if (Test-Path $target) { Remove-Item -Force $target }
                 Compress-Archive -Path (Join-Path $built '*') -DestinationPath $target
             }
@@ -162,4 +317,22 @@ foreach ($app in $apps) {
 Write-Step 'Summary'
 $results | Format-Table -AutoSize -Wrap | Out-String | Write-Host
 
-if (@($results | Where-Object { $_.Status -eq 'FAILED' }).Count -gt 0) { exit 1 }
+$failed = @($results | Where-Object { $_.Status -eq 'FAILED' })
+$built = @($results | Where-Object { $_.Status -eq 'ok' })
+
+if ($failed.Count -gt 0) {
+    Write-Host "VERSION.md not updated: $($next.Label) did not ship." -ForegroundColor Red
+    exit 1
+}
+
+if ($built.Count -gt 0) {
+    $entry = @(
+        "### $($next.Label) - build $($next.Build) - $(Get-Date -Format 'yyyy-MM-dd')",
+        '',
+        "$commitLine - apps: $(($built | ForEach-Object { $_.App }) -join ', ')",
+        ''
+    ) + @($notes | ForEach-Object { "- $_" })
+
+    Add-VersionEntry $versionFile $Channel $entry
+    Write-Host "VERSION.md: $($next.Label) (build $($next.Build)) added under $Channel - commit it." -ForegroundColor Green
+}
