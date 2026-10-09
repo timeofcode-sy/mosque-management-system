@@ -100,5 +100,20 @@
     "or, enter the code manually": "أو أدخل الرمز يدويًا",
     "Welcome": "مرحبًا",
     "Dashboard": "لوحة المعلومات",
-    "Search": "بحث"
+    "Search": "بحث",
+    "Character {current} of {total}": "الحرف {current} من {total}",
+    "Choose file": "اختر ملفًا",
+    "Choose files": "اختر ملفات",
+    "Clear input": "مسح الحقل",
+    "Close modal": "إغلاق النافذة",
+    "Copy to clipboard": "نسخ",
+    "No file chosen": "لم يُختر ملف",
+    "Search...": "بحث…",
+    "Showing": "عرض",
+    "Toggle password visibility": "إظهار كلمة المرور أو إخفاؤها",
+    "Toggle sidebar": "فتح القائمة أو إغلاقها",
+    "files": "ملفات",
+    "of": "من",
+    "results": "نتيجة",
+    "to": "إلى"
 }
