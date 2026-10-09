@@ -3,16 +3,20 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-sand-50 dark:bg-zinc-800">
+    <body class="min-h-screen bg-surface text-ink antialiased">
+        <a href="#main-content" class="sr-only z-50 rounded-sm bg-primary px-4 py-2 text-on-primary focus:not-sr-only focus:fixed focus:start-4 focus:top-4">
+            تخطَّ إلى المحتوى
+        </a>
+
         {{--
             عناصر القائمة مغلَّفة بـ @can لا لتزيين الواجهة: بدونها يرى المستخدمُ
             روابطَ تؤدّي به إلى 403، فتصير الأدوار عقوبةً مفاجئة بدل أن تكون شكلاً
             للوحة يفهمه من نظرة.
         --}}
-        <flux:sidebar sticky collapsible="mobile" class="border-e border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+        <flux:sidebar sticky collapsible="mobile" class="w-[264px] border-e border-line bg-raised" aria-label="التنقّل الرئيسي">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
-                <flux:sidebar.collapse class="lg:hidden" />
+                <flux:sidebar.collapse class="lg:hidden" aria-label="إغلاق القائمة" />
             </flux:sidebar.header>
 
             <div class="px-2 pb-2">
@@ -117,7 +121,7 @@
                         @endcan
 
                         @can('users.manage')
-                            <flux:sidebar.item icon="user-group" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>
+                            <flux:sidebar.item icon="shield-check" :href="route('users.index')" :current="request()->routeIs('users.*')" wire:navigate>
                                 المستخدمون
                             </flux:sidebar.item>
                         @endcan
@@ -126,7 +130,7 @@
 
                 @can('settings.manage')
                     <flux:sidebar.group heading="الإعدادات" class="grid">
-                        <flux:sidebar.item icon="building-library" :href="route('institute.edit')" :current="request()->routeIs('institute.*')" wire:navigate>
+                        <flux:sidebar.item icon="identification" :href="route('institute.edit')" :current="request()->routeIs('institute.*')" wire:navigate>
                             بيانات المعهد
                         </flux:sidebar.item>
                         <flux:sidebar.item icon="adjustments-horizontal" :href="route('custom-fields.index')" :current="request()->routeIs('custom-fields.*')" wire:navigate>
@@ -163,34 +167,35 @@
             <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
         </flux:sidebar>
 
-        <!-- قائمة المستخدم على الجوال -->
-        <flux:header class="lg:hidden">
-            <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
+        {{--
+            AppBar للجوال واللوحي (أقل من 1024px): ارتفاع 64px ثابت في الأعلى، زر القائمة بمساحة لمس 48px،
+            علامة نزلاً المصغّرة واسم المعهد، ثم قائمة المستخدم. على الحاسوب يحلّ محلّه الشريط الجانبي.
+        --}}
+        <flux:header class="sticky top-0 z-10 h-16 gap-2 border-b border-line bg-raised px-2 lg:hidden sm:px-4">
+            <flux:sidebar.toggle class="size-12" icon="bars-2" aria-label="فتح القائمة" />
 
-            <flux:spacer />
+            <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate class="min-w-0 flex-1" />
 
-            <flux:dropdown position="top" align="end">
+            <flux:dropdown position="bottom" align="end">
                 <flux:profile
+                    class="min-h-12"
                     :initials="auth()->user()->initials()"
                     icon-trailing="chevron-down"
+                    aria-label="قائمة المستخدم"
                 />
 
                 <flux:menu>
-                    <flux:menu.radio.group>
-                        <div class="p-0 text-sm font-normal">
-                            <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                                <flux:avatar
-                                    :name="auth()->user()->name"
-                                    :initials="auth()->user()->initials()"
-                                />
+                    <div class="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
+                        <flux:avatar
+                            :name="auth()->user()->name"
+                            :initials="auth()->user()->initials()"
+                        />
 
-                                <div class="grid flex-1 text-start text-sm leading-tight">
-                                    <flux:heading class="truncate">{{ auth()->user()->name }}</flux:heading>
-                                    <flux:text class="truncate">{{ auth()->user()->email }}</flux:text>
-                                </div>
-                            </div>
+                        <div class="grid flex-1 text-start text-sm leading-tight">
+                            <flux:heading class="truncate">{{ auth()->user()->name }}</flux:heading>
+                            <flux:text class="truncate">{{ auth()->user()->email }}</flux:text>
                         </div>
-                    </flux:menu.radio.group>
+                    </div>
 
                     <flux:menu.separator />
 

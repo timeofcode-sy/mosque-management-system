@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 @import '../../vendor/livewire/flux/dist/flux.css';
+@import './nuzul-tokens.css';
+@import './nuzul-fonts.css';
+@import './nuzul-kit.css';
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -9,91 +12,193 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /**
- * توكنات الهوية البصرية — مولَّدة يدوياً من design/design-tokens.json.
- * أي تعديل على اللوحة يبدأ من ذلك الملف ثم يُنسخ إلى هنا وإلى mousqe_ui.
+ * هوية «نزلاً» الإصدار الثالث (v3/identity).
+ *
+ * الألوان في nuzul-tokens.css مولَّدةً من tokens.json: متغيّراتٌ تنقلب بين الفاتح (`:root`)
+ * والليلي (`.dark`) وحدها، فلا يحتاج الصنفُ إلى زوج `dark:`. هنا نعرّف أسماءها لـ Tailwind
+ * (bg-surface · text-muted · border-line ...) ونربط بها Flux.
+ *
+ * القاعدة: لا ألوان حرفية في الصفحات، بل هذه الأسماء. والأرقام لاتينية (0–9) في كل النظام.
  */
-@theme {
-    --font-sans: 'IBM Plex Sans Arabic', 'Tajawal', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji';
-    --font-display: 'Reem Kufi', 'Noto Kufi Arabic', 'IBM Plex Sans Arabic', sans-serif;
+@theme inline {
+    --font-sans: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, system-ui, sans-serif;
+    --font-display: 'Reem Kufi', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+    --font-quote: Amiri, 'Traditional Arabic', 'Times New Roman', serif;
 
-    --color-brand-50: #e8f2ed;
-    --color-brand-100: #c6e0d4;
-    --color-brand-200: #9ccab6;
-    --color-brand-300: #6db295;
-    --color-brand-400: #419a7a;
-    --color-brand-500: #177f5c;
-    --color-brand-600: #0f5132;
-    --color-brand-700: #0c4128;
-    --color-brand-800: #08301e;
-    --color-brand-900: #052014;
+    --color-surface: var(--surface);
+    --color-raised: var(--surface-raised);
+    --color-sunken: var(--surface-sunken);
+    --color-line: var(--line);
+    --color-ink: var(--ink);
+    --color-muted: var(--ink-muted);
+    --color-primary: var(--primary);
+    --color-on-primary: var(--on-primary);
+    --color-primary-hover: var(--primary-hover);
+    --color-bronze-ink: var(--bronze-ink);
+    --color-bronze-soft: var(--bronze-soft);
+    --color-success: var(--success);
+    --color-success-soft: var(--success-soft);
+    --color-warning: var(--warning);
+    --color-warning-soft: var(--warning-soft);
+    --color-danger: var(--danger);
+    --color-danger-soft: var(--danger-soft);
+    --color-info: var(--info);
+    --color-info-soft: var(--info-soft);
+    --color-progress-current: var(--progress-current);
+    --color-tag-bg: var(--tag-bg);
+    --color-tag-ink: var(--tag-ink);
+    --color-focus: var(--focus);
+    --color-night: var(--night);
+    --color-night-raised: var(--night-raised);
+    --color-night-line: var(--night-line);
+    --color-bronze: var(--bronze);
+    --color-star: var(--star);
+    --color-mist: var(--mist);
 
-    --color-gold-300: #e4ce7f;
-    --color-gold-400: #d6ba53;
-    --color-gold-500: #c9a227;
-    --color-gold-600: #a5841f;
-    --color-gold-700: #7c6317;
+    /* حالات التفقّد — أزواج الهوية الثابتة (حاضر/متأخر/مستأذن/غائب). */
+    --color-present: var(--success);
+    --color-late: var(--warning);
+    --color-excused: var(--info);
+    --color-absent: var(--danger);
 
-    --color-sand-50: #fdfbf6;
-    --color-sand-100: #f7f3ea;
-    --color-sand-200: #ede5d4;
-    --color-sand-300: #ded2b8;
+    /*
+     * سلّم الرمادي (zinc) يستعمله Flux من الداخل: نعيد رسمه من رموز الهوية فيبقى كل مكوّنٍ في
+     * Flux على أرضيّةٍ خضراء مائلة لا رماديةٍ باردة. 50–200 أسطحٌ وحدودٌ فاتحة، و500 هو
+     * ink-muted، و700–950 طبقات الليل (line · raised · night · sunken).
+     */
+    --color-zinc-50: #f3f5f2;
+    --color-zinc-100: #e6ece7;
+    --color-zinc-200: #c9d3cc;
+    --color-zinc-300: #a8bbb2;
+    --color-zinc-400: #7d928a;
+    --color-zinc-500: #4d605a;
+    --color-zinc-600: #3a4f48;
+    --color-zinc-700: #2c5649;
+    --color-zinc-800: #12352e;
+    --color-zinc-900: #0a241f;
+    --color-zinc-950: #071a16;
 
-    --color-ink-500: #4a4844;
-    --color-ink-700: #2e2c29;
-    --color-ink-900: #1c1b19;
+    /* الفعل الرئيسي في Flux (الأزرار المعبّأة، العناصر المحدَّدة). */
+    --color-accent: var(--primary);
+    --color-accent-content: var(--primary);
+    --color-accent-foreground: var(--on-primary);
 
-    --color-present: #177f5c;
-    --color-absent: #b42318;
-    --color-late: #c9a227;
-    --color-excused: #2563eb;
+    /* الزوايا حادّة: 3px للتحكّمات و6px للبطاقات (radius-sm / radius-md في الهوية). */
+    --radius-xs: 2px;
+    --radius-sm: 3px;
+    --radius-md: 3px;
+    --radius-lg: 3px;
+    --radius-xl: 6px;
+    --radius-2xl: 6px;
+    --radius-3xl: 6px;
 
-    --color-zinc-50: #fafafa;
-    --color-zinc-100: #f5f5f5;
-    --color-zinc-200: #e5e5e5;
-    --color-zinc-300: #d4d4d4;
-    --color-zinc-400: #a3a3a3;
-    --color-zinc-500: #737373;
-    --color-zinc-600: #525252;
-    --color-zinc-700: #404040;
-    --color-zinc-800: #262626;
-    --color-zinc-900: #171717;
-    --color-zinc-950: #0a0a0a;
-
-    --color-accent: var(--color-brand-600);
-    --color-accent-content: var(--color-brand-700);
-    --color-accent-foreground: var(--color-white);
-
-    --radius-card: 16px;
-}
-
-@layer theme {
-    .dark {
-        --color-accent: var(--color-brand-300);
-        --color-accent-content: var(--color-brand-200);
-        --color-accent-foreground: var(--color-brand-900);
-    }
+    --breakpoint-sm: 600px;
+    --breakpoint-lg: 1024px;
+    --breakpoint-2xl: 1440px;
 }
 
 @layer base {
+    html {
+        font-family: var(--font-sans);
+        background: var(--surface);
+        color: var(--ink);
+        -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        background: var(--surface);
+        color: var(--ink);
+        font-size: 15px;
+        line-height: 1.75;
+        font-feature-settings: 'kern';
+    }
 
     *,
     ::after,
     ::before,
     ::backdrop,
     ::file-selector-button {
-        border-color: var(--color-gray-200, currentColor);
+        border-color: var(--line);
     }
 
-    h1, h2, h3,
-    [data-flux-heading] {
+    /* عناوين الصفحات وحدها بالكوفي (من 26px)؛ ما دونها IBM Plex Sans Arabic. */
+    h1,
+    .font-display {
         font-family: var(--font-display);
+    }
+
+    ::placeholder {
+        color: var(--ink-muted);
+        opacity: 1;
+    }
+
+    /* حلقة التركيز: خطٌّ مصمت 2px بإزاحة 2px على كل عنصر تفاعلي، بتباين 3:1 في السمتين. */
+    :focus-visible {
+        outline: 2px solid var(--focus);
+        outline-offset: 2px;
+    }
+
+    ::selection {
+        background: var(--bronze-soft);
+        color: var(--ink);
+    }
+
+    /* جداول الأرقام: خانات متساوية العرض فتصطفّ الأعمدة. */
+    table {
+        font-variant-numeric: tabular-nums;
     }
 }
 
-/** الأرقام في الواجهة العربية تبقى لاتينية حتى تتطابق مع التقارير والتصدير. */
+/** الأرقام لاتينية (0–9) في كل النظام؛ هذه الأداة تثبّت عرض الخانة فقط. */
 @utility latin-numerals {
     font-variant-numeric: lining-nums tabular-nums;
     font-feature-settings: 'tnum';
+}
+
+/** حاوية المحتوى: content-max (1200px) مع هوامش 16 / 24 / 32 حسب العرض. */
+@utility nz-container {
+    width: min(1200px, 100% - 2rem);
+    margin-inline: auto;
+
+    @media (min-width: 600px) {
+        width: min(1200px, 100% - 3rem);
+    }
+
+    @media (min-width: 1024px) {
+        width: min(1200px, 100% - 4rem);
+    }
+}
+
+/** النقش: مسدّس البيت نفسه أرضيةً هادئة خلف المحتوى، لا فوق النص الصغير. */
+@utility nz-pattern-night {
+    background-color: var(--night);
+    background-image: url('/brand/pattern/nuzuln-pattern-tile-night.svg');
+    background-size: 120px auto;
+}
+
+@utility nz-pattern-soft {
+    background-color: var(--surface-sunken);
+    background-image: url('/brand/pattern/nuzuln-pattern-tile-mist.svg');
+    background-size: 120px auto;
+
+    &:where(.dark, .dark *) {
+        background-image: url('/brand/pattern/nuzuln-pattern-tile-night.svg');
+    }
+}
+
+/** الصورة ذات النسختين (الشعار): تظهر النسخة المناسبة للسمة. */
+@utility nz-only-dark {
+    display: none !important;
+
+    &:where(.dark, .dark *) {
+        display: revert !important;
+    }
+}
+
+@utility nz-only-light {
+    &:where(.dark, .dark *) {
+        display: none !important;
+    }
 }
 
 [data-flux-field]:not(ui-radio, ui-checkbox) {
@@ -101,13 +206,14 @@
 }
 
 [data-flux-label] {
-    @apply  !mb-0 !leading-tight;
+    @apply !mb-0 !leading-tight;
 }
 
-input:focus[data-flux-control],
-textarea:focus[data-flux-control],
-select:focus[data-flux-control] {
-    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
+/* مدخلات Flux: حلقة التركيز الموحَّدة بدل ring-offset الافتراضية. */
+[data-flux-control]:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+    box-shadow: none;
 }
 
 /** توسعة تباعد صفوف وخلايا الجداول — القيم الافتراضية من Flux (py-3 px-3) ضيقة جداً لجداولنا. */
@@ -125,6 +231,17 @@ select:focus[data-flux-control] {
 [data-flux-cell]:last-child,
 [data-flux-column]:last-child {
     padding-inline-end: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 
 /**
@@ -184,4 +301,9 @@ select:focus[data-flux-control] {
         transform: none !important;
         opacity: 1 !important;
     }
+}
+
+/* ظلّ البطاقة المرتفعة (shadow-card في الهوية). */
+@utility shadow-card {
+    box-shadow: var(--shadow-card);
 }

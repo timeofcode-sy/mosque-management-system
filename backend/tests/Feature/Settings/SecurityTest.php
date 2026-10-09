@@ -38,10 +38,10 @@ class SecurityTest extends TestCase
 
         $response->assertOk();
 
-        $response->assertSee('Passkeys');
-        $response->assertSee('No passkeys yet');
-        $response->assertSee('Two-factor authentication');
-        $response->assertSee('Enable 2FA');
+        $response->assertSee('مفاتيح المرور');
+        $response->assertSee('لا توجد مفاتيح مرور بعد');
+        $response->assertSee('التحقق بخطوتين');
+        $response->assertSee('تفعيل التحقق بخطوتين');
     }
 
     public function test_security_settings_page_requires_password_confirmation_when_enabled(): void
@@ -64,7 +64,7 @@ class SecurityTest extends TestCase
             ->withSession(['auth.password_confirmed_at' => time()])
             ->get(route('security.edit'))
             ->assertOk()
-            ->assertSee('Update password')
+            ->assertSee('تحديث كلمة المرور')
             ->assertDontSee('Manage your passkeys for passwordless sign-in')
             ->assertDontSee('Add a passkey to sign in without a password')
             ->assertDontSee('Two-factor authentication');

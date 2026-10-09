@@ -102,7 +102,7 @@ new #[Title('الطلاب')] class extends Component {
         </flux:select>
     </div>
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="rounded-xl border border-line bg-raised">
         @if ($this->students->isEmpty())
             <flux:text class="p-6 text-center">لا توجد نتائج مطابقة.</flux:text>
         @else

@@ -61,14 +61,14 @@
         <svg viewBox="0 0 {{ $viewWidth }} {{ $viewHeight }}" preserveAspectRatio="none" class="h-44 w-full overflow-visible" role="img" aria-label="منحنى">
             <defs>
                 <linearGradient id="{{ $gradientId }}" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" class="text-brand-500" stop-color="currentColor" stop-opacity="0.28" />
-                    <stop offset="100%" class="text-brand-500" stop-color="currentColor" stop-opacity="0" />
+                    <stop offset="0%" class="text-primary" stop-color="currentColor" stop-opacity="0.28" />
+                    <stop offset="100%" class="text-primary" stop-color="currentColor" stop-opacity="0" />
                 </linearGradient>
             </defs>
 
             @foreach ([25, 50, 75] as $gridline)
                 @php($gy = round($padY + ($viewHeight - 2 * $padY) * (1 - $gridline / 100), 2))
-                <line x1="0" y1="{{ $gy }}" x2="{{ $viewWidth }}" y2="{{ $gy }}" class="stroke-sand-200 dark:stroke-zinc-700" stroke-width="1" stroke-dasharray="3 4" />
+                <line x1="0" y1="{{ $gy }}" x2="{{ $viewWidth }}" y2="{{ $gy }}" class="stroke-line" stroke-width="1" stroke-dasharray="3 4" />
             @endforeach
 
             <path d="{{ $area }}" fill="url(#{{ $gradientId }})" class="chart-fade" style="animation-delay: 300ms" />
@@ -77,9 +77,9 @@
                 d="{{ $path }}"
                 fill="none"
                 stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="chart-stroke stroke-brand-600 dark:stroke-brand-300"
+                stroke-linecap="square"
+                stroke-linejoin="miter"
+                class="chart-stroke stroke-primary"
                 style="--dash-length: {{ $viewWidth * 2 }}"
             />
 
@@ -87,7 +87,7 @@
                 <circle
                     cx="{{ $coord['x'] }}" cy="{{ $coord['y'] }}" r="3.5"
                     stroke-width="2"
-                    class="chart-fade fill-white stroke-brand-600 dark:fill-zinc-900 dark:stroke-brand-300"
+                    class="chart-fade fill-raised stroke-primary"
                     style="animation-delay: {{ 300 + $index * 40 }}ms"
                 >
                     <title>{{ $coord['point'][$labelKey] ?? '' }} · {{ $coord['point'][$valueKey] ?? 0 }}</title>
@@ -95,7 +95,7 @@
             @endforeach
         </svg>
 
-        <div class="latin-numerals mt-2 flex justify-between text-xs text-ink-500 dark:text-zinc-400">
+        <div class="latin-numerals mt-2 flex justify-between text-xs text-muted">
             <span>{{ $points->first()[$labelKey] ?? '' }}</span>
             <span>{{ $points->last()[$labelKey] ?? '' }}</span>
         </div>

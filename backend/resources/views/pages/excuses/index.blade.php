@@ -172,7 +172,7 @@ new #[Title('أذونات الغياب')] class extends Component {
         <x-stat-card label="الطلاب" :value="$this->students->count()" tone="ink" />
     </div>
 
-    <div class="flex flex-wrap items-end gap-3 rounded-xl border border-sand-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="flex flex-wrap items-end gap-3 rounded-xl border border-line bg-raised p-4">
         <flux:input wire:model.live.debounce.300ms="search" label="بحث" placeholder="اسم الطالب أو رقم المعرف" class="max-w-64" icon="magnifying-glass" />
 
         <flux:select wire:model.live="status" label="الحالة" class="max-w-48" data-test="excuse-status-filter">
@@ -183,7 +183,7 @@ new #[Title('أذونات الغياب')] class extends Component {
         </flux:select>
     </div>
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="rounded-xl border border-line bg-raised">
         @if ($this->excuses->isEmpty())
             <flux:text class="p-6 text-center">لا توجد أذونات مطابقة.</flux:text>
         @else

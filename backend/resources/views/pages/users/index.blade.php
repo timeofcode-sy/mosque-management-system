@@ -299,7 +299,7 @@ new #[Title('المستخدمون')] class extends Component {
         @endif
     </div>
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="rounded-xl border border-line bg-raised">
         @if ($this->users->isEmpty())
             <flux:text class="p-6 text-center">لا يوجد مستخدمون مطابقون.</flux:text>
         @else
@@ -334,7 +334,7 @@ new #[Title('المستخدمون')] class extends Component {
                                             @endif
                                         </flux:badge>
                                     @empty
-                                        <flux:text size="sm" class="text-ink-500 dark:text-zinc-400">بلا دور</flux:text>
+                                        <flux:text size="sm" class="text-muted">بلا دور</flux:text>
                                     @endforelse
                                 </div>
                             </flux:table.cell>
@@ -413,7 +413,7 @@ new #[Title('المستخدمون')] class extends Component {
                     @endforeach
                 </flux:select>
 
-                <flux:text size="sm" class="text-ink-500 dark:text-zinc-400">
+                <flux:text size="sm" class="text-muted">
                     حسابات الأساتذة وأولياء الأمور والطلاب يولّدها النظام مع سجلّاتها، وتُدار من شاشة «بيانات الدخول».
                 </flux:text>
 

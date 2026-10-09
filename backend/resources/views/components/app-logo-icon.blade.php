@@ -1,16 +1,15 @@
-{{-- شعار نزلاً على بلاطته — مولَّدٌ من design/logo/nuzuln-icon.svg، فلا يُحرَّر هنا يدوياً.
-     معرّفُ التدرّج فريدٌ لكل نسخة: نسخةٌ مخفيّة (قائمةُ الجوّال) تُبطل تدرّجاً يشير إليه غيرُها. --}}
-@php($gradient = 'nuzuln-ground-'.Str::random(6))
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="{{ config('app.name') }}" {{ $attributes }}>
-<defs>
-<linearGradient id="{{ $gradient }}" x1="1" y1="0" x2="0" y2="1">
-<stop offset="0" stop-color="#1B3C35"/>
-<stop offset="1" stop-color="#0A221E"/>
-</linearGradient>
-</defs>
-<rect width="1024" height="1024" rx="230" fill="url(#{{ $gradient }})"/>
-<g transform="translate(293.59 183.32) scale(0.66873)">
-<path fill="#D8C0A2" d="M650.7,431.1L326.5,206.4L2.5,430.9L2.5,348L326.5,121.6L650.7,347ZM29,936.3L46.3,842L2.5,779L2.5,609L72.5,561.4L72.5,823.6L226.8,724L226.8,392L297,343.9L297,761ZM2.5,561.1L2.5,547L72.5,498.8L72.5,512.6ZM2.5,590.4L2.5,577L72.5,528.5L72.5,542ZM326.5,981.5L259.6,948L439.3,829L439.3,657L508.5,604L508.5,782.6L582.4,735L582.4,649L650.7,595.8L650.7,772.7Z"/>
-<path fill="#FFFFFF" d="M386.46,79.54A59.77,59.77 0 1 1 327.72,1.59A49.55,49.55 0 1 0 386.46,79.54ZM467.30,384.95C467.30,403.66 504.80,440.65 523.78,440.65C504.80,440.65 467.30,477.64 467.30,496.36C467.30,477.64 429.80,440.65 410.83,440.65C429.80,440.65 467.30,403.66 467.30,384.95ZM616.25,457.19C616.25,474.97 654.26,513.36 671.87,513.36C654.26,513.36 616.25,551.75 616.25,569.53C616.25,551.75 578.24,513.36 560.63,513.36C578.24,513.36 616.25,474.97 616.25,457.19Z"/>
-</g>
-</svg>
+@props([
+    // الأحجام: من 48px فما فوق العلامة الكاملة؛ من 24 إلى 48 العلامة المصغّرة (بالألف الداخلية والنجمتين).
+    'small' => false,
+    'alt' => null,
+])
+
+{{--
+    شعار نزلاً (v3). العلامة هي الكلمة نفسها فلا يُكتب «نزلاً» بجانبها.
+    على الأرضية الفاتحة النسخة الخضراء، وعلى الليلية النحاسية (nz-only-light / nz-only-dark).
+    المساحة الآمنة حول العلامة تُترك للمُستدعي. ولا تُدوَّر ولا تُظلَّل ولا يُعاد تلوينها.
+--}}
+@php($alt ??= config('app.name'))
+
+<img src="{{ $small ? '/brand/logos/nuzuln-mark-small-night.svg' : '/brand/logos/nuzuln-mark-night.svg' }}" alt="{{ $alt }}" {{ $attributes->class('nz-only-light shrink-0 object-contain') }}>
+<img src="{{ $small ? '/brand/logos/nuzuln-mark-small-bronze.svg' : '/brand/logos/nuzuln-mark-bronze.svg' }}" alt="{{ $alt }}" {{ $attributes->class('nz-only-dark shrink-0 object-contain') }}>

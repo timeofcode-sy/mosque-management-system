@@ -145,7 +145,7 @@ new #[Title('الواصفات المخصّصة')] class extends Component {
         </x-slot>
     </x-page-header>
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="rounded-xl border border-line bg-raised">
         @if ($this->fields->isEmpty())
             <flux:text class="p-6 text-center">لم تُعرَّف واصفات مخصّصة بعد.</flux:text>
         @else

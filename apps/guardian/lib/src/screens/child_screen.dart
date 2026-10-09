@@ -67,7 +67,7 @@ class _AttendanceTab extends StatelessWidget {
                 (date: day.date, rate: day.rate, sessions: day.sessions),
             ],
           ),
-          const _SectionTitle('السجلّ — آخر ٣٠ يوم تفقّد'),
+          const _SectionTitle('السجلّ — آخر 30 يوم تفقّد'),
           for (final row in attendance.recent) _AttendanceRow(row: row),
         ],
       ),

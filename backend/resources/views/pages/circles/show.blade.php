@@ -205,8 +205,8 @@ new #[Title('الحلقة')] class extends Component {
         <x-stat-card label="القاعة" :value="$courseCircle->room ?: '—'" tone="gold" />
     </div>
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-        <div class="flex items-center justify-between border-b border-sand-200 p-4 dark:border-zinc-700">
+    <div class="rounded-xl border border-line bg-raised">
+        <div class="flex items-center justify-between border-b border-line p-4">
             <flux:heading size="lg">الأساتذة</flux:heading>
             <flux:modal.trigger name="assign-teacher">
                 <flux:button size="sm" icon="plus" data-test="open-assign-teacher">إسناد أستاذ</flux:button>
@@ -225,8 +225,8 @@ new #[Title('الحلقة')] class extends Component {
         </div>
     </div>
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-        <div class="border-b border-sand-200 p-4 dark:border-zinc-700">
+    <div class="rounded-xl border border-line bg-raised">
+        <div class="border-b border-line p-4">
             <flux:heading size="lg">الطلاب المسجَّلون</flux:heading>
         </div>
 

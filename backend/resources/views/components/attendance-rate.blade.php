@@ -3,10 +3,10 @@
 @php
     $value = $rate === null ? null : (float) $rate;
     $tone = match (true) {
-        $value === null => 'text-ink-500 dark:text-zinc-400',
-        $value >= 90 => 'text-present dark:text-brand-300',
-        $value >= 75 => 'text-gold-600 dark:text-gold-400',
-        default => 'text-absent dark:text-red-400',
+        $value === null => 'text-muted',
+        $value >= 90 => 'text-present',
+        $value >= 75 => 'text-bronze-ink',
+        default => 'text-absent',
     };
 @endphp
 
@@ -16,7 +16,7 @@
     </span>
 
     @if ($showBar && $value !== null)
-        <span class="h-1.5 w-16 overflow-hidden rounded-full bg-sand-200 dark:bg-zinc-700">
+        <span class="h-1.5 w-16 overflow-hidden rounded-full bg-sunken">
             <span class="block h-full rounded-full bg-current {{ $tone }}" style="width: {{ min(100, max(0, $value)) }}%"></span>
         </span>
     @endif

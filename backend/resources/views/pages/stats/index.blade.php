@@ -114,7 +114,7 @@ new #[Title('الإحصائيات')] class extends Component {
             </x-slot>
         </flux:callout>
     @else
-        <div class="flex flex-wrap items-end gap-3 rounded-xl border border-sand-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+        <div class="flex flex-wrap items-end gap-3 rounded-xl border border-line bg-raised p-4">
             <flux:select wire:model.live="entity" label="الكيان" class="max-w-40" data-test="stats-entity">
                 @foreach (StatsQuery::entities() as $value => $label)
                     <flux:select.option :value="$value">{{ $label }}</flux:select.option>
@@ -145,8 +145,8 @@ new #[Title('الإحصائيات')] class extends Component {
                 ['heading' => 'الأكثر '.StatsQuery::metrics()[$this->metric], 'rows' => $this->top, 'tone' => 'brand', 'test' => 'stats-top'],
                 ['heading' => 'الأقل '.StatsQuery::metrics()[$this->metric], 'rows' => $this->bottom, 'tone' => 'gold', 'test' => 'stats-bottom'],
             ] as $panel)
-                <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900" data-test="{{ $panel['test'] }}">
-                    <div class="border-b border-sand-200 p-4 dark:border-zinc-700">
+                <div class="rounded-xl border border-line bg-raised" data-test="{{ $panel['test'] }}">
+                    <div class="border-b border-line p-4">
                         <flux:heading size="lg">{{ $panel['heading'] }}</flux:heading>
                     </div>
 
@@ -158,8 +158,8 @@ new #[Title('الإحصائيات')] class extends Component {
         </div>
 
         <div class="grid gap-6 lg:grid-cols-2">
-            <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="border-b border-sand-200 p-4 dark:border-zinc-700">
+            <div class="rounded-xl border border-line bg-raised">
+                <div class="border-b border-line p-4">
                     <flux:heading size="lg">منحنى الحضور في المدى</flux:heading>
                 </div>
                 <div class="p-4">
@@ -167,8 +167,8 @@ new #[Title('الإحصائيات')] class extends Component {
                 </div>
             </div>
 
-            <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="border-b border-sand-200 p-4 dark:border-zinc-700">
+            <div class="rounded-xl border border-line bg-raised">
+                <div class="border-b border-line p-4">
                     <flux:heading size="lg">توزيع حالات التفقّد</flux:heading>
                 </div>
                 <div class="p-4">

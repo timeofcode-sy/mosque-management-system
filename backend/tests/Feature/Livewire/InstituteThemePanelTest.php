@@ -60,7 +60,11 @@ class InstituteThemePanelTest extends TestCase
             ->assertHasErrors(['theme.primary']);
     }
 
-    public function test_the_panel_head_carries_the_institute_colours(): void
+    /**
+     * الهوية البصرية v3 ثابتة: ألوان المعهد تبقى بياناتٍ في الإعدادات والـ API، لكنها لا تصبغ اللوحة
+     * ولا التقارير، فيبقى التباين المضمون (4.5:1) في كل شاشة.
+     */
+    public function test_the_panel_stays_on_the_nuzuln_palette_whatever_the_institute_saved(): void
     {
         $this->institute->update(['settings' => [
             'theme' => ['primary' => '#7D0A0A', 'secondary' => '#FFBF9B', 'surface' => '#EAD196'],
@@ -68,17 +72,11 @@ class InstituteThemePanelTest extends TestCase
 
         $this->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('--color-brand-600:#7d0a0a', escape: false);
-    }
-
-    public function test_an_institute_on_the_default_palette_injects_nothing(): void
-    {
-        $this->get(route('dashboard'))
-            ->assertOk()
+            ->assertDontSee('#7d0a0a', escape: false)
             ->assertDontSee('--color-brand-600:', escape: false);
     }
 
-    public function test_a_printed_report_follows_the_same_palette(): void
+    public function test_a_printed_report_stays_on_the_nuzuln_palette(): void
     {
         $this->institute->update(['settings' => [
             'theme' => ['primary' => '#7D0A0A', 'secondary' => '#FFBF9B', 'surface' => '#EAD196'],
@@ -86,7 +84,7 @@ class InstituteThemePanelTest extends TestCase
 
         $this->get(route('reports.print.circle', ['courseCircle' => $this->courseCircle, 'date' => '2026-09-06']))
             ->assertOk()
-            ->assertSee('--color-brand-600:#7d0a0a', escape: false);
+            ->assertDontSee('#7d0a0a', escape: false);
     }
 
     public function test_marking_a_student_late_fills_the_minutes_before_saving(): void

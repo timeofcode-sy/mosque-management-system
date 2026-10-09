@@ -207,10 +207,10 @@ new #[Title('ملف الطالب')] class extends Component
         />
     </div>
 
-    <x-attendance-trend :points="$this->trend" heading="منحنى حضور الطالب — آخر ٣٠ يوماً" />
+    <x-attendance-trend :points="$this->trend" heading="منحنى حضور الطالب — آخر 30 يوماً" />
 
     <div class="grid gap-6 lg:grid-cols-3">
-        <div class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+        <div class="rounded-xl border border-line bg-raised p-6">
             <flux:heading size="lg">البيانات الأساسية</flux:heading>
 
             <dl class="mt-4 space-y-3 text-sm">
@@ -230,23 +230,23 @@ new #[Title('ملف الطالب')] class extends Component
                     'الحالة' => $student->status->label(),
                 ] as $label => $value)
                     <div class="flex justify-between gap-4">
-                        <dt class="text-ink-500 dark:text-zinc-400">{{ $label }}</dt>
+                        <dt class="text-muted">{{ $label }}</dt>
                         <dd class="latin-numerals text-end">{{ $value ?: '—' }}</dd>
                     </div>
                 @endforeach
             </dl>
         </div>
 
-        <div class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+        <div class="rounded-xl border border-line bg-raised p-6">
             <div class="flex justify-center">
                 @if ($student->photo_path)
                     <img
                         src="{{ Storage::url($student->photo_path) }}"
                         alt="صورة {{ $student->full_name }}"
-                        class="h-28 w-28 rounded-full border border-sand-200 object-cover dark:border-zinc-700"
+                        class="h-28 w-28 rounded-full border border-line object-cover"
                     />
                 @else
-                    <div class="flex h-28 w-28 items-center justify-center rounded-full border border-dashed border-sand-300 bg-sand-50 text-ink-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-500">
+                    <div class="flex h-28 w-28 items-center justify-center rounded-full border border-dashed border-line bg-surface text-muted">
                         <flux:icon name="user" class="size-10" />
                     </div>
                 @endif
@@ -258,7 +258,7 @@ new #[Title('ملف الطالب')] class extends Component
 
             <div class="mt-4 space-y-4">
                 @forelse ($student->guardians as $guardian)
-                    <div wire:key="guardian-{{ $guardian->id }}" class="rounded-lg border border-sand-200 p-3 dark:border-zinc-700">
+                    <div wire:key="guardian-{{ $guardian->id }}" class="rounded-lg border border-line p-3">
                         <div class="flex items-center gap-2">
                             <flux:heading size="sm">{{ $guardian->full_name }}</flux:heading>
                             <flux:badge size="sm" color="zinc">
@@ -281,7 +281,7 @@ new #[Title('ملف الطالب')] class extends Component
             <flux:text size="sm" class="mt-1">العائلة: {{ $student->family_health_status ?: '—' }}</flux:text>
         </div>
 
-        <div class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+        <div class="rounded-xl border border-line bg-raised p-6">
             <flux:heading size="lg">الصفات</flux:heading>
 
             <div class="mt-4 flex flex-wrap gap-2">
@@ -302,7 +302,7 @@ new #[Title('ملف الطالب')] class extends Component
                 <dl class="mt-4 space-y-3 text-sm">
                     @foreach ($this->customFieldEntries as $entry)
                         <div class="flex justify-between gap-4">
-                            <dt class="text-ink-500 dark:text-zinc-400">{{ $entry['label'] }}</dt>
+                            <dt class="text-muted">{{ $entry['label'] }}</dt>
                             <dd class="text-end">{{ $entry['value'] ?: '—' }}</dd>
                         </div>
                     @endforeach
@@ -316,8 +316,8 @@ new #[Title('ملف الطالب')] class extends Component
         </div>
     </div>
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-        <div class="border-b border-sand-200 p-4 dark:border-zinc-700">
+    <div class="rounded-xl border border-line bg-raised">
+        <div class="border-b border-line p-4">
             <flux:heading size="lg">مسار الحلقات عبر الدورات</flux:heading>
         </div>
 
@@ -351,8 +351,8 @@ new #[Title('ملف الطالب')] class extends Component
     </div>
 
     @if ($this->transfers->isNotEmpty())
-        <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-            <div class="border-b border-sand-200 p-4 dark:border-zinc-700">
+        <div class="rounded-xl border border-line bg-raised">
+            <div class="border-b border-line p-4">
                 <flux:heading size="lg">سجل النقل</flux:heading>
             </div>
 
@@ -380,11 +380,11 @@ new #[Title('ملف الطالب')] class extends Component
         </div>
     @endif
 
-    <div class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="rounded-xl border border-line bg-raised p-6">
         <div class="flex flex-wrap items-baseline justify-between gap-3">
             <flux:heading size="lg">خريطة تقدّم الحفظ في المصحف</flux:heading>
 
-            <flux:text size="sm" class="latin-numerals text-ink-500 dark:text-zinc-400">
+            <flux:text size="sm" class="latin-numerals text-muted">
                 {{ $this->progressMap['memorized_ayahs'] }} / {{ App\Support\Quran::TOTAL_AYAHS }} آية ·
                 {{ $this->progressMap['completed_surahs'] }} سورة مكتملة ·
                 {{ round($this->progressMap['overall_ratio'] * 100, 1) }}%
@@ -398,10 +398,10 @@ new #[Title('ملف الطالب')] class extends Component
         <x-surah-map :surahs="$this->progressMap['surahs']" class="mt-4" />
     </div>
 
-    <div class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="rounded-xl border border-line bg-raised p-6">
         <div class="flex flex-wrap items-baseline justify-between gap-3">
             <flux:heading size="lg">المحفوظات وتقدّم المناهج</flux:heading>
-            <flux:text size="sm" class="text-ink-500 dark:text-zinc-400">اضغط البند لتحديث حالته ونسبته.</flux:text>
+            <flux:text size="sm" class="text-muted">اضغط البند لتحديث حالته ونسبته.</flux:text>
         </div>
 
         <div class="mt-4 flex flex-col gap-6">
@@ -479,8 +479,8 @@ new #[Title('ملف الطالب')] class extends Component
     </flux:modal>
 
     @if ($this->recentAttendances->isNotEmpty())
-        <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-            <div class="border-b border-sand-200 p-4 dark:border-zinc-700">
+        <div class="rounded-xl border border-line bg-raised">
+            <div class="border-b border-line p-4">
                 <flux:heading size="lg">آخر سجلات الحضور</flux:heading>
             </div>
 

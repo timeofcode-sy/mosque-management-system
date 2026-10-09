@@ -11,12 +11,12 @@
 @endphp
 
 @if ($isForeign)
-    <div class="flex items-center justify-center gap-2 bg-gold-500 px-4 py-1.5 text-center text-sm font-medium text-ink-900 dark:bg-gold-600 dark:text-white" data-test="foreign-institute-banner">
+    <div role="status" class="flex items-center justify-center gap-2 border-b border-line bg-warning-soft px-4 py-2 text-center text-sm font-medium text-warning" data-test="foreign-institute-banner">
         <flux:icon icon="exclamation-triangle" variant="micro" />
         <span>أنت تعمل داخل «{{ $current->name }}» — وليس معهدك «{{ $home->name }}».</span>
     </div>
 @elseif ($current !== null && $home === null)
-    <div class="flex items-center justify-center gap-2 bg-gold-500 px-4 py-1.5 text-center text-sm font-medium text-ink-900 dark:bg-gold-600 dark:text-white" data-test="foreign-institute-banner">
+    <div role="status" class="flex items-center justify-center gap-2 border-b border-line bg-warning-soft px-4 py-2 text-center text-sm font-medium text-warning" data-test="foreign-institute-banner">
         <flux:icon icon="exclamation-triangle" variant="micro" />
         <span>أنت تعمل داخل «{{ $current->name }}» بصلاحية عابرة للمعاهد.</span>
     </div>

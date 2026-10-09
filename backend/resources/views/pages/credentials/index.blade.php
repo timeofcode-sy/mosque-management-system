@@ -181,7 +181,7 @@ new #[Title('بيانات الدخول')] class extends Component {
         <flux:switch wire:model.live="revealed" label="إظهار كلمات المرور" />
     </div>
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="rounded-xl border border-line bg-raised">
         @if ($this->rows->isEmpty())
             <flux:text class="p-6 text-center">لا توجد بيانات دخول مطابقة.</flux:text>
         @else
@@ -203,7 +203,7 @@ new #[Title('بيانات الدخول')] class extends Component {
                             <flux:table.cell class="latin-numerals">{{ $row['username'] }}</flux:table.cell>
                             <flux:table.cell class="latin-numerals">
                                 @if ($row['password'] === null)
-                                    <flux:text size="sm" class="text-ink-500 dark:text-zinc-400">غيّرها صاحبها</flux:text>
+                                    <flux:text size="sm" class="text-muted">غيّرها صاحبها</flux:text>
                                 @elseif ($revealed)
                                     {{ $row['password'] }}
                                 @else

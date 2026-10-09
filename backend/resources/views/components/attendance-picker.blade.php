@@ -6,20 +6,21 @@
 ])
 
 @php
-    // ألوان حالات التفقّد من توكنات الهوية (--color-present/absent/late/excused).
+    // حالات التفقّد بأزواج الهوية الثابتة (حاضر: success · متأخر: warning · مستأذن: info · غائب: danger).
+    // المحدَّدة تُملأ بلونها الهادئ ويُكتب اسمها وتظهر علامة صحّ — فلا يكفي اللون وحده.
     $palette = [
-        'present' => ['on' => 'bg-present text-white border-present', 'off' => 'text-present border-sand-300 hover:bg-present/10 dark:border-zinc-600'],
-        'absent' => ['on' => 'bg-absent text-white border-absent', 'off' => 'text-absent border-sand-300 hover:bg-absent/10 dark:border-zinc-600'],
-        'late' => ['on' => 'bg-late text-ink-900 border-late', 'off' => 'text-late border-sand-300 hover:bg-late/10 dark:border-zinc-600'],
-        'excused' => ['on' => 'bg-excused text-white border-excused', 'off' => 'text-excused border-sand-300 hover:bg-excused/10 dark:border-zinc-600'],
+        'present' => 'bg-success-soft text-success',
+        'absent' => 'bg-danger-soft text-danger',
+        'late' => 'bg-warning-soft text-warning',
+        'excused' => 'bg-info-soft text-info',
     ];
 @endphp
 
-<div {{ $attributes->class('inline-flex rounded-lg shadow-xs') }} role="radiogroup">
+<div {{ $attributes->class('inline-flex overflow-hidden rounded-sm border border-line') }} role="radiogroup">
     @foreach (App\Enums\AttendanceStatus::cases() as $status)
         @php
             $isOn = $selected === $status->value;
-            $classes = $palette[$status->value][$isOn ? 'on' : 'off'];
+            $classes = $isOn ? $palette[$status->value].' font-semibold' : 'bg-raised text-muted hover:bg-sunken';
         @endphp
 
         <button
@@ -33,8 +34,11 @@
             @if ($testId)
                 data-test="{{ $testId }}-{{ $status->value }}"
             @endif
-            class="border px-3 py-1.5 text-sm font-medium transition first:rounded-s-lg last:rounded-e-lg disabled:cursor-not-allowed disabled:opacity-60 {{ $classes }} -me-px last:me-0"
+            class="inline-flex min-h-10 items-center gap-1 border-s border-line px-3 text-[13px] font-medium transition-colors first:border-s-0 disabled:cursor-not-allowed disabled:opacity-60 {{ $classes }}"
         >
+            @if ($isOn)
+                <flux:icon icon="check" variant="micro" />
+            @endif
             {{ $status->label() }}
         </button>
     @endforeach

@@ -130,7 +130,7 @@ new #[Title('الدوامات')] class extends Component {
     @else
         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             @forelse ($this->shifts as $shift)
-                <div class="rounded-xl border border-sand-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900" wire:key="shift-{{ $shift->id }}">
+                <div class="rounded-xl border border-line bg-raised p-4" wire:key="shift-{{ $shift->id }}">
                     <div class="flex items-start justify-between gap-2">
                         <div>
                             <flux:heading size="lg">{{ $shift->name }}</flux:heading>

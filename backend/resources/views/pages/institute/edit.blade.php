@@ -86,7 +86,7 @@ new #[Title('بيانات المعهد')] class extends Component {
 <div class="flex w-full flex-col gap-6">
     <x-page-header heading="بيانات المعهد" subheading="الاسم والشعار وبيانات التواصل — تظهر في الواجهات والتقارير" />
 
-    <form wire:submit="save" class="max-w-2xl space-y-6 rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+    <form wire:submit="save" class="max-w-2xl space-y-6 rounded-xl border border-line bg-raised p-6">
         <x-institute-form-fields
             :logo-url="$this->institute?->logo_path ? Storage::url($this->institute->logo_path) : null"
         />

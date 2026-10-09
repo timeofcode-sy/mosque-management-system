@@ -155,13 +155,13 @@ new #[Title('الإعلانات')] class extends Component {
     </flux:text>
 
     @if ($this->announcements->isEmpty())
-        <div class="rounded-xl border border-sand-200 bg-white p-10 text-center dark:border-zinc-700 dark:bg-zinc-900">
+        <div class="rounded-xl border border-line bg-raised p-10 text-center">
             <flux:text>لا إعلاناتٍ بعد.</flux:text>
         </div>
     @else
-        <div class="overflow-hidden rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+        <div class="overflow-hidden rounded-xl border border-line bg-raised">
             <table class="w-full text-sm">
-                <thead class="border-b border-sand-200 text-right dark:border-zinc-700">
+                <thead class="border-b border-line text-right">
                     <tr>
                         <th class="p-3 font-medium">العنوان</th>
                         <th class="p-3 font-medium">النطاق</th>
@@ -171,7 +171,7 @@ new #[Title('الإعلانات')] class extends Component {
                 </thead>
                 <tbody>
                     @foreach ($this->announcements as $announcement)
-                        <tr class="border-b border-sand-100 last:border-0 dark:border-zinc-800">
+                        <tr class="border-b border-line last:border-0">
                             <td class="p-3">
                                 <div class="font-medium">{{ $announcement->title }}</div>
                                 <flux:text size="sm">{{ Str::limit($announcement->body, 80) }}</flux:text>
@@ -184,7 +184,7 @@ new #[Title('الإعلانات')] class extends Component {
                                     <flux:badge color="zinc" size="sm">مسودّة</flux:badge>
                                 @else
                                     <flux:badge color="green" size="sm">منشور</flux:badge>
-                                    <div class="text-xs text-ink-500 dark:text-zinc-400">{{ $announcement->published_at->format('Y-m-d H:i') }}</div>
+                                    <div class="text-xs text-muted">{{ $announcement->published_at->format('Y-m-d H:i') }}</div>
                                 @endif
                             </td>
                             <td class="p-3 text-left">

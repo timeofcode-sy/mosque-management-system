@@ -273,8 +273,8 @@ new #[Title('المناهج')] class extends Component
 
     <div class="flex flex-col gap-4">
         @foreach ($this->curricula as $curriculum)
-            <div wire:key="curriculum-{{ $curriculum->id }}" class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-sand-200 p-4 dark:border-zinc-700">
+            <div wire:key="curriculum-{{ $curriculum->id }}" class="rounded-xl border border-line bg-raised">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-line p-4">
                     <div>
                         <div class="flex items-center gap-2">
                             <flux:heading size="lg">{{ $curriculum->name }}</flux:heading>
@@ -319,7 +319,7 @@ new #[Title('المناهج')] class extends Component
 
                         <flux:badge wire:key="item-{{ $item->id }}" color="zinc">
                             <button type="button" wire:click="editItem('{{ $item->uuid }}')" class="cursor-pointer">
-                                {{ $item->name }}@if ($countLabel)<span class="latin-numerals text-ink-500 dark:text-zinc-400"> · {{ $countLabel }}</span>@endif
+                                {{ $item->name }}@if ($countLabel)<span class="latin-numerals text-muted"> · {{ $countLabel }}</span>@endif
                             </button>
                             @if ($curriculum->type !== CurriculumType::Quran)
                                 <flux:badge.close wire:click="deleteItem('{{ $item->uuid }}')" />

@@ -306,7 +306,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
     </x-page-header>
 
     <form wire:submit="save" class="flex flex-col gap-6">
-        <flux:fieldset class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+        <flux:fieldset class="rounded-xl border border-line bg-raised p-6">
             <flux:legend>بيانات التسجيل</flux:legend>
 
             <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -332,7 +332,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
             </div>
         </flux:fieldset>
 
-        <flux:fieldset class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+        <flux:fieldset class="rounded-xl border border-line bg-raised p-6">
             <flux:legend>البيانات الشخصية</flux:legend>
 
             <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -357,7 +357,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
             </div>
         </flux:fieldset>
 
-        <flux:fieldset class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+        <flux:fieldset class="rounded-xl border border-line bg-raised p-6">
             <flux:legend>بيانات العائلة</flux:legend>
 
             <div class="grid gap-6 sm:grid-cols-3">
@@ -372,7 +372,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
             <flux:input wire:model="family_members_count" type="number" min="1" label="عدد أفراد العائلة" class="mt-6 sm:max-w-xs" />
         </flux:fieldset>
 
-        <flux:fieldset class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+        <flux:fieldset class="rounded-xl border border-line bg-raised p-6">
             <flux:legend>الوضع الصحي</flux:legend>
 
             <div class="grid gap-6 sm:grid-cols-2">
@@ -381,7 +381,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
             </div>
         </flux:fieldset>
 
-        <flux:fieldset class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+        <flux:fieldset class="rounded-xl border border-line bg-raised p-6">
             <flux:legend>الصفات الشخصية والسلوكية</flux:legend>
 
             <flux:checkbox.group wire:model="traitIds" class="grid gap-3 sm:grid-cols-3">
@@ -391,7 +391,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
             </flux:checkbox.group>
         </flux:fieldset>
 
-        <flux:fieldset class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+        <flux:fieldset class="rounded-xl border border-line bg-raised p-6">
             <flux:legend>المحفوظات</flux:legend>
             <flux:text class="mb-4">اختر ما أتمّه الطالب من بنود المناهج. المحدَّد يُسجَّل «محفوظاً»، والمُتقَن يبقى كما هو.</flux:text>
 
@@ -411,7 +411,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
         </flux:fieldset>
 
         @if ($this->customFieldDefinitions->isNotEmpty())
-            <flux:fieldset class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+            <flux:fieldset class="rounded-xl border border-line bg-raised p-6">
                 <flux:legend>الواصفات المخصّصة</flux:legend>
 
                 <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -452,7 +452,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
             </flux:fieldset>
         @endif
 
-        <flux:fieldset class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900">
+        <flux:fieldset class="rounded-xl border border-line bg-raised p-6">
             <flux:legend>الحلقة والملاحظات</flux:legend>
 
             <flux:select wire:model="courseCircleId" label="الحلقة في الدورة الجارية" placeholder="بلا تسجيل الآن" class="sm:max-w-md">

@@ -88,7 +88,7 @@ new #[Title('المعاهد')] class extends Component {
 
     <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="ابحث باسم المعهد" class="sm:max-w-md" />
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="rounded-xl border border-line bg-raised">
         @if ($this->institutes->isEmpty())
             <flux:text class="p-6 text-center">لا توجد معاهد مطابقة.</flux:text>
         @else
@@ -112,7 +112,7 @@ new #[Title('المعاهد')] class extends Component {
                                     @if ($institute->logo_path)
                                         <img src="{{ Storage::url($institute->logo_path) }}" alt="" class="size-8 rounded-lg object-cover" />
                                     @else
-                                        <flux:icon icon="building-library" class="size-8 text-ink-400 dark:text-zinc-500" />
+                                        <flux:icon icon="building-library" class="size-8 text-muted" />
                                     @endif
 
                                     <span>{{ $institute->name }}</span>

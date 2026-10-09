@@ -12,8 +12,8 @@
     ];
 @endphp
 
-<div {{ $attributes->class('rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900') }}>
-    <div class="border-b border-sand-200 p-4 dark:border-zinc-700">
+<div {{ $attributes->class('rounded-xl border border-line bg-raised') }}>
+    <div class="border-b border-line p-4">
         <flux:heading size="lg">{{ $heading }}</flux:heading>
     </div>
 
@@ -24,12 +24,12 @@
             @foreach ($bars as $bar)
                 <div>
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-ink-700 dark:text-zinc-200">{{ $bar['label'] }}</span>
-                        <span class="latin-numerals text-ink-500 dark:text-zinc-400">
+                        <span class="text-ink">{{ $bar['label'] }}</span>
+                        <span class="latin-numerals text-muted">
                             {{ $bar['value'] }} · {{ round($bar['value'] / $total * 100, 1) }}%
                         </span>
                     </div>
-                    <div class="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-sand-100 dark:bg-zinc-800">
+                    <div class="mt-1.5 h-2.5 w-full overflow-hidden rounded-full bg-sunken">
                         <div class="h-full rounded-full {{ $bar['class'] }}" style="width: {{ round($bar['value'] / $total * 100, 1) }}%"></div>
                     </div>
                 </div>

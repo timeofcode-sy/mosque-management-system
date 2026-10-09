@@ -111,7 +111,7 @@ new #[Title('التفقّد')] class extends Component {
             </x-slot>
         </flux:callout>
     @else
-        <div class="flex flex-wrap items-end gap-3 rounded-xl border border-sand-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+        <div class="flex flex-wrap items-end gap-3 rounded-xl border border-line bg-raised p-4">
             <flux:input type="date" wire:model.live="date" label="التاريخ" class="latin-numerals max-w-48" data-test="attendance-date" />
 
             <flux:select wire:model.live="shiftId" label="الدوام" class="max-w-56" data-test="attendance-shift">
@@ -135,8 +135,8 @@ new #[Title('التفقّد')] class extends Component {
             <x-stat-card label="نسبة حضور اليوم" :value="$this->dayRate !== null ? $this->dayRate.'%' : '—'" tone="ink" />
         </div>
 
-        <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-            <div class="border-b border-sand-200 p-4 dark:border-zinc-700">
+        <div class="rounded-xl border border-line bg-raised">
+            <div class="border-b border-line p-4">
                 <flux:heading size="lg">حلقات {{ $this->weekday->label() }}</flux:heading>
             </div>
 

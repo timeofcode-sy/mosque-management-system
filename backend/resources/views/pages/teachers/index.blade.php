@@ -168,7 +168,7 @@ new #[Title('الأساتذة')] class extends Component {
 
     <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="ابحث بالاسم أو الهاتف أو التخصّص" class="sm:max-w-md" />
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="rounded-xl border border-line bg-raised">
         @if ($this->teachers->isEmpty())
             <flux:text class="p-6 text-center">لا يوجد أساتذة مطابقون.</flux:text>
         @else

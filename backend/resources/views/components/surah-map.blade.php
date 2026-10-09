@@ -10,16 +10,16 @@
             @php
                 $ratio = $surah['ratio'];
                 $shade = match (true) {
-                    $ratio >= 1.0 => 'bg-brand-600 text-white',
-                    $ratio >= 0.6 => 'bg-brand-400 text-white',
-                    $ratio >= 0.25 => 'bg-brand-200 text-ink-900',
-                    $ratio > 0 => 'bg-brand-100 text-ink-900',
-                    default => 'bg-sand-200 text-ink-500 dark:bg-zinc-700 dark:text-zinc-400',
+                    $ratio >= 1.0 => 'bg-primary text-on-primary',
+                    $ratio >= 0.6 => 'bg-success text-on-primary',
+                    $ratio >= 0.25 => 'bg-success-soft text-success',
+                    $ratio > 0 => 'bg-bronze-soft text-bronze-ink',
+                    default => 'bg-sunken text-muted',
                 };
             @endphp
 
             <div
-                class="avoid-break flex aspect-square flex-col items-center justify-center rounded {{ $shade }}"
+                class="avoid-break flex aspect-square flex-col items-center justify-center rounded-sm {{ $shade }}"
                 title="{{ $surah['number'] }} · {{ $surah['name'] }} — {{ $surah['covered'] }}/{{ $surah['ayahs'] }} آية"
             >
                 <span class="latin-numerals text-[0.6rem] leading-none font-semibold">{{ $surah['number'] }}</span>
@@ -27,14 +27,14 @@
         @endforeach
     </div>
 
-    <div class="flex flex-wrap items-center gap-3 text-xs text-ink-500 dark:text-zinc-400">
+    <div class="flex flex-wrap items-center gap-3 text-xs text-muted">
         <span>مقياس التغطية:</span>
         @foreach ([
-            'لم يبدأ' => 'bg-sand-200 dark:bg-zinc-700',
-            'أقل من الربع' => 'bg-brand-100',
-            'ربع فأكثر' => 'bg-brand-200',
-            'أغلبها' => 'bg-brand-400',
-            'مكتملة' => 'bg-brand-600',
+            'لم يبدأ' => 'bg-sunken',
+            'أقل من الربع' => 'bg-bronze-soft',
+            'ربع فأكثر' => 'bg-success-soft',
+            'أغلبها' => 'bg-success',
+            'مكتملة' => 'bg-primary',
         ] as $label => $swatch)
             <span class="inline-flex items-center gap-1">
                 <span class="size-3 rounded {{ $swatch }}"></span>{{ $label }}

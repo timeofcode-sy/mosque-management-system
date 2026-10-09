@@ -48,7 +48,7 @@ new #[Title('الأجهزة المزامِنة')] class extends Component {
 
     <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="ابحث بمعرّف الجهاز أو بريد المستخدم" class="sm:max-w-md" />
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="rounded-xl border border-line bg-raised">
         @if ($this->devices->isEmpty())
             <flux:text class="p-6 text-center">لا توجد أجهزة مسجَّلة بعد.</flux:text>
         @else

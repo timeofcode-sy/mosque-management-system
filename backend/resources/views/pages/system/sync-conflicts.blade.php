@@ -138,7 +138,7 @@ new #[Title('تعارضات المزامنة')] class extends Component {
         <flux:radio value="all" label="الكل" />
     </flux:radio.group>
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="rounded-xl border border-line bg-raised">
         @if ($this->conflicts->isEmpty())
             <flux:text class="p-6 text-center">لا توجد تعارضات — وهذا هو المتوقّع.</flux:text>
         @else
@@ -193,11 +193,11 @@ new #[Title('تعارضات المزامنة')] class extends Component {
                 <div class="grid gap-4 lg:grid-cols-2">
                     <div>
                         <flux:heading size="sm">قيمة الخادم (الفائزة)</flux:heading>
-                        <pre dir="ltr" class="latin-numerals mt-2 max-h-80 overflow-auto rounded-lg bg-sand-100 p-3 text-xs dark:bg-zinc-800">{{ json_encode($this->inspected->server_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                        <pre dir="ltr" class="latin-numerals mt-2 max-h-80 overflow-auto rounded-lg bg-sunken p-3 text-xs">{{ json_encode($this->inspected->server_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
                     </div>
                     <div>
                         <flux:heading size="sm">قيمة الجهاز (المرفوضة)</flux:heading>
-                        <pre dir="ltr" class="latin-numerals mt-2 max-h-80 overflow-auto rounded-lg bg-sand-100 p-3 text-xs dark:bg-zinc-800">{{ json_encode($this->inspected->client_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                        <pre dir="ltr" class="latin-numerals mt-2 max-h-80 overflow-auto rounded-lg bg-sunken p-3 text-xs">{{ json_encode($this->inspected->client_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
                     </div>
                 </div>
             @endif

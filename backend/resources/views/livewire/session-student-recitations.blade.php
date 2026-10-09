@@ -556,23 +556,23 @@ new class extends Component
                             data-test="recitation-grade-{{ $student->id }}-{{ $case->value }}"
                             @class([
                                 'border px-3 py-1.5 text-sm font-medium transition first:rounded-s-lg last:rounded-e-lg -me-px last:me-0',
-                                'bg-brand-600 text-white border-brand-600' => $grade === $case->value,
-                                'border-sand-300 text-ink-700 hover:bg-brand-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800' => $grade !== $case->value,
+                                'bg-primary text-white border-primary' => $grade === $case->value,
+                                'border-line text-ink hover:bg-sunken' => $grade !== $case->value,
                             ])
                         >{{ $case->label() }}</button>
                     @endforeach
                 </div>
             </flux:field>
 
-            <div class="latin-numerals rounded-lg border border-sand-200 bg-sand-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-800">
-                <span class="text-ink-500 dark:text-zinc-400">الأسطر</span>
+            <div class="latin-numerals rounded-lg border border-line bg-surface p-3 text-sm">
+                <span class="text-muted">الأسطر</span>
                 {{ $this->preview['lines'] }}
-                <span class="mx-2 text-ink-500 dark:text-zinc-400">·</span>
-                <span class="text-ink-500 dark:text-zinc-400">الجديد</span>
+                <span class="mx-2 text-muted">·</span>
+                <span class="text-muted">الجديد</span>
                 {{ $this->preview['new_lines'] }}
-                <span class="mx-2 text-ink-500 dark:text-zinc-400">·</span>
-                <span class="text-ink-500 dark:text-zinc-400">النقاط</span>
-                <span class="font-semibold text-brand-600 dark:text-brand-300" data-test="recitation-points-{{ $student->id }}">{{ $this->preview['points'] }}</span>
+                <span class="mx-2 text-muted">·</span>
+                <span class="text-muted">النقاط</span>
+                <span class="font-semibold text-primary" data-test="recitation-points-{{ $student->id }}">{{ $this->preview['points'] }}</span>
             </div>
 
             <div class="flex gap-2">

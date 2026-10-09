@@ -31,9 +31,9 @@
             d="{{ $path }}"
             fill="none"
             stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="chart-stroke stroke-brand-500 dark:stroke-brand-300"
+            stroke-linecap="square"
+            stroke-linejoin="miter"
+            class="chart-stroke stroke-primary"
             style="--dash-length: {{ $viewWidth * 2 }}"
         />
     </svg>

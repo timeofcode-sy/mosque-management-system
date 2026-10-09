@@ -149,7 +149,7 @@ new #[Title('الدورات')] class extends Component {
         </x-slot>
     </x-page-header>
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="rounded-xl border border-line bg-raised">
         @if ($this->courses->isEmpty())
             <flux:text class="p-6 text-center">لا توجد دورات بعد.</flux:text>
         @else

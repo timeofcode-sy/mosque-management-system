@@ -161,7 +161,7 @@ new #[Title('التقارير')] class extends Component {
             </x-slot>
         </flux:callout>
     @else
-        <div class="flex flex-wrap items-end gap-3 rounded-xl border border-sand-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+        <div class="flex flex-wrap items-end gap-3 rounded-xl border border-line bg-raised p-4">
             <flux:input type="date" wire:model.live="date" label="التاريخ" class="latin-numerals max-w-48" data-test="report-date" />
 
             <flux:select wire:model.live="shiftId" label="الدوام" class="max-w-48" data-test="report-shift">
@@ -192,8 +192,8 @@ new #[Title('التقارير')] class extends Component {
         @if ($this->circleReport)
             @php($report = $this->circleReport)
 
-            <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-sand-200 p-4 dark:border-zinc-700">
+            <div class="rounded-xl border border-line bg-raised">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-line p-4">
                     <flux:heading size="lg">تقرير {{ $report['variables']['circle_name'] }} — {{ $report['variables']['date'] }}</flux:heading>
 
                     <flux:button
@@ -217,7 +217,7 @@ new #[Title('التقارير')] class extends Component {
                     <x-stat-card label="الترتيب اليومي" :value="$report['variables']['daily_rank']" tone="ink" />
                 </div>
 
-                <div class="grid gap-4 border-t border-sand-200 p-4 sm:grid-cols-2 dark:border-zinc-700">
+                <div class="grid gap-4 border-t border-line p-4 sm:grid-cols-2">
                     @foreach ([
                         'الحاضرون' => $report['lists']['present'],
                         'الغائبون' => $report['lists']['absent'],
@@ -236,8 +236,8 @@ new #[Title('التقارير')] class extends Component {
         @if ($this->pointsReport)
             @php($points = $this->pointsReport)
 
-            <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="flex flex-wrap items-end justify-between gap-3 border-b border-sand-200 p-4 dark:border-zinc-700">
+            <div class="rounded-xl border border-line bg-raised">
+                <div class="flex flex-wrap items-end justify-between gap-3 border-b border-line p-4">
                     <div class="flex flex-1 flex-wrap items-end gap-3">
                         <flux:heading size="lg" class="w-full">
                             نقاط {{ $points['courseCircle']->circle->name }}
@@ -313,8 +313,8 @@ new #[Title('التقارير')] class extends Component {
         @endif
 
         @if ($this->selectedShift)
-            <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-sand-200 p-4 dark:border-zinc-700">
+            <div class="rounded-xl border border-line bg-raised">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-line p-4">
                     <flux:heading size="lg">
                         ترتيب حلقات {{ $this->selectedShift->name }} — {{ $this->mode === 'cumulative' ? 'تراكمي' : 'اليوم' }}
                     </flux:heading>

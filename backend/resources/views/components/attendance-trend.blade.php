@@ -37,12 +37,12 @@
         : $coords->first()['x'].",{$viewHeight} ".$line.' '.$coords->last()['x'].",{$viewHeight}";
 @endphp
 
-<div {{ $attributes->class('rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900') }}>
-    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-sand-200 p-4 dark:border-zinc-700">
+<div {{ $attributes->class('rounded-xl border border-line bg-raised') }}>
+    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-line p-4">
         <flux:heading size="lg">{{ $heading }}</flux:heading>
 
         @if ($withSessions->isNotEmpty())
-            <flux:text size="sm" class="latin-numerals text-ink-500 dark:text-zinc-400">
+            <flux:text size="sm" class="latin-numerals text-muted">
                 المعدّل {{ round($withSessions->avg('rate'), 1) }}% · {{ $withSessions->count() }} يوم تفقّد
             </flux:text>
         @endif
@@ -56,27 +56,27 @@
             <svg viewBox="0 0 {{ $viewWidth }} {{ $viewHeight }}" preserveAspectRatio="none" class="h-40 w-full overflow-visible" role="img" aria-label="{{ $heading }}">
                 @foreach ([25, 50, 75] as $gridline)
                     @php $gy = $padY + (($viewHeight - 2 * $padY) * (100 - $gridline)) / 100; @endphp
-                    <line x1="0" y1="{{ $gy }}" x2="{{ $viewWidth }}" y2="{{ $gy }}" class="stroke-sand-200 dark:stroke-zinc-700" stroke-width="1" />
+                    <line x1="0" y1="{{ $gy }}" x2="{{ $viewWidth }}" y2="{{ $gy }}" class="stroke-line" stroke-width="1" />
                 @endforeach
 
-                <polygon points="{{ $area }}" class="fill-brand-500/10" />
+                <polygon points="{{ $area }}" class="fill-primary/10" />
                 <polyline
                     points="{{ $line }}"
                     fill="none"
-                    class="stroke-brand-600 dark:stroke-brand-300"
+                    class="stroke-primary"
                     stroke-width="2"
-                    stroke-linejoin="round"
-                    stroke-linecap="round"
+                    stroke-linejoin="miter"
+                    stroke-linecap="square"
                 />
 
                 @foreach ($coords as $c)
                     @if ($c['point']['sessions'] > 0)
-                        <circle cx="{{ $c['x'] }}" cy="{{ $c['y'] }}" r="3.5" class="fill-white stroke-brand-600 dark:fill-zinc-900 dark:stroke-brand-300" stroke-width="2" />
+                        <circle cx="{{ $c['x'] }}" cy="{{ $c['y'] }}" r="3.5" class="fill-raised stroke-primary" stroke-width="2" />
                     @endif
                 @endforeach
             </svg>
 
-            <div class="latin-numerals mt-2 flex justify-between text-xs text-ink-500 dark:text-zinc-400">
+            <div class="latin-numerals mt-2 flex justify-between text-xs text-muted">
                 <span>{{ $points->first()['date'] ?? '' }}</span>
                 <span>{{ $points->last()['date'] ?? '' }}</span>
             </div>

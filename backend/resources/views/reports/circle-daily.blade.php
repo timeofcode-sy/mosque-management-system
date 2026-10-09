@@ -24,17 +24,17 @@
             ['غائب', $v['absent'], 'text-absent'],
             ['متأخّر', $v['late'], 'text-late'],
             ['مأذون', $v['excused'], 'text-excused'],
-            ['النسبة', $v['rate'], 'text-brand-600'],
+            ['النسبة', $v['rate'], 'text-primary'],
         ] as [$label, $value, $tone])
-            <div class="rounded-lg border border-sand-300 p-3">
-                <p class="text-xs text-ink-500">{{ $label }}</p>
+            <div class="rounded-lg border border-line p-3">
+                <p class="text-xs text-muted">{{ $label }}</p>
                 <p class="latin-numerals mt-1 font-display text-2xl font-semibold {{ $tone }}">{{ $value }}</p>
             </div>
         @endforeach
     </section>
 
     @if ($session === null)
-        <p class="mt-6 rounded-lg border border-sand-300 bg-sand-50 p-4 text-center text-sm text-ink-500">
+        <p class="mt-6 rounded-lg border border-line bg-surface p-4 text-center text-sm text-muted">
             لم تُفتح جلسة تفقّد لهذه الحلقة في هذا التاريخ.
         </p>
     @else
@@ -43,31 +43,31 @@
 
             <table class="mt-2 w-full border-collapse text-sm">
                 <thead>
-                    <tr class="bg-sand-100 text-start">
-                        <th class="border border-sand-300 p-2 text-start">#</th>
-                        <th class="border border-sand-300 p-2 text-start">الطالب</th>
-                        <th class="border border-sand-300 p-2 text-start">رقم المعرف</th>
-                        <th class="border border-sand-300 p-2 text-start">الحالة</th>
-                        <th class="border border-sand-300 p-2 text-start">التأخّر</th>
-                        <th class="border border-sand-300 p-2 text-start">ملاحظة</th>
+                    <tr class="bg-sunken text-start">
+                        <th class="border border-line p-2 text-start">#</th>
+                        <th class="border border-line p-2 text-start">الطالب</th>
+                        <th class="border border-line p-2 text-start">رقم المعرف</th>
+                        <th class="border border-line p-2 text-start">الحالة</th>
+                        <th class="border border-line p-2 text-start">التأخّر</th>
+                        <th class="border border-line p-2 text-start">ملاحظة</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($session->attendances->sortBy(fn ($a) => $a->student->full_name)->values() as $i => $attendance)
                         <tr>
-                            <td class="latin-numerals border border-sand-300 p-2">{{ $i + 1 }}</td>
-                            <td class="border border-sand-300 p-2">{{ $attendance->student->full_name }}</td>
-                            <td class="latin-numerals border border-sand-300 p-2">{{ $attendance->student->registration_no ?: '—' }}</td>
-                            <td class="border border-sand-300 p-2">
+                            <td class="latin-numerals border border-line p-2">{{ $i + 1 }}</td>
+                            <td class="border border-line p-2">{{ $attendance->student->full_name }}</td>
+                            <td class="latin-numerals border border-line p-2">{{ $attendance->student->registration_no ?: '—' }}</td>
+                            <td class="border border-line p-2">
                                 <span class="{{ match ($attendance->status) {
-                                    App\Enums\AttendanceStatus::Present => 'text-present',
+ App\Enums\AttendanceStatus::Present => 'text-present',
                                     App\Enums\AttendanceStatus::Absent => 'text-absent',
                                     App\Enums\AttendanceStatus::Late => 'text-late',
                                     App\Enums\AttendanceStatus::Excused => 'text-excused',
                                 } }} font-medium">{{ $attendance->status->label() }}</span>
                             </td>
-                            <td class="latin-numerals border border-sand-300 p-2">{{ $attendance->late_minutes ? $attendance->late_minutes.' د' : '—' }}</td>
-                            <td class="border border-sand-300 p-2">{{ $attendance->note ?: '—' }}</td>
+                            <td class="latin-numerals border border-line p-2">{{ $attendance->late_minutes ? $attendance->late_minutes.' د' : '—' }}</td>
+                            <td class="border border-line p-2">{{ $attendance->note ?: '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -81,9 +81,9 @@
                 'المأذونون' => $lists['excused'],
             ] as $label => $names)
                 @if ($names !== [])
-                    <div class="rounded-lg border border-sand-300 p-3">
+                    <div class="rounded-lg border border-line p-3">
                         <h3 class="font-medium">{{ $label }} ({{ count($names) }})</h3>
-                        <p class="mt-1 text-ink-500">{{ implode('، ', $names) }}</p>
+                        <p class="mt-1 text-muted">{{ implode('، ', $names) }}</p>
                     </div>
                 @endif
             @endforeach
@@ -91,12 +91,12 @@
 
         <section class="avoid-break mt-10 grid grid-cols-2 gap-12 text-sm">
             <div>
-                <p class="text-ink-500">توقيع الأستاذ</p>
-                <div class="mt-8 border-t border-ink-900/40"></div>
+                <p class="text-muted">توقيع الأستاذ</p>
+                <div class="mt-8 border-t border-ink/40"></div>
             </div>
             <div>
-                <p class="text-ink-500">توقيع المشرف</p>
-                <div class="mt-8 border-t border-ink-900/40"></div>
+                <p class="text-muted">توقيع المشرف</p>
+                <div class="mt-8 border-t border-ink/40"></div>
             </div>
         </section>
     @endif

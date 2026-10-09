@@ -16,10 +16,10 @@
             ['غائب', $summary['absent'], 'text-absent'],
             ['متأخّر', $summary['late'], 'text-late'],
             ['مأذون', $summary['excused'], 'text-excused'],
-            ['نسبة الحضور', $summary['rate'] !== null ? $summary['rate'].'%' : '—', 'text-brand-600'],
+            ['نسبة الحضور', $summary['rate'] !== null ? $summary['rate'].'%' : '—', 'text-primary'],
         ] as [$label, $value, $tone])
-            <div class="rounded-lg border border-sand-300 p-3">
-                <p class="text-xs text-ink-500">{{ $label }}</p>
+            <div class="rounded-lg border border-line p-3">
+                <p class="text-xs text-muted">{{ $label }}</p>
                 <p class="latin-numerals mt-1 font-display text-2xl font-semibold {{ $tone }}">{{ $value }}</p>
             </div>
         @endforeach
@@ -43,28 +43,28 @@
         <h2 class="font-display text-lg font-semibold">مسار الحلقات</h2>
 
         @if ($enrollments->isEmpty())
-            <p class="mt-2 text-sm text-ink-500">لم يُسجَّل الطالب في أي حلقة بعد.</p>
+            <p class="mt-2 text-sm text-muted">لم يُسجَّل الطالب في أي حلقة بعد.</p>
         @else
             <table class="mt-2 w-full border-collapse text-sm">
                 <thead>
-                    <tr class="bg-sand-100">
-                        <th class="border border-sand-300 p-2 text-start">الدورة</th>
-                        <th class="border border-sand-300 p-2 text-start">الحلقة</th>
-                        <th class="border border-sand-300 p-2 text-start">الدوام</th>
-                        <th class="border border-sand-300 p-2 text-start">من</th>
-                        <th class="border border-sand-300 p-2 text-start">إلى</th>
-                        <th class="border border-sand-300 p-2 text-start">الحالة</th>
+                    <tr class="bg-sunken">
+                        <th class="border border-line p-2 text-start">الدورة</th>
+                        <th class="border border-line p-2 text-start">الحلقة</th>
+                        <th class="border border-line p-2 text-start">الدوام</th>
+                        <th class="border border-line p-2 text-start">من</th>
+                        <th class="border border-line p-2 text-start">إلى</th>
+                        <th class="border border-line p-2 text-start">الحالة</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($enrollments as $enrollment)
                         <tr>
-                            <td class="border border-sand-300 p-2">{{ $enrollment->courseCircle->course->name }}</td>
-                            <td class="border border-sand-300 p-2">{{ $enrollment->courseCircle->circle->name }}</td>
-                            <td class="border border-sand-300 p-2">{{ $enrollment->courseCircle->shift->name }}</td>
-                            <td class="latin-numerals border border-sand-300 p-2">{{ $enrollment->enrolled_on?->toDateString() ?? '—' }}</td>
-                            <td class="latin-numerals border border-sand-300 p-2">{{ $enrollment->left_on?->toDateString() ?? '—' }}</td>
-                            <td class="border border-sand-300 p-2">{{ $enrollment->status->label() }}</td>
+                            <td class="border border-line p-2">{{ $enrollment->courseCircle->course->name }}</td>
+                            <td class="border border-line p-2">{{ $enrollment->courseCircle->circle->name }}</td>
+                            <td class="border border-line p-2">{{ $enrollment->courseCircle->shift->name }}</td>
+                            <td class="latin-numerals border border-line p-2">{{ $enrollment->enrolled_on?->toDateString() ?? '—' }}</td>
+                            <td class="latin-numerals border border-line p-2">{{ $enrollment->left_on?->toDateString() ?? '—' }}</td>
+                            <td class="border border-line p-2">{{ $enrollment->status->label() }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -80,7 +80,7 @@
                 @foreach ($progressByCurriculum as $curriculumName => $entries)
                     <div>
                         <h3 class="font-medium">{{ $curriculumName }}</h3>
-                        <p class="mt-1 text-ink-500">{{ $entries->map(fn ($p) => $p->curriculumItem->name)->join('، ') }}</p>
+                        <p class="mt-1 text-muted">{{ $entries->map(fn ($p) => $p->curriculumItem->name)->join('، ') }}</p>
                     </div>
                 @endforeach
             </div>
@@ -89,12 +89,12 @@
 
     <section class="avoid-break mt-10 grid grid-cols-2 gap-12 text-sm">
         <div>
-            <p class="text-ink-500">توقيع المشرف</p>
-            <div class="mt-8 border-t border-ink-900/40"></div>
+            <p class="text-muted">توقيع المشرف</p>
+            <div class="mt-8 border-t border-ink/40"></div>
         </div>
         <div>
-            <p class="text-ink-500">توقيع ولي الأمر</p>
-            <div class="mt-8 border-t border-ink-900/40"></div>
+            <p class="text-muted">توقيع ولي الأمر</p>
+            <div class="mt-8 border-t border-ink/40"></div>
         </div>
     </section>
 </x-report-sheet>

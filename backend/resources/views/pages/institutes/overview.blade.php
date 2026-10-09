@@ -79,14 +79,14 @@ new #[Title('لوحة المعاهد')] class extends Component {
     </div>
 
     <div class="grid gap-6 lg:grid-cols-3">
-        <div class="rounded-xl border border-sand-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900 lg:col-span-1">
+        <div class="rounded-xl border border-line bg-raised p-6 lg:col-span-1">
             <flux:heading size="sm">نسب الحضور</flux:heading>
             <div class="mt-4">
                 <x-charts.bar :rows="$this->rateBars" unit="%" />
             </div>
         </div>
 
-        <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900 lg:col-span-2">
+        <div class="rounded-xl border border-line bg-raised lg:col-span-2">
             @if (collect($this->overview['rows'])->isEmpty())
                 <flux:text class="p-6 text-center">لا توجد معاهد بعد.</flux:text>
             @else

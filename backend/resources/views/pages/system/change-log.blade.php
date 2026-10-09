@@ -96,7 +96,7 @@ new #[Title('سجل التغييرات')] class extends Component {
         </flux:select>
     </div>
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="rounded-xl border border-line bg-raised">
         @if ($this->entries->isEmpty())
             <flux:text class="p-6 text-center">لا توجد قيود مطابقة.</flux:text>
         @else
@@ -137,7 +137,7 @@ new #[Title('سجل التغييرات')] class extends Component {
             <flux:heading size="lg">حمولة القيد</flux:heading>
 
             @if ($this->inspected)
-                <pre dir="ltr" class="latin-numerals max-h-96 overflow-auto rounded-lg bg-sand-100 p-3 text-xs dark:bg-zinc-800">{{ json_encode($this->inspected->payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                <pre dir="ltr" class="latin-numerals max-h-96 overflow-auto rounded-lg bg-sunken p-3 text-xs">{{ json_encode($this->inspected->payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
             @endif
 
             <flux:modal.close><flux:button variant="ghost">إغلاق</flux:button></flux:modal.close>

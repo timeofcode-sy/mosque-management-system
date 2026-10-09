@@ -114,7 +114,7 @@ new #[Title('الصفات')] class extends Component {
         </x-slot>
     </x-page-header>
 
-    <div class="rounded-xl border border-sand-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="rounded-xl border border-line bg-raised">
         <flux:table>
             <flux:table.columns>
                 <flux:table.column>الصفة</flux:table.column>

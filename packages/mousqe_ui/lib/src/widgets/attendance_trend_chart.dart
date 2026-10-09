@@ -18,7 +18,7 @@ class AttendanceTrendChart extends StatelessWidget {
   const AttendanceTrendChart({
     super.key,
     required this.days,
-    this.heading = 'منحنى الحضور — آخر ٣٠ يوماً',
+    this.heading = 'منحنى الحضور — آخر 30 يوماً',
   });
 
   final List<TrendDay> days;
