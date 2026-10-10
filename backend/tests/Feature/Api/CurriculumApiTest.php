@@ -75,12 +75,12 @@ class CurriculumApiTest extends TestCase
 
         $this->deleteJson("/api/v1/admin/curriculum-items/{$juz->uuid}")->assertStatus(422);
 
-        // وتحريرُ اسم جزءٍ قائم مسموح — الثابتُ عددُها لا أسماؤها.
+        // ولا يُعدَّل اسمُ جزءٍ قائم أيضاً.
         $this->putJson("/api/v1/admin/curriculum-items/{$juz->uuid}", ['name' => 'جزء عمّ'])
-            ->assertOk()
-            ->assertJsonPath('data.name', 'جزء عمّ');
+            ->assertStatus(422);
 
         $this->assertSame(30, $quran->items()->count());
+        $this->assertSame($juz->name, $juz->refresh()->name);
     }
 
     /**

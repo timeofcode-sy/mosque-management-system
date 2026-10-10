@@ -17,9 +17,15 @@ use RuntimeException;
  * النقاط تُشتقّ من النسبة × عدّاد البند (meta.hadiths أو meta.abyat) × معامل النوع،
  * ثم تُجمَّد في الصف: صفُّ التقدّم حالةٌ واحدة لكل بند، فإعادةُ الحساب عند كل حفظ
  * تعطي المجموع الصحيح للبند دون تكرار، وتغييرُ الإعدادات لاحقاً لا يمسّ ما مضى.
+ *
+ * الجزء القرآني يختلف: لا «متقَن» فيه — «محفوظ» يكفي، ودرجةُ سبره في score. ونسبتُه
+ * لا تُدخَل بل تُشتقّ من آياته المسمَّعة (RefreshJuzProgress)، فما لم يُعلَّم محفوظاً
+ * يُعاد حسابه بعد الحفظ.
  */
 class SaveStudentCurriculumProgress
 {
+    public function __construct(private readonly RefreshJuzProgress $juzProgress) {}
+
     /**
      * @param  array{status: string, percent?: int|string|null, score?: int|string|null, notes?: string|null}  $data
      */
@@ -31,10 +37,16 @@ class SaveStudentCurriculumProgress
             throw new RuntimeException('حالة الإنجاز غير معروفة.');
         }
 
+        $item->loadMissing('curriculum.institute');
+
+        $isJuz = $item->juz() !== null;
+
+        if ($isJuz && $status === ProgressStatus::Mastered) {
+            $status = ProgressStatus::Memorized;
+        }
+
         $percent = $this->percentFor($status, $data['percent'] ?? null);
         $today = Carbon::today()->toDateString();
-
-        $item->loadMissing('curriculum.institute');
 
         $points = PointsSettings::for($item->curriculum->institute ?? $student->institute)
             ->progressPoints($item, $percent);
@@ -44,7 +56,7 @@ class SaveStudentCurriculumProgress
             ->where('curriculum_item_id', $item->id)
             ->first();
 
-        return StudentCurriculumProgress::updateOrCreate(
+        $progress = StudentCurriculumProgress::updateOrCreate(
             ['student_id' => $student->id, 'curriculum_item_id' => $item->id],
             [
                 'course_circle_id' => $student->activeEnrollment()?->course_circle_id,
@@ -55,11 +67,28 @@ class SaveStudentCurriculumProgress
                 'points' => $points,
                 'started_on' => $existing?->started_on?->toDateString()
                     ?? ($status === ProgressStatus::NotStarted ? null : $today),
-                'completed_on' => in_array($status, [ProgressStatus::Memorized, ProgressStatus::Mastered], true) ? $today : null,
+                'completed_on' => $this->isComplete($status)
+                    ? ($this->isComplete($existing?->status) ? $existing->completed_on?->toDateString() : null) ?? $today
+                    : null,
                 'achieved_on' => $status === ProgressStatus::NotStarted ? null : $today,
                 'teacher_id' => $actor?->teacher?->id,
             ],
         );
+
+        if ($isJuz && $status !== ProgressStatus::Memorized) {
+            $this->juzProgress->handle($student, $actor);
+            $progress->refresh();
+        }
+
+        return $progress;
+    }
+
+    /**
+     * تاريخ الإتمام يبقى على أوّل يومٍ اكتمل فيه البند: تسجيل درجة السبر لاحقاً لا يزحزحه.
+     */
+    private function isComplete(?ProgressStatus $status): bool
+    {
+        return in_array($status, [ProgressStatus::Memorized, ProgressStatus::Mastered], true);
     }
 
     /**

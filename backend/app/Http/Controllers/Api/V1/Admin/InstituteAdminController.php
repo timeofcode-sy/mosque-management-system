@@ -10,6 +10,7 @@ use App\Support\AttendanceSettings;
 use App\Support\InstituteForm;
 use App\Support\InstituteTheme;
 use App\Support\PointsSettings;
+use App\Support\SabrSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -94,6 +95,9 @@ class InstituteAdminController extends Controller
                 ),
             ],
             'points' => $request->input('points', PointsSettings::for($institute)->toArray()),
+            'sabr' => [
+                'pass_mark' => $request->input('sabr.pass_mark', SabrSettings::for($institute)->passMark()),
+            ],
         ];
 
         $validated = Validator::make($payload, $rules, attributes: InstituteForm::attributes())->validate();
@@ -121,6 +125,7 @@ class InstituteAdminController extends Controller
             'theme' => InstituteTheme::for($institute)->toArray(),
             'attendance' => AttendanceSettings::for($institute)->toArray(),
             'points' => PointsSettings::for($institute)->toArray(),
+            'sabr' => SabrSettings::for($institute)->toArray(),
         ];
     }
 }

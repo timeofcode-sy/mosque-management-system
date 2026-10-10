@@ -83,6 +83,10 @@ new #[Title('المناهج')] class extends Component
 
     public function edit(Curriculum $curriculum): void
     {
+        if ($this->rejectFixedQuran($curriculum)) {
+            return;
+        }
+
         $this->editingId = $curriculum->id;
         $this->name = $curriculum->name;
         $this->type = $curriculum->type->value;
@@ -109,6 +113,10 @@ new #[Title('المناهج')] class extends Component
         $editing = $this->editingId === null
             ? null
             : $this->curricula->firstWhere('id', $this->editingId);
+
+        if ($editing !== null && $this->rejectFixedQuran($editing)) {
+            return;
+        }
 
         try {
             app(SaveCurriculum::class)->handle($this->institute, $validated, $editing);
@@ -140,6 +148,10 @@ new #[Title('المناهج')] class extends Component
 
     public function editItem(CurriculumItem $item): void
     {
+        if ($this->rejectFixedQuran($item->curriculum)) {
+            return;
+        }
+
         $this->itemCurriculumId = $item->curriculum_id;
         $this->editingItemId = $item->id;
         $this->itemName = $item->name;
@@ -156,8 +168,7 @@ new #[Title('المناهج')] class extends Component
     {
         $curriculum = Curriculum::findOrFail($this->itemCurriculumId);
 
-        // بندٌ جديد في القرآن مرفوض؛ وتعديل اسم جزء قائم مسموح.
-        if ($this->editingItemId === null && $this->rejectFixedQuran($curriculum)) {
+        if ($this->rejectFixedQuran($curriculum)) {
             return;
         }
 
@@ -208,7 +219,8 @@ new #[Title('المناهج')] class extends Component
     }
 
     /**
-     * أجزاء القرآن ثلاثون ثابتاً — إخفاء الأزرار وحده ليس حماية، فالحراسة هنا على الخادم.
+     * منهج القرآن وأجزاؤه الثلاثون ثابتة: لا يُعدَّل المنهج ولا بنوده ولا تُضاف ولا تُحذف —
+     * إخفاء الأزرار وحده ليس حماية، فالحراسة هنا على الخادم.
      */
     private function rejectFixedQuran(Curriculum $curriculum): bool
     {
@@ -216,7 +228,7 @@ new #[Title('المناهج')] class extends Component
             return false;
         }
 
-        Flux::toast(variant: 'danger', text: 'أجزاء القرآن ثابتة ولا تُضاف ولا تُحذف.');
+        Flux::toast(variant: 'danger', text: 'منهج القرآن وأجزاؤه ثابتة ولا تُعدَّل ولا تُضاف ولا تُحذف.');
 
         return true;
     }
@@ -291,8 +303,8 @@ new #[Title('المناهج')] class extends Component
                     <div class="flex gap-2">
                         @if ($curriculum->type !== CurriculumType::Quran)
                             <flux:button wire:click="createItem('{{ $curriculum->uuid }}')" size="sm" icon="plus">بند</flux:button>
+                            <flux:button wire:click="edit('{{ $curriculum->uuid }}')" size="sm" variant="subtle" icon="pencil">تعديل</flux:button>
                         @endif
-                        <flux:button wire:click="edit('{{ $curriculum->uuid }}')" size="sm" variant="subtle" icon="pencil">تعديل</flux:button>
                         @if ($curriculum->institute_id !== null)
                             <flux:button
                                 wire:click="delete('{{ $curriculum->uuid }}')"
@@ -318,10 +330,12 @@ new #[Title('المناهج')] class extends Component
                         @endphp
 
                         <flux:badge wire:key="item-{{ $item->id }}" color="zinc">
-                            <button type="button" wire:click="editItem('{{ $item->uuid }}')" class="cursor-pointer">
-                                {{ $item->name }}@if ($countLabel)<span class="latin-numerals text-muted"> · {{ $countLabel }}</span>@endif
-                            </button>
-                            @if ($curriculum->type !== CurriculumType::Quran)
+                            @if ($curriculum->type === CurriculumType::Quran)
+                                {{ $item->name }}
+                            @else
+                                <button type="button" wire:click="editItem('{{ $item->uuid }}')" class="cursor-pointer">
+                                    {{ $item->name }}@if ($countLabel)<span class="latin-numerals text-muted"> · {{ $countLabel }}</span>@endif
+                                </button>
                                 <flux:badge.close wire:click="deleteItem('{{ $item->uuid }}')" />
                             @endif
                         </flux:badge>

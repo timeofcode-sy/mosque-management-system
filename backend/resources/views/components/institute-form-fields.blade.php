@@ -6,7 +6,7 @@
     ويحرّر أيّها شاء. النموذج واحد، فلا يصحّ أن يتفرّع الحقلُ في إحداهما دون الأخرى.
 
     تعتمد على خصائص المكوّن المستدعي بأسمائها: name · short_name · phone · email ·
-    address · is_active · logo · points · theme · attendance.
+    address · is_active · logo · points · theme · attendance · sabr.
 --}}
 <div class="space-y-6">
     <flux:input wire:model="name" label="اسم المعهد" required autofocus />
@@ -37,6 +37,17 @@
         description="دقائق التأخير تُحسب تلقائياً من بداية الدوام مطروحاً منها هذه الفترة. صفرٌ يعني احتساب التأخير من بداية الدوام تماماً."
         class="latin-numerals max-w-56"
         data-test="late-grace"
+    />
+
+    <flux:separator text="سبر الأجزاء" />
+
+    <flux:input
+        wire:model="sabr.pass_mark"
+        type="number" min="0" max="100"
+        label="علامة النجاح · من 100"
+        description="في نهاية تسميع كل جزء يسبر الأستاذ الطالب فيه بعلامة من 100، وينجح من بلغ هذه العلامة."
+        class="latin-numerals max-w-56"
+        data-test="sabr-pass-mark"
     />
 
     <flux:separator text="النقاط" />

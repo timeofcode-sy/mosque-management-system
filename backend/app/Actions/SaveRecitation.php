@@ -22,7 +22,10 @@ use RuntimeException;
  */
 class SaveRecitation
 {
-    public function __construct(private readonly BuildStudentCoverageMap $coverageMap) {}
+    public function __construct(
+        private readonly BuildStudentCoverageMap $coverageMap,
+        private readonly RefreshJuzProgress $juzProgress,
+    ) {}
 
     /**
      * @param  array{uuid?: string|null, from_surah: int|string, from_ayah: int|string, to_surah: int|string, to_ayah: int|string, grade?: string|null, juz?: int|string|null, type?: string|null, curriculum_item_id?: int|null, notes?: string|null}  $data
@@ -79,6 +82,9 @@ class SaveRecitation
                 'teacher_id' => $actor?->teacher?->id,
                 'notes' => blank($data['notes'] ?? null) ? null : $data['notes'],
             ])->save();
+
+            // نسبة الجزء تتبع آياته المسمَّعة، فكل تسميع يعيد حسابها.
+            $this->juzProgress->handle($student, $actor);
 
             return $log;
         });

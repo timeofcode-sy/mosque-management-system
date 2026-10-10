@@ -32,6 +32,7 @@ class InstituteForm
             'theme.secondary' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'theme.surface' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'attendance.late_grace_minutes' => ['required', 'integer', 'min:0', 'max:240'],
+            'sabr.pass_mark' => ['required', 'integer', 'min:0', 'max:100'],
             'points.quran_per_15_lines' => ['required', 'numeric', 'min:0', 'max:1000'],
             'points.hadith_per_item' => ['required', 'numeric', 'min:0', 'max:1000'],
             'points.mutun_per_bayt' => ['required', 'numeric', 'min:0', 'max:1000'],
@@ -53,6 +54,7 @@ class InstituteForm
             'theme.secondary' => 'اللون الثانوي',
             'theme.surface' => 'لون الأرضية',
             'attendance.late_grace_minutes' => 'فترة السماح',
+            'sabr.pass_mark' => 'علامة النجاح في السبر',
         ];
     }
 
@@ -60,7 +62,7 @@ class InstituteForm
      * الحقول جاهزةً للإسناد على النموذج، والشعارُ مخزَّناً إن رُفع.
      *
      * الإعدادات الأخرى في العمود تبقى كما هي — تُستبدل المفاتيح المعروضة في النموذج
-     * وحدها (points · theme · attendance)، فإضافةُ مفتاحٍ لاحقاً لا تمسح ما قبله.
+     * وحدها (points · theme · attendance · sabr)، فإضافةُ مفتاحٍ لاحقاً لا تمسح ما قبله.
      *
      * @param  array<string, mixed>  $validated
      * @param  array<string, mixed>  $points
@@ -71,8 +73,10 @@ class InstituteForm
         $theme = InstituteTheme::fromArray((array) ($validated['theme'] ?? []))->toArray();
         $attendance = AttendanceSettings::for(null)->toArray();
         $attendance['late_grace_minutes'] = (int) data_get($validated, 'attendance.late_grace_minutes', 0);
+        $sabr = SabrSettings::for(null)->toArray();
+        $sabr['pass_mark'] = (int) data_get($validated, 'sabr.pass_mark', $sabr['pass_mark']);
 
-        unset($validated['logo'], $validated['points'], $validated['theme'], $validated['attendance']);
+        unset($validated['logo'], $validated['points'], $validated['theme'], $validated['attendance'], $validated['sabr']);
 
         $attributes = [
             ...$validated,
@@ -81,6 +85,7 @@ class InstituteForm
                 'points' => $points,
                 'theme' => $theme,
                 'attendance' => $attendance,
+                'sabr' => $sabr,
             ],
         ];
 

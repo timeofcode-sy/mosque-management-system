@@ -30,7 +30,7 @@ use RuntimeException;
  */
 class CurriculumAdminController extends Controller
 {
-    private const FIXED_QURAN = 'أجزاء القرآن ثابتة ولا تُضاف ولا تُحذف.';
+    private const FIXED_QURAN = 'منهج القرآن وأجزاؤه ثابتة ولا تُعدَّل ولا تُضاف ولا تُحذف.';
 
     public function store(Request $request, SaveCurriculum $saveCurriculum): JsonResponse
     {
@@ -45,6 +45,10 @@ class CurriculumAdminController extends Controller
     {
         $institute = $this->institute($request);
         $curriculum = $this->curriculum($uuid, $institute);
+
+        if ($curriculum->type === CurriculumType::Quran) {
+            return response()->json(['message' => self::FIXED_QURAN], 422);
+        }
 
         try {
             $curriculum = $saveCurriculum->handle($institute, $this->attributes($request), $curriculum);
@@ -74,8 +78,10 @@ class CurriculumAdminController extends Controller
         $item = $this->item($uuid, $institute);
         $curriculum = $item->curriculum;
 
-        // تحريرُ اسم جزءٍ قائم مسموح، وإضافةُ جزءٍ وحذفُه ممنوعان — نفسُ تفريق
-        // شاشة اللوحة حرفياً: الثابتُ عددُها لا أسماؤها.
+        if ($curriculum->type === CurriculumType::Quran) {
+            return response()->json(['message' => self::FIXED_QURAN], 422);
+        }
+
         $item = $saveItem->handle($curriculum, $this->itemAttributes($request, $curriculum, $item), $item->id);
 
         return response()->json(['data' => self::itemPayload($item)]);

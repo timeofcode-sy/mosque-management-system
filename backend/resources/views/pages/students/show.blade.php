@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\BuildStudentMemorizedMap;
 use App\Actions\BuildStudentProgressMap;
 use App\Actions\SaveStudentCurriculumProgress;
 use App\Enums\ProgressStatus;
@@ -11,6 +12,8 @@ use App\Models\Student;
 use App\Models\StudentTransfer;
 use App\Queries\InstituteCatalogQuery;
 use App\Queries\StudentProfileQuery;
+use App\Support\Quran;
+use App\Support\SabrSettings;
 use Flux\Flux;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
@@ -29,6 +32,13 @@ new #[Title('ملف الطالب')] class extends Component
     public int $progressPercent = 0;
 
     public string $progressNotes = '';
+
+    /**
+     * نافذة الجزء القرآني: «محفوظ» أو لا — والنسبة تُشتقّ من الآيات المسمَّعة.
+     */
+    public bool $progressMemorized = false;
+
+    public string $progressScore = '';
 
     public function mount(Student $student): void
     {
@@ -106,6 +116,32 @@ new #[Title('ملف الطالب')] class extends Component
             : $this->curricula->flatMap->items->firstWhere('id', $this->progressItemId);
     }
 
+    #[Computed]
+    public function sabr(): SabrSettings
+    {
+        return SabrSettings::for($this->student->institute);
+    }
+
+    /**
+     * آيات الجزء المحفوظة من مجموعها — ما تُشتقّ منه نسبة الجزء في نافذته.
+     *
+     * @return array{covered: int, total: int}|null
+     */
+    #[Computed]
+    public function editingJuzCoverage(): ?array
+    {
+        $juz = $this->editingItem?->juz();
+
+        if ($juz === null) {
+            return null;
+        }
+
+        return [
+            'covered' => BuildStudentMemorizedMap::coveredInJuz(app(BuildStudentMemorizedMap::class)->handle($this->student), $juz),
+            'total' => Quran::juzAyahs($juz),
+        ];
+    }
+
     public function editProgress(CurriculumItem $curriculumItem): void
     {
         $existing = $this->progressByItem->get($curriculumItem->id);
@@ -114,9 +150,11 @@ new #[Title('ملف الطالب')] class extends Component
         $this->progressStatus = $existing?->status->value ?? ProgressStatus::InProgress->value;
         $this->progressPercent = $existing?->percent ?? 0;
         $this->progressNotes = (string) $existing?->notes;
+        $this->progressMemorized = in_array($existing?->status, [ProgressStatus::Memorized, ProgressStatus::Mastered], true);
+        $this->progressScore = (string) $existing?->score;
         $this->resetValidation();
 
-        unset($this->editingItem);
+        unset($this->editingItem, $this->editingJuzCoverage);
 
         Flux::modal('curriculum-progress')->show();
     }
@@ -126,6 +164,12 @@ new #[Title('ملف الطالب')] class extends Component
         $item = $this->editingItem;
 
         if ($item === null) {
+            return;
+        }
+
+        if ($item->juz() !== null) {
+            $this->saveJuzProgress($item);
+
             return;
         }
 
@@ -142,7 +186,37 @@ new #[Title('ملف الطالب')] class extends Component
             auth()->user(),
         );
 
-        unset($this->progressByItem);
+        $this->progressSaved();
+    }
+
+    /**
+     * الجزء: «محفوظ» مع علامة السبر، أو غير محفوظ فتعود نسبته إلى آياته المسمَّعة.
+     */
+    private function saveJuzProgress(CurriculumItem $item): void
+    {
+        $this->validate([
+            'progressMemorized' => ['boolean'],
+            'progressScore' => ['nullable', 'integer', 'between:0,100'],
+            'progressNotes' => ['nullable', 'string', 'max:1000'],
+        ], attributes: ['progressScore' => 'علامة السبر']);
+
+        app(SaveStudentCurriculumProgress::class)->handle(
+            $this->student,
+            $item,
+            [
+                'status' => ($this->progressMemorized ? ProgressStatus::Memorized : ProgressStatus::NotStarted)->value,
+                'score' => $this->progressMemorized ? $this->progressScore : null,
+                'notes' => $this->progressNotes,
+            ],
+            auth()->user(),
+        );
+
+        $this->progressSaved();
+    }
+
+    private function progressSaved(): void
+    {
+        unset($this->progressByItem, $this->progressMap);
 
         Flux::modal('curriculum-progress')->close();
         Flux::toast(variant: 'success', text: 'حُدّث الإنجاز.');
@@ -392,7 +466,7 @@ new #[Title('ملف الطالب')] class extends Component
         </div>
 
         @if ($this->progressMap['memorized_ayahs'] === 0)
-            <flux:text class="mt-4">لم تُسجَّل مدَيات حفظ بعد — الخريطة تُبنى من سجلّات الحفظ (from_surah إلى to_surah).</flux:text>
+            <flux:text class="mt-4">لم يُسجَّل حفظ بعد — الخريطة تُبنى من مدَيات التسميع ومن الأجزاء المعلَّمة «محفوظ».</flux:text>
         @endif
 
         <x-surah-map :surahs="$this->progressMap['surahs']" class="mt-4" />
@@ -412,14 +486,16 @@ new #[Title('ملف الطالب')] class extends Component
                     <div class="mt-2 flex flex-wrap gap-2">
                         @forelse ($curriculum->items as $item)
                             @php($progress = $this->progressByItem->get($item->id))
+                            @php($sabrPassed = $item->juz() !== null && $progress?->status === ProgressStatus::Memorized ? $this->sabr->passed($progress->score) : null)
 
                             <flux:badge
                                 wire:key="progress-item-{{ $item->id }}"
                                 size="sm"
-                                :color="match ($progress?->status) {
-                                    ProgressStatus::Mastered => 'green',
-                                    ProgressStatus::Memorized => 'lime',
-                                    ProgressStatus::InProgress => 'amber',
+                                :color="match (true) {
+                                    $sabrPassed === false => 'red',
+                                    $sabrPassed === true, $progress?->status === ProgressStatus::Mastered => 'green',
+                                    $progress?->status === ProgressStatus::Memorized => 'lime',
+                                    $progress?->status === ProgressStatus::InProgress => 'amber',
                                     default => 'zinc',
                                 }"
                             >
@@ -432,6 +508,9 @@ new #[Title('ملف الطالب')] class extends Component
                                     {{ $item->name }}
                                     @if ($progress && $progress->percent > 0 && $progress->percent < 100)
                                         <span class="latin-numerals"> · {{ $progress->percent }}%</span>
+                                    @endif
+                                    @if ($item->juz() !== null && $progress?->status === ProgressStatus::Memorized)
+                                        <span class="latin-numerals" data-test="sabr-{{ $item->id }}"> · {{ $progress->score === null ? 'بانتظار السبر' : 'سبر '.$progress->score }}</span>
                                     @endif
                                     @if ($progress && (float) $progress->points > 0)
                                         <span class="latin-numerals"> · {{ rtrim(rtrim(number_format((float) $progress->points, 2, '.', ''), '0'), '.') }} نقطة</span>
@@ -452,20 +531,48 @@ new #[Title('ملف الطالب')] class extends Component
             <form wire:submit="saveProgress" class="space-y-6">
                 <flux:heading size="lg">{{ $this->editingItem->name }}</flux:heading>
 
-                <flux:select wire:model.live="progressStatus" label="الحالة" data-test="progress-status">
-                    @foreach (ProgressStatus::options() as $value => $label)
-                        <flux:select.option :value="$value">{{ $label }}</flux:select.option>
-                    @endforeach
-                </flux:select>
+                @if ($this->editingJuzCoverage)
+                    <div class="space-y-1">
+                        <flux:text size="sm" class="text-muted">{{ Quran::juzLabel($this->editingItem->juz()) }}</flux:text>
+                        <flux:text class="latin-numerals" data-test="juz-coverage">
+                            المحفوظ {{ $this->editingJuzCoverage['covered'] }} / {{ $this->editingJuzCoverage['total'] }} آية ·
+                            {{ intdiv($this->editingJuzCoverage['covered'] * 100, $this->editingJuzCoverage['total']) }}%
+                        </flux:text>
+                    </div>
 
-                @if ($progressStatus === ProgressStatus::InProgress->value)
-                    <flux:input
-                        wire:model="progressPercent"
-                        type="number" min="1" max="100"
-                        label="النسبة المنجَزة %"
-                        class="latin-numerals"
-                        data-test="progress-percent"
+                    <flux:switch
+                        wire:model.live="progressMemorized"
+                        label="الجزء محفوظ كاملاً"
+                        description="يملأ سور الجزء في خريطة المصحف. وغير المحفوظ تُحسب نسبته من آياته المسمَّعة."
+                        data-test="juz-memorized"
                     />
+
+                    @if ($progressMemorized)
+                        <flux:input
+                            wire:model="progressScore"
+                            type="number" min="0" max="100"
+                            label="علامة السبر · من 100"
+                            :description="'علامة النجاح '.$this->sabr->passMark().' — تُضبط في بيانات المعهد. اتركها فارغةً إن لم يُسبر الجزء بعد.'"
+                            class="latin-numerals max-w-56"
+                            data-test="sabr-score"
+                        />
+                    @endif
+                @else
+                    <flux:select wire:model.live="progressStatus" label="الحالة" data-test="progress-status">
+                        @foreach (ProgressStatus::options() as $value => $label)
+                            <flux:select.option :value="$value">{{ $label }}</flux:select.option>
+                        @endforeach
+                    </flux:select>
+
+                    @if ($progressStatus === ProgressStatus::InProgress->value)
+                        <flux:input
+                            wire:model="progressPercent"
+                            type="number" min="1" max="100"
+                            label="النسبة المنجَزة %"
+                            class="latin-numerals"
+                            data-test="progress-percent"
+                        />
+                    @endif
                 @endif
 
                 <flux:textarea wire:model="progressNotes" label="ملاحظات" rows="2" />

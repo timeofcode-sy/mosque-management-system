@@ -2,8 +2,6 @@
 
 namespace App\Actions;
 
-use App\Enums\MemorizationType;
-use App\Models\MemorizationLog;
 use App\Models\Student;
 use App\Support\Quran;
 
@@ -11,10 +9,13 @@ use App\Support\Quran;
  * خريطة تقدّم الحفظ في المصحف: نسبة تغطية كل سورة من سجلّات الحفظ.
  *
  * التغطية تُبنى من مدَيات (from_surah, from_ayah) إلى (to_surah, to_ayah) لا من عدّاد
- * الصفحات، لأن المدى وحده يقول أين وصل الطالب — والصفحات تقول كم قطع فقط.
+ * الصفحات، لأن المدى وحده يقول أين وصل الطالب — والصفحات تقول كم قطع فقط. والجزء
+ * المعلَّم «محفوظ» مدىً كذلك بحدوده (BuildStudentMemorizedMap).
  */
 class BuildStudentProgressMap
 {
+    public function __construct(private readonly BuildStudentMemorizedMap $memorized) {}
+
     /**
      * @return array{
      *     surahs: array<int, array{number: int, name: string, ayahs: int, covered: int, ratio: float}>,
@@ -59,26 +60,17 @@ class BuildStudentProgressMap
     }
 
     /**
-     * أعلى تغطية بلغَتها كل سورة عبر كل سجلّات الحفظ — لا مجموعها،
-     * فمراجعة المدى نفسه مرّتين لا تعني حفظ ضعفه.
+     * آيات كل سورة المحفوظة: اتّحاد المدَيات لا مجموعها، فمراجعة المدى نفسه مرّتين
+     * لا تعني حفظ ضعفه، ومدَيان متداخلان لا يُحسب تقاطعهما مرّتين.
      *
      * @return array<int, int>
      */
     private function coveredAyahsBySurah(Student $student): array
     {
-        $logs = MemorizationLog::query()
-            ->where('student_id', $student->id)
-            ->where('type', MemorizationType::Hifz)
-            ->whereNotNull('from_surah')
-            ->whereNotNull('to_surah')
-            ->get(['from_surah', 'from_ayah', 'to_surah', 'to_ayah']);
-
         $covered = [];
 
-        foreach ($logs as $log) {
-            foreach (Quran::coverage((int) $log->from_surah, $log->from_ayah, (int) $log->to_surah, $log->to_ayah) as $surah => $count) {
-                $covered[$surah] = max($covered[$surah] ?? 0, $count);
-            }
+        foreach ($this->memorized->handle($student) as $surah => $ranges) {
+            $covered[$surah] = array_sum(array_map(fn (array $range) => $range[1] - $range[0] + 1, $ranges));
         }
 
         return $covered;

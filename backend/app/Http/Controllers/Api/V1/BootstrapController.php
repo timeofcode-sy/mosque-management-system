@@ -12,6 +12,7 @@ use App\Support\ApiScope;
 use App\Support\AttendanceSettings;
 use App\Support\InstituteTheme;
 use App\Support\PointsSettings;
+use App\Support\SabrSettings;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -61,6 +62,8 @@ class BootstrapController extends Controller
                 // بافتراضيّ الحزمة لا بقيم المعهد، فيختلف رقمُ التقرير المطبوع من
                 // الديسكتوب عن رقم اللوحة في معهدٍ عدّل نقاطَه — وهو اختلافٌ صامت.
                 'points' => PointsSettings::for($institute)->toArray(),
+                // علامة النجاح في سبر الأجزاء — ليحكم العميل على درجة السبر المزامَنة.
+                'sabr' => SabrSettings::for($institute)->toArray(),
             ],
             'course' => $course === null ? null : [
                 'uuid' => $course->uuid,

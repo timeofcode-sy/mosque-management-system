@@ -56,19 +56,41 @@ class CurriculumItemsTest extends TestCase
         $this->assertSame(176, $item->meta['abyat']);
     }
 
-    public function test_editing_a_counter_keeps_the_seeded_meta(): void
+    public function test_the_quran_curriculum_and_its_parts_cannot_be_edited(): void
     {
-        $juz = $this->curriculum('quran')->items()->first();
+        $quran = $this->curriculum('quran');
+        $juz = $quran->items()->first();
+        $juzName = $juz->name;
 
         Livewire::test('pages::curricula.index')
+            ->call('edit', $quran->getRouteKey())
+            ->assertSet('editingId', null)
             ->call('editItem', $juz->getRouteKey())
+            ->assertSet('editingItemId', null)
+            ->set('itemCurriculumId', $quran->id)
+            ->set('editingItemId', $juz->id)
             ->set('itemName', 'الجزء الأول (تلاوة)')
+            ->call('saveItem');
+
+        $this->assertSame($juzName, $juz->refresh()->name);
+        $this->assertSame(1, $juz->meta['juz']);
+    }
+
+    public function test_editing_a_counter_keeps_the_seeded_meta(): void
+    {
+        $item = CurriculumItem::query()->where('code', 'arbaeen-1')->sole();
+        $item->update(['meta' => [...$item->meta, 'note' => 'kept']]);
+
+        Livewire::test('pages::curricula.index')
+            ->call('editItem', $item->getRouteKey())
+            ->set('itemCount', 40)
             ->call('saveItem')
             ->assertHasNoErrors();
 
-        // القرآن بلا عدّاد، لكن meta.juz المزروعة يجب ألّا تُمحى بحفظ البند.
-        $this->assertSame(1, $juz->refresh()->meta['juz']);
-        $this->assertSame('الجزء الأول (تلاوة)', $juz->name);
+        $item->refresh();
+
+        $this->assertSame(40, $item->meta['hadiths']);
+        $this->assertSame('kept', $item->meta['note']);
     }
 
     public function test_the_seeder_carries_the_real_counts(): void

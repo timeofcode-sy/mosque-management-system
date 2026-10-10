@@ -22,6 +22,8 @@ use RuntimeException;
  */
 class SaveStudentRegistration
 {
+    public function __construct(private readonly RefreshJuzProgress $juzProgress) {}
+
     /**
      * @param  array<string, mixed>  $attributes  أعمدة جدول students
      * @param  array<string, array{full_name?: ?string, occupation?: ?string, phone?: ?string}>  $guardians  مفتاحها صلة القرابة
@@ -53,6 +55,9 @@ class SaveStudentRegistration
             $this->syncMemorizedItems($student, $memorizedItemIds);
             $this->syncCustomFieldValues($student, $customFieldValues);
             $this->enrollIfRequested($student, $courseCircleId);
+
+            // الجزء المُزال من المحفوظات يعود إلى ما تقوله تسميعاته، لا إلى الصفر.
+            $this->juzProgress->handle($student);
 
             return $student->refresh();
         });
@@ -181,6 +186,7 @@ class SaveStudentRegistration
 
             if ($progress->status !== ProgressStatus::Mastered) {
                 $progress->status = ProgressStatus::Memorized;
+                $progress->percent = 100;
                 $progress->completed_on ??= Carbon::today()->toDateString();
                 $progress->save();
             }
@@ -190,7 +196,7 @@ class SaveStudentRegistration
             ->where('student_id', $student->id)
             ->whereNotIn('curriculum_item_id', $memorizedItemIds ?: [0])
             ->whereIn('status', [ProgressStatus::Memorized, ProgressStatus::Mastered])
-            ->update(['status' => ProgressStatus::NotStarted, 'completed_on' => null]);
+            ->update(['status' => ProgressStatus::NotStarted, 'percent' => 0, 'completed_on' => null]);
     }
 
     /**

@@ -97,7 +97,7 @@ class BuildStudentCoverageMap
      * @param  array<int, array{int, int}>  $ranges
      * @return array<int, array{int, int}>
      */
-    private static function merge(array $ranges): array
+    public static function merge(array $ranges): array
     {
         usort($ranges, fn (array $a, array $b) => $a[0] <=> $b[0]);
 

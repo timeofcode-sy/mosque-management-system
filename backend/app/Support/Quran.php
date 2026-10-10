@@ -200,9 +200,91 @@ class Quran
         30 => [78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114],
     ];
 
+    /**
+     * أوّل آية في كل جزء [سورة، آية] — مصحف المدينة. تطابق JUZ_SURAHS سورةً بسورة.
+     *
+     * نهاية الجزء هي الآية السابقة لبداية تاليه (الجزء الأول: الفاتحة 1 ← البقرة 141)،
+     * فحدود الثلاثين كلها مشتقّة من هذا الجدول وحده.
+     *
+     * @var array<int, array{int, int}>
+     */
+    public const JUZ_STARTS = [
+        1 => [1, 1], 2 => [2, 142], 3 => [2, 253], 4 => [3, 93], 5 => [4, 24], 6 => [4, 148],
+        7 => [5, 82], 8 => [6, 111], 9 => [7, 88], 10 => [8, 41], 11 => [9, 93], 12 => [11, 6],
+        13 => [12, 53], 14 => [15, 1], 15 => [17, 1], 16 => [18, 75], 17 => [21, 1], 18 => [23, 1],
+        19 => [25, 21], 20 => [27, 56], 21 => [29, 46], 22 => [33, 31], 23 => [36, 28], 24 => [39, 32],
+        25 => [41, 47], 26 => [46, 1], 27 => [51, 31], 28 => [58, 1], 29 => [67, 1], 30 => [78, 1],
+    ];
+
     public static function lines(int $surah): int
     {
         return self::LINES[$surah] ?? 0;
+    }
+
+    /**
+     * حدّا الجزء: [من سورة، من آية، إلى سورة، إلى آية].
+     *
+     * @return array{int, int, int, int}
+     */
+    public static function juzBounds(int $juz): array
+    {
+        [$fromSurah, $fromAyah] = self::JUZ_STARTS[$juz];
+
+        if ($juz >= 30) {
+            return [$fromSurah, $fromAyah, 114, self::ayahs(114)];
+        }
+
+        [$nextSurah, $nextAyah] = self::JUZ_STARTS[$juz + 1];
+
+        return $nextAyah > 1
+            ? [$fromSurah, $fromAyah, $nextSurah, $nextAyah - 1]
+            : [$fromSurah, $fromAyah, $nextSurah - 1, self::ayahs($nextSurah - 1)];
+    }
+
+    /**
+     * الجزء موزَّعاً على سوره: لكل سورة أوّل آية وآخرها ضمن الجزء.
+     *
+     * @return array<int, array{int, int}>
+     */
+    public static function juzSegments(int $juz): array
+    {
+        return self::segments(...self::juzBounds($juz));
+    }
+
+    /**
+     * عدد آيات الجزء.
+     */
+    public static function juzAyahs(int $juz): int
+    {
+        return array_sum(self::coverage(...self::juzBounds($juz)));
+    }
+
+    /**
+     * الجزء الذي تقع فيه آية بعينها.
+     */
+    public static function juzOf(int $surah, int $ayah): int
+    {
+        $juz = 1;
+
+        foreach (self::JUZ_STARTS as $number => $start) {
+            if ([$surah, $ayah] < $start) {
+                break;
+            }
+
+            $juz = $number;
+        }
+
+        return $juz;
+    }
+
+    /**
+     * وصف حدّي الجزء للعرض: «الفاتحة 1 ← البقرة 141».
+     */
+    public static function juzLabel(int $juz): string
+    {
+        [$fromSurah, $fromAyah, $toSurah, $toAyah] = self::juzBounds($juz);
+
+        return self::name($fromSurah).' '.$fromAyah.' ← '.self::name($toSurah).' '.$toAyah;
     }
 
     /**

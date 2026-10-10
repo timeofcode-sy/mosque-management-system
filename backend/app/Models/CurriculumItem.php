@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Concerns\HasUuid;
 use App\Concerns\RecordsSyncChanges;
 use App\Contracts\Syncable;
+use App\Enums\CurriculumType;
 use App\Support\SyncScope;
 use Database\Factories\CurriculumItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -42,6 +43,16 @@ class CurriculumItem extends Model implements Syncable
     public function progress(): HasMany
     {
         return $this->hasMany(StudentCurriculumProgress::class);
+    }
+
+    /**
+     * رقم الجزء إن كان البند جزءاً قرآنياً — ومنه حدوده بالآية في Quran::juzBounds.
+     */
+    public function juz(): ?int
+    {
+        $juz = (int) ($this->meta['juz'] ?? 0);
+
+        return $juz >= 1 && $juz <= 30 && $this->curriculum?->type === CurriculumType::Quran ? $juz : null;
     }
 
     /**

@@ -7,6 +7,7 @@ use App\Support\InstituteForm;
 use App\Support\InstituteTheme;
 use App\Support\PanelScope;
 use App\Support\PointsSettings;
+use App\Support\SabrSettings;
 use Flux\Flux;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -48,6 +49,11 @@ new #[Title('بيانات المعهد')] class extends Component {
      */
     public array $attendance = [];
 
+    /**
+     * @var array<string, mixed>
+     */
+    public array $sabr = [];
+
     public function mount(): void
     {
         $institute = $this->institute;
@@ -55,6 +61,7 @@ new #[Title('بيانات المعهد')] class extends Component {
         $this->points = PointsSettings::for($institute)->toArray();
         $this->theme = InstituteTheme::for($institute)->toArray();
         $this->attendance = AttendanceSettings::for($institute)->toArray();
+        $this->sabr = SabrSettings::for($institute)->toArray();
 
         if ($institute === null) {
             return;
