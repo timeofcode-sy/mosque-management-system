@@ -342,17 +342,17 @@
 /** النقش: مسدّس البيت نفسه أرضيةً هادئة خلف المحتوى، لا فوق النص الصغير. */
 @utility nz-pattern-night {
     background-color: var(--night);
-    background-image: url('/brand/pattern/nuzuln-pattern-tile-night.svg');
+    background-image: url('../images/pattern/nuzuln-pattern-tile-night.svg');
     background-size: 120px auto;
 }
 
 @utility nz-pattern-soft {
     background-color: var(--surface-sunken);
-    background-image: url('/brand/pattern/nuzuln-pattern-tile-mist.svg');
+    background-image: url('../images/pattern/nuzuln-pattern-tile-mist.svg');
     background-size: 120px auto;
 
     &:where(.dark, .dark *) {
-        background-image: url('/brand/pattern/nuzuln-pattern-tile-night.svg');
+        background-image: url('../images/pattern/nuzuln-pattern-tile-night.svg');
     }
 }
 

@@ -53,8 +53,19 @@ class DemoInstituteSeeder extends Seeder
 
     private const STUDENTS_PER_CIRCLE = 13;
 
+    /**
+     * البذرُ يُنشئ حسابات بأسماء مستخدمين ثابتة (admin1000 …)، فتشغيلُه على قاعدةٍ مبذورةٍ يسقط بخرق
+     * UNIQUE بعد أن يكون قد كتب نصفَ المعهد. وهو أمرٌ يقع كثيراً: `migrate --seed` مرّتين، أو على قاعدة
+     * التجربة القديمة. فيُترك المعهدُ التجريبي كما هو، ومن أراد قاعدةً نظيفة شغّل `migrate:fresh --seed`.
+     */
     public function run(): void
     {
+        if (User::where('username', 'admin1000')->exists()) {
+            $this->command?->warn('المعهد التجريبي مبذور من قبل — لا شيء يُضاف. لقاعدة نظيفة: php artisan migrate:fresh --seed');
+
+            return;
+        }
+
         $institute = Institute::factory()->create([
             'name' => 'معهد النور لتحفيظ القرآن الكريم',
             'short_name' => 'معهد النور',

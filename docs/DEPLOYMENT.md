@@ -30,6 +30,10 @@ php artisan migrate --seed        # قاعدة SQLite ومعهد تجريبي ك
 php artisan storage:link
 ```
 
+- إن كانت القاعدة مبذورة من قبل فالبذر يتخطى المعهد التجريبي ويكتب تنبيهاً، ولا يسقط. ولقاعدة **نظيفة** (تمسح كل بياناتها) شغّل `php artisan migrate:fresh --seed`.
+- إن ظهر «The [public/storage] link already exists» فهو سليم: الرابط موجود.
+- إن ظهر تحذير «The lock file is not up to date» فقد صُحّح في المستودع (`composer update --lock`)؛ اسحب آخر نسخة.
+
 في `.env` ضع عنوان الحاسوب بدل `localhost` (يظهر في الروابط والتنبيهات): `APP_URL=http://192.168.1.10:8000`.
 
 ### أ.3 التشغيل
