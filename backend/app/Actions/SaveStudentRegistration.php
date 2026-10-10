@@ -28,6 +28,7 @@ class SaveStudentRegistration
      * @param  array<int, int>  $traitIds
      * @param  array<int, int>  $memorizedItemIds  بنود المناهج التي أتمّها الطالب
      * @param  array<int, mixed>  $customFieldValues  مفتاحها معرّف الواصفة
+     * @param  array<string, int>  $siblingGuardianIds  أولياء أمر أخٍ مسجَّل أكّد المستخدم الأخوّة معه، مفتاحها صلة القرابة
      */
     public function handle(
         Institute $institute,
@@ -38,15 +39,16 @@ class SaveStudentRegistration
         array $memorizedItemIds = [],
         array $customFieldValues = [],
         ?int $courseCircleId = null,
+        array $siblingGuardianIds = [],
     ): Student {
         return DB::transaction(function () use (
-            $institute, $attributes, $student, $guardians, $traitIds, $memorizedItemIds, $customFieldValues, $courseCircleId
+            $institute, $attributes, $student, $guardians, $traitIds, $memorizedItemIds, $customFieldValues, $courseCircleId, $siblingGuardianIds
         ): Student {
             $student ??= new Student;
             $student->fill([...$attributes, 'institute_id' => $institute->id]);
             $student->save();
 
-            $this->syncGuardians($institute, $student, $guardians);
+            $this->syncGuardians($institute, $student, $guardians, $siblingGuardianIds);
             $this->syncTraits($student, $traitIds);
             $this->syncMemorizedItems($student, $memorizedItemIds);
             $this->syncCustomFieldValues($student, $customFieldValues);
@@ -57,9 +59,13 @@ class SaveStudentRegistration
     }
 
     /**
+     * ولي الأمر سجلٌّ واحد يتشاركه الإخوة، فحسابه يرى أبناءه كلَّهم. لذا لا يُعاد تسمية
+     * سجلٍّ مشترك من استمارة أحد الإخوة: تغيّرُ الاسم يعني أن لهذا الطالب ولياً آخر.
+     *
      * @param  array<string, array{full_name?: ?string, occupation?: ?string, phone?: ?string}>  $guardians
+     * @param  array<string, int>  $siblingGuardianIds
      */
-    private function syncGuardians(Institute $institute, Student $student, array $guardians): void
+    private function syncGuardians(Institute $institute, Student $student, array $guardians, array $siblingGuardianIds): void
     {
         foreach ($guardians as $relation => $data) {
             $fullName = trim((string) ($data['full_name'] ?? ''));
@@ -68,30 +74,73 @@ class SaveStudentRegistration
                 continue;
             }
 
-            $existing = $student->guardians()->wherePivot('relation', $relation)->first();
+            $details = [
+                'full_name' => $fullName,
+                'occupation' => $data['occupation'] ?? null,
+                'phone' => $data['phone'] ?? null,
+            ];
 
-            $guardian = $existing
-                ? tap($existing)->update([
-                    'full_name' => $fullName,
-                    'occupation' => $data['occupation'] ?? null,
-                    'phone' => $data['phone'] ?? null,
-                ])
-                : Guardian::create([
-                    'institute_id' => $institute->id,
-                    'full_name' => $fullName,
-                    'occupation' => $data['occupation'] ?? null,
-                    'phone' => $data['phone'] ?? null,
-                ]);
+            $current = $student->guardians()->wherePivot('relation', $relation)->first();
 
-            if ($existing === null) {
-                GuardianStudent::create([
-                    'guardian_id' => $guardian->id,
-                    'student_id' => $student->id,
-                    'relation' => $relation,
-                    'is_primary' => $relation === GuardianRelation::Father->value,
-                ]);
+            $sibling = isset($siblingGuardianIds[$relation])
+                ? Guardian::query()->where('institute_id', $institute->id)->find($siblingGuardianIds[$relation])
+                : null;
+
+            if ($sibling !== null) {
+                // ما تركته الاستمارة فارغاً يبقى على ما سُجِّل مع الأخ.
+                $sibling->update(array_filter($details, fn ($value) => $value !== null));
+                $this->link($student, $current, $sibling, $relation);
+
+                continue;
+            }
+
+            if ($current !== null && ($current->full_name === $fullName || ! $this->sharedBeyond($current, $student))) {
+                $current->update($details);
+
+                continue;
+            }
+
+            $this->link($student, $current, Guardian::create([...$details, 'institute_id' => $institute->id]), $relation);
+        }
+    }
+
+    private function sharedBeyond(Guardian $guardian, Student $student): bool
+    {
+        return GuardianStudent::query()
+            ->where('guardian_id', $guardian->id)
+            ->where('student_id', '!=', $student->id)
+            ->exists();
+    }
+
+    /**
+     * يستبدل ولي الأمر في صلة القرابة هذه. السجلّ القديم إن لم يبق له أبناء نسخةٌ مكرَّرة
+     * فيُحذف حذفاً ليّناً، فيُقفل حسابه ولا يبقى في قوائم الدخول.
+     */
+    private function link(Student $student, ?Guardian $current, Guardian $guardian, string $relation): void
+    {
+        if ($current?->is($guardian)) {
+            return;
+        }
+
+        if ($current !== null) {
+            GuardianStudent::query()
+                ->where('student_id', $student->id)
+                ->where('guardian_id', $current->id)
+                ->where('relation', $relation)
+                ->get()
+                ->each->delete();
+
+            if (! GuardianStudent::query()->where('guardian_id', $current->id)->exists()) {
+                $current->delete();
             }
         }
+
+        GuardianStudent::create([
+            'guardian_id' => $guardian->id,
+            'student_id' => $student->id,
+            'relation' => $relation,
+            'is_primary' => $relation === GuardianRelation::Father->value,
+        ]);
     }
 
     /**

@@ -62,9 +62,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
 
     public string $current_address = '';
 
-    /** العائلة */
-    public string $father_full_name = '';
-
+    /** العائلة — اسم الأب الكامل لا يُكتب: هو اسم الأب متبوعاً بالكنية. */
     public string $father_occupation = '';
 
     public string $father_phone = '';
@@ -101,6 +99,23 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
 
     public ?int $courseCircleId = null;
 
+    /**
+     * عائلة الأخ المعروضة في سؤال الأخوّة الآن.
+     *
+     * @var array{key?: string, question?: string}
+     */
+    public array $siblingPrompt = [];
+
+    /** العائلة التي أكّد المستخدم أن الطالب منها: يُربط بوليّي أمرها بدل إنشاء جديدين. */
+    public ?string $siblingFamilyKey = null;
+
+    /**
+     * عائلاتٌ أجاب المستخدم بأن الطالب ليس منها، فلا يُسأل عنها ثانيةً في هذه الاستمارة.
+     *
+     * @var array<int, string>
+     */
+    public array $declinedFamilyKeys = [];
+
     public function mount(?Student $student = null): void
     {
         $this->requireInstitute();
@@ -135,7 +150,6 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
         $father = $student->father();
         $mother = $student->mother();
 
-        $this->father_full_name = (string) $father?->full_name;
         $this->father_occupation = (string) $father?->occupation;
         $this->father_phone = (string) $father?->phone;
         $this->mother_full_name = (string) $mother?->full_name;
@@ -198,6 +212,49 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
         return $this->query()->courseCircles($this->currentCourse);
     }
 
+    public function fatherFullName(): string
+    {
+        return trim(preg_replace('/\s+/u', ' ', "{$this->father_name} {$this->family_name}"));
+    }
+
+    public function confirmSibling(SaveStudentRegistration $saveStudentRegistration): void
+    {
+        $this->siblingFamilyKey = $this->siblingPrompt['key'] ?? null;
+        $this->siblingPrompt = [];
+        Flux::modal('sibling-question')->close();
+
+        $this->save($saveStudentRegistration);
+    }
+
+    public function declineSibling(SaveStudentRegistration $saveStudentRegistration): void
+    {
+        if (isset($this->siblingPrompt['key'])) {
+            $this->declinedFamilyKeys[] = $this->siblingPrompt['key'];
+        }
+
+        $this->siblingPrompt = [];
+        Flux::modal('sibling-question')->close();
+
+        $this->save($saveStudentRegistration);
+    }
+
+    /**
+     * «هل الطالب فلان هو أخ الطالب فلان؟» — بصيغة المؤنّث حيث تلزم.
+     *
+     * @param  Collection<int, Student>  $siblings
+     */
+    private function siblingQuestion(Collection $siblings): string
+    {
+        $female = $this->gender === Gender::Female->value;
+        $name = trim(preg_replace('/\s+/u', ' ', "{$this->first_name} {$this->father_name} {$this->family_name}"));
+
+        $others = $siblings
+            ->map(fn (Student $sibling) => ($sibling->gender === Gender::Female ? 'الطالبة ' : 'الطالب ').$sibling->full_name)
+            ->implode(' و');
+
+        return ($female ? "هل الطالبة {$name} هي أخت " : "هل الطالب {$name} هو أخ ").$others.'؟';
+    }
+
     public function save(SaveStudentRegistration $saveStudentRegistration): void
     {
         $validated = $this->validate([
@@ -223,7 +280,6 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
             'phone' => ['nullable', 'string', 'max:32'],
             'permanent_address' => ['nullable', 'string', 'max:255'],
             'current_address' => ['nullable', 'string', 'max:255'],
-            'father_full_name' => ['nullable', 'string', 'max:255'],
             'father_occupation' => ['nullable', 'string', 'max:255'],
             'father_phone' => ['nullable', 'string', 'max:32'],
             'mother_full_name' => ['nullable', 'string', 'max:255'],
@@ -246,6 +302,23 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
             'student_health_status', 'family_health_status', 'notes',
         ])->map(fn ($value) => $value === '' ? null : $value)->all();
 
+        $families = $this->query()->siblingFamilies(
+            $this->institute, $this->fatherFullName(), $this->mother_full_name, $this->student,
+        );
+
+        $sibling = $families->firstWhere('key', $this->siblingFamilyKey);
+
+        if ($sibling === null) {
+            $unasked = $families->first(fn (array $family) => ! in_array($family['key'], $this->declinedFamilyKeys, true));
+
+            if ($unasked !== null) {
+                $this->siblingPrompt = ['key' => $unasked['key'], 'question' => $this->siblingQuestion($unasked['students'])];
+                Flux::modal('sibling-question')->show();
+
+                return;
+            }
+        }
+
         if ($this->photo !== null) {
             $attributes['photo_path'] = $this->photo->store('students', 'public');
         }
@@ -256,7 +329,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
             student: $this->student,
             guardians: [
                 GuardianRelation::Father->value => [
-                    'full_name' => $this->father_full_name,
+                    'full_name' => $this->fatherFullName(),
                     'occupation' => $this->father_occupation ?: null,
                     'phone' => $this->father_phone ?: null,
                 ],
@@ -270,6 +343,10 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
             memorizedItemIds: array_map('intval', $this->memorizedItemIds),
             customFieldValues: $this->customFields,
             courseCircleId: $this->courseCircleId,
+            siblingGuardianIds: $sibling === null ? [] : [
+                GuardianRelation::Father->value => $sibling['father_id'],
+                GuardianRelation::Mother->value => $sibling['mother_id'],
+            ],
         );
 
         Flux::toast(variant: 'success', text: 'حُفظت استمارة الطالب.');
@@ -285,6 +362,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
         return [
             'first_name' => 'اسم الطالب',
             'father_name' => 'اسم الأب',
+            'mother_full_name' => 'اسم الأم الكامل',
             'family_name' => 'اسم العائلة',
             'registration_no' => 'رقم المعرف',
             'birth_date' => 'تاريخ الولادة',
@@ -361,15 +439,21 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
             <flux:legend>بيانات العائلة</flux:legend>
 
             <div class="grid gap-6 sm:grid-cols-3">
-                <flux:input wire:model="father_full_name" label="اسم الأب الكامل" />
+                <flux:input
+                    label="اسم الأب الكامل"
+                    readonly
+                    icon:trailing="lock-closed"
+                    :value="$this->fatherFullName()"
+                    x-bind:value="[$wire.father_name, $wire.family_name].map((part) => (part ?? '').trim()).filter(Boolean).join(' ')"
+                    data-test="father-full-name"
+                />
                 <flux:input wire:model="father_occupation" label="عمل الأب" />
                 <flux:input wire:model="father_phone" label="جوال الأب" />
-                <flux:input wire:model="mother_full_name" label="اسم الأم" />
+                <flux:input wire:model="mother_full_name" label="اسم الأم الكامل" />
                 <flux:input wire:model="mother_occupation" label="عمل الأم" />
                 <flux:input wire:model="mother_phone" label="جوال الأم" />
+                <flux:input wire:model="family_members_count" type="number" min="1" label="عدد أفراد العائلة" />
             </div>
-
-            <flux:input wire:model="family_members_count" type="number" min="1" label="عدد أفراد العائلة" class="mt-6 sm:max-w-xs" />
         </flux:fieldset>
 
         <flux:fieldset class="rounded-xl border border-line bg-raised p-6">
@@ -471,4 +555,24 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
             <flux:button :href="route('students.index')" wire:navigate variant="ghost">إلغاء</flux:button>
         </div>
     </form>
+
+    <flux:modal name="sibling-question" class="w-full max-w-lg" :dismissible="false">
+        <div class="space-y-6">
+            <flux:heading size="lg">أخٌ مسجَّل؟</flux:heading>
+
+            <flux:text size="lg" data-test="sibling-question">{{ $siblingPrompt['question'] ?? '' }}</flux:text>
+
+            <flux:callout icon="information-circle" variant="secondary">
+                <flux:callout.text>
+                    اسم الأب الكامل واسم الأم الكامل يطابقان طالباً مسجَّلاً. إن كانا أخوين رُبط الطالب
+                    بوليّي الأمر أنفسهما فيتابع حسابُهما الأبناءَ معاً، وإلا أُنشئ له وليّا أمر جديدان.
+                </flux:callout.text>
+            </flux:callout>
+
+            <div class="flex justify-end gap-2">
+                <flux:button wire:click="declineSibling" variant="ghost" data-test="decline-sibling">لا، ليسا أخوين</flux:button>
+                <flux:button wire:click="confirmSibling" variant="primary" data-test="confirm-sibling">نعم، أخوان</flux:button>
+            </div>
+        </div>
+    </flux:modal>
 </div>

@@ -9,10 +9,12 @@ use App\Models\Curriculum;
 use App\Models\CurriculumItem;
 use App\Models\CustomField;
 use App\Models\Enrollment;
+use App\Models\Guardian;
 use App\Models\PersonalTrait;
 use App\Models\Student;
 use App\Models\StudentCurriculumProgress;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\Concerns\BuildsInstitute;
 use Tests\TestCase;
@@ -59,7 +61,7 @@ class StudentRegistrationTest extends TestCase
             ->set('phone', '0912345678')
             ->set('permanent_address', 'دمشق - الميدان')
             ->set('current_address', 'دمشق - المزة')
-            ->set('father_full_name', 'سامر الخطيب')
+            ->assertSeeHtml('data-test="father-full-name"')
             ->set('father_occupation', 'نجّار')
             ->set('father_phone', '0911111111')
             ->set('mother_full_name', 'أم عبد الرحمن')
@@ -127,6 +129,93 @@ class StudentRegistrationTest extends TestCase
             ->set('first_name', '')
             ->call('save')
             ->assertHasErrors(['first_name', 'father_name', 'family_name']);
+    }
+
+    public function test_the_father_full_name_is_the_father_name_followed_by_the_family_name(): void
+    {
+        $this->register('يوسف', 'حسان', 'الأحمد', 'عائشة العلي');
+
+        $this->assertSame('حسان الأحمد', Student::query()->sole()->father()?->full_name);
+    }
+
+    public function test_a_confirmed_sibling_shares_the_guardians_of_the_registered_brother(): void
+    {
+        $brother = $this->register('محمد', 'حسان', 'الأحمد', 'عائشة العلي', fatherPhone: '0951018624');
+
+        $this->fillForm('إبراهيم', 'حسان', 'الأحمد', 'عائشة العلي')
+            ->call('save')
+            ->assertSet('siblingPrompt.question', 'هل الطالب إبراهيم حسان الأحمد هو أخ الطالب محمد حسان الأحمد؟')
+            ->call('confirmSibling')
+            ->assertHasNoErrors()
+            ->assertRedirect();
+
+        $ibrahim = Student::query()->where('first_name', 'إبراهيم')->sole();
+
+        $this->assertSame(2, Guardian::query()->count());
+        $this->assertTrue($ibrahim->father()->is($brother->father()));
+        $this->assertTrue($ibrahim->mother()->is($brother->mother()));
+        $this->assertSame('0951018624', $ibrahim->father()->phone);
+    }
+
+    public function test_a_declined_sibling_gets_guardians_of_its_own(): void
+    {
+        $this->register('محمد', 'حسان', 'الأحمد', 'عائشة العلي');
+
+        $this->fillForm('إبراهيم', 'حسان', 'الأحمد', 'عائشة العلي')
+            ->call('save')
+            ->call('declineSibling')
+            ->assertHasNoErrors()
+            ->assertRedirect();
+
+        $this->assertSame(4, Guardian::query()->count());
+    }
+
+    public function test_a_different_mother_is_not_a_sibling(): void
+    {
+        $this->register('محمد', 'حسان', 'الأحمد', 'عائشة العلي');
+
+        $this->fillForm('إبراهيم', 'حسان', 'الأحمد', 'خديجة السيد')
+            ->call('save')
+            ->assertSet('siblingPrompt', [])
+            ->assertRedirect();
+    }
+
+    public function test_renaming_a_shared_father_gives_the_student_a_father_of_its_own(): void
+    {
+        $brother = $this->register('محمد', 'حسان', 'الأحمد', 'عائشة العلي');
+
+        $this->fillForm('إبراهيم', 'حسان', 'الأحمد', 'عائشة العلي')->call('save')->call('confirmSibling');
+
+        $ibrahim = Student::query()->where('first_name', 'إبراهيم')->sole();
+
+        Livewire::test('pages::students.form', ['student' => $ibrahim])
+            ->set('father_name', 'سامر')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame('حسان الأحمد', $brother->refresh()->father()->full_name);
+        $this->assertSame('سامر الأحمد', $ibrahim->refresh()->father()->full_name);
+        $this->assertTrue($ibrahim->mother()->is($brother->mother()));
+    }
+
+    private function fillForm(string $firstName, string $fatherName, string $familyName, string $motherFullName, string $fatherPhone = ''): Testable
+    {
+        return Livewire::test('pages::students.form')
+            ->set('first_name', $firstName)
+            ->set('father_name', $fatherName)
+            ->set('family_name', $familyName)
+            ->set('mother_full_name', $motherFullName)
+            ->set('father_phone', $fatherPhone);
+    }
+
+    private function register(string $firstName, string $fatherName, string $familyName, string $motherFullName, string $fatherPhone = ''): Student
+    {
+        $this->fillForm($firstName, $fatherName, $familyName, $motherFullName, $fatherPhone)
+            ->call('save')
+            ->assertHasNoErrors()
+            ->assertSet('siblingPrompt', []);
+
+        return Student::query()->where('first_name', $firstName)->sole();
     }
 
     public function test_editing_loads_the_stored_form_and_updates_it(): void
