@@ -136,7 +136,7 @@ class AttendanceSessionTest extends TestCase
 
         $stat = $this->courseCircle->dailyStats()->whereDate('date', '2026-09-01')->sole();
 
-        // النسبة = (حاضر 1 + متأخّر 1) ÷ (المجموع 4 − المأذون 1) = 66.67٪
+        // النسبة = (حاضر 1 + متأخّر 1) ÷ (المجموع 4 − الغائب بعذر 1) = 66.67٪
         $this->assertSame(1, $stat->present);
         $this->assertSame(1, $stat->late);
         $this->assertSame(1, $stat->absent);

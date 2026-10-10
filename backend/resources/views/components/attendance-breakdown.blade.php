@@ -8,7 +8,7 @@
         ['key' => 'present', 'label' => 'حاضر', 'value' => $breakdown['present'], 'class' => 'bg-present'],
         ['key' => 'absent', 'label' => 'غائب', 'value' => $breakdown['absent'], 'class' => 'bg-absent'],
         ['key' => 'late', 'label' => 'متأخّر', 'value' => $breakdown['late'], 'class' => 'bg-late'],
-        ['key' => 'excused', 'label' => 'مأذون', 'value' => $breakdown['excused'], 'class' => 'bg-excused'],
+        ['key' => 'excused', 'label' => 'غائب بعذر', 'value' => $breakdown['excused'], 'class' => 'bg-excused'],
     ];
 @endphp
 

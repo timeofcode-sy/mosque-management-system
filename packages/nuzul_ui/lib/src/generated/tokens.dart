@@ -85,7 +85,7 @@ class NzColorTokens {
   final Color danger;
   /// Background of the absent badge and error notices.
   final Color dangerSoft;
-  /// Excused (مستأذن) and neutral notices: text and icon on info-soft.
+  /// Excused (غائب بعذر) and neutral notices: text and icon on info-soft.
   final Color info;
   /// Background of the excused badge and info notices.
   final Color infoSoft;

@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * إذن غياب مسبق يقدّمه ولي الأمر فيُقترح حالة "مأذون" تلقائياً على شاشة تفقّد الأستاذ.
+ * إذن غياب مسبق يقدّمه ولي الأمر فيُقترح حالة "غائب بعذر" تلقائياً على شاشة تفقّد الأستاذ.
  */
 #[Fillable([
     'student_id', 'from_date', 'to_date', 'reason', 'attachment_path',

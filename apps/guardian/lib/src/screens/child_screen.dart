@@ -111,7 +111,7 @@ class _SummaryGrid extends StatelessWidget {
               Expanded(child: StatCard(value: '${summary.present}', label: 'حاضر')),
               Expanded(child: StatCard(value: '${summary.absent}', label: 'غائب')),
               Expanded(child: StatCard(value: '${summary.late}', label: 'متأخّر')),
-              Expanded(child: StatCard(value: '${summary.excused}', label: 'مأذون')),
+              Expanded(child: StatCard(value: '${summary.excused}', label: 'غائب بعذر')),
             ],
           ),
         ],

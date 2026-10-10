@@ -15,7 +15,7 @@ enum AttendanceStatus: string
             self::Present => 'حاضر',
             self::Absent => 'غائب',
             self::Late => 'متأخّر',
-            self::Excused => 'مأذون',
+            self::Excused => 'غائب بعذر',
         };
     }
 

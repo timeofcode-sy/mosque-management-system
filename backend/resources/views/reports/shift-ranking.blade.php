@@ -24,7 +24,7 @@
                     <th class="border border-line p-2 text-start">حاضر</th>
                     <th class="border border-line p-2 text-start">غائب</th>
                     <th class="border border-line p-2 text-start">متأخّر</th>
-                    <th class="border border-line p-2 text-start">مأذون</th>
+                    <th class="border border-line p-2 text-start">غائب بعذر</th>
                     @if ($mode === 'cumulative')
                         <th class="border border-line p-2 text-start">الجلسات</th>
                     @endif
@@ -56,7 +56,7 @@
         </table>
 
         <p class="mt-4 text-xs text-muted">
-            النسبة = (الحاضرون + المتأخّرون) ÷ (المجموع − المأذونون). الإذن المسبق لا يُحسب غياباً على الحلقة.
+            النسبة = (الحاضرون + المتأخّرون) ÷ (المجموع − الغائبون بعذر). الإذن المسبق لا يُحسب غياباً على الحلقة.
         </p>
     @endif
 </x-report-sheet>

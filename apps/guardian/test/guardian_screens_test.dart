@@ -239,7 +239,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('قيد المراجعة'), findsOneWidget);
-    expect(find.textContaining('لا يُحتسب مأذوناً قبل القبول'), findsOneWidget);
+    expect(find.textContaining('لا يُحتسب غائباً بعذر قبل القبول'), findsOneWidget);
   });
 
   testWidgets('a rejected excuse carries the reason the staff gave', (tester) async {

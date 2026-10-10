@@ -15,7 +15,7 @@
             ['حاضر', $summary['present'], 'text-present'],
             ['غائب', $summary['absent'], 'text-absent'],
             ['متأخّر', $summary['late'], 'text-late'],
-            ['مأذون', $summary['excused'], 'text-excused'],
+            ['غائب بعذر', $summary['excused'], 'text-excused'],
             ['نسبة الحضور', $summary['rate'] !== null ? $summary['rate'].'%' : '—', 'text-primary'],
         ] as [$label, $value, $tone])
             <div class="rounded-lg border border-line p-3">

@@ -229,7 +229,7 @@ class ReportDocuments {
       headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: _inkMuted),
       cellStyle: const pw.TextStyle(fontSize: 10),
       cellAlignment: pw.Alignment.center,
-      headers: const ['حاضر', 'متأخّر', 'غائب', 'مأذون', 'المجموع'],
+      headers: const ['حاضر', 'متأخّر', 'غائب', 'غائب بعذر', 'المجموع'],
       data: [
         [
           '${breakdown.present}',
@@ -301,5 +301,5 @@ const Map<AttendanceStatus, String> statusLabels = {
   AttendanceStatus.present: 'الحاضرون',
   AttendanceStatus.late: 'المتأخّرون',
   AttendanceStatus.absent: 'الغائبون',
-  AttendanceStatus.excused: 'المأذونون',
+  AttendanceStatus.excused: 'الغائبون بعذر',
 };

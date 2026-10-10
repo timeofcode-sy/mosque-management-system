@@ -84,7 +84,7 @@ class _ExcuseCard extends StatelessWidget {
             if (excuse.isPending) ...[
               const SizedBox(height: 8),
               Text(
-                'ينتظر مراجعةَ المعهد — الغيابُ لا يُحتسب مأذوناً قبل القبول.',
+                'ينتظر مراجعةَ المعهد — الغيابُ لا يُحتسب غائباً بعذر قبل القبول.',
                 style: NzType.caption.copyWith(color: context.nz.warning),
               ),
             ],

@@ -99,7 +99,7 @@ class _SubmitExcuseScreenState extends State<SubmitExcuseScreen> {
             const SizedBox(height: 12),
             Text(
               'يُرسَل الطلبُ إلى المعهد فوراً ويحتاج اتصالاً بالإنترنت، ثم يظهر '
-              'في «أذونات الغياب» حتى يراجعه الطاقم. والغيابُ لا يُحتسب مأذوناً '
+              'في «أذونات الغياب» حتى يراجعه الطاقم. والغيابُ لا يُحتسب غائباً بعذر '
               'قبل القبول.',
               style: theme.textTheme.bodySmall,
             ),

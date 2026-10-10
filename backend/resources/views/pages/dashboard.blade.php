@@ -86,7 +86,7 @@ new #[Title('لوحة المعلومات')] class extends Component {
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <x-stat-card label="الطلاب في المعهد" :value="$this->counters['students']" />
             <x-stat-card label="المسجَّلون في الدورة الجارية" :value="$this->counters['enrolled']" tone="gold" />
-            <x-stat-card label="الحلقات العاملة" :value="$this->counters['circles']" />
+            <x-stat-card label="الحلقات المفعلة" :value="$this->counters['circles']" />
             <x-stat-card
                 label="نسبة حضور اليوم"
                 :value="$this->todayRate !== null ? $this->todayRate.'%' : '—'"

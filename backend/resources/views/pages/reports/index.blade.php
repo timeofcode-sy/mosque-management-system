@@ -212,7 +212,7 @@ new #[Title('التقارير')] class extends Component {
                     <x-stat-card label="حاضر" :value="$report['variables']['present']" />
                     <x-stat-card label="غائب" :value="$report['variables']['absent']" tone="danger" />
                     <x-stat-card label="متأخّر" :value="$report['variables']['late']" tone="gold" />
-                    <x-stat-card label="مأذون" :value="$report['variables']['excused']" tone="ink" />
+                    <x-stat-card label="غائب بعذر" :value="$report['variables']['excused']" tone="ink" />
                     <x-stat-card label="النسبة" :value="$report['variables']['rate']" tone="gold" />
                     <x-stat-card label="الترتيب اليومي" :value="$report['variables']['daily_rank']" tone="ink" />
                 </div>
@@ -222,7 +222,7 @@ new #[Title('التقارير')] class extends Component {
                         'الحاضرون' => $report['lists']['present'],
                         'الغائبون' => $report['lists']['absent'],
                         'المتأخّرون' => $report['lists']['late'],
-                        'المأذونون' => $report['lists']['excused'],
+                        'الغائبون بعذر' => $report['lists']['excused'],
                     ] as $label => $names)
                         <div>
                             <flux:heading size="sm">{{ $label }} ({{ count($names) }})</flux:heading>
@@ -341,7 +341,7 @@ new #[Title('التقارير')] class extends Component {
                             <flux:table.column>حاضر</flux:table.column>
                             <flux:table.column>غائب</flux:table.column>
                             <flux:table.column>متأخّر</flux:table.column>
-                            <flux:table.column>مأذون</flux:table.column>
+                            <flux:table.column>غائب بعذر</flux:table.column>
                             <flux:table.column>النسبة</flux:table.column>
                             <flux:table.column>المسار</flux:table.column>
                         </flux:table.columns>

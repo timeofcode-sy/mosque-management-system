@@ -63,7 +63,7 @@
                         <article class="rounded-xl border border-line bg-raised p-6">
                             <flux:icon icon="clipboard-document-check" class="size-7 text-primary" />
                             <h3 class="mt-3 mb-2 text-[19px] font-semibold leading-[1.6]">الحضور بنقرة</h3>
-                            <p class="text-muted">حاضر، متأخر، مستأذن، غائب: نقرة واحدة لكل طالب، ويُحفظ على الجهاز إن انقطع الاتصال ثم يُزامَن.</p>
+                            <p class="text-muted">حاضر، متأخر، غائب بعذر، غائب: نقرة واحدة لكل طالب، ويُحفظ على الجهاز إن انقطع الاتصال ثم يُزامَن.</p>
                         </article>
                         <article class="rounded-xl border border-line bg-raised p-6">
                             <flux:icon icon="book-open-text" class="size-7 text-primary" />

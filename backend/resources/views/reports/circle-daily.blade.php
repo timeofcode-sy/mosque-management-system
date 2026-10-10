@@ -23,7 +23,7 @@
             ['حاضر', $v['present'], 'text-present'],
             ['غائب', $v['absent'], 'text-absent'],
             ['متأخّر', $v['late'], 'text-late'],
-            ['مأذون', $v['excused'], 'text-excused'],
+            ['غائب بعذر', $v['excused'], 'text-excused'],
             ['النسبة', $v['rate'], 'text-primary'],
         ] as [$label, $value, $tone])
             <div class="rounded-lg border border-line p-3">
@@ -78,7 +78,7 @@
             @foreach ([
                 'الغائبون' => $lists['absent'],
                 'المتأخّرون' => $lists['late'],
-                'المأذونون' => $lists['excused'],
+                'الغائبون بعذر' => $lists['excused'],
             ] as $label => $names)
                 @if ($names !== [])
                     <div class="rounded-lg border border-line p-3">

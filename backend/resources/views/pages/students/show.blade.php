@@ -272,7 +272,7 @@ new #[Title('ملف الطالب')] class extends Component
         <x-stat-card label="حاضر" :value="$this->summary['present']" />
         <x-stat-card label="غائب" :value="$this->summary['absent']" tone="danger" />
         <x-stat-card label="متأخّر" :value="$this->summary['late']" tone="gold" />
-        <x-stat-card label="مأذون" :value="$this->summary['excused']" tone="ink" />
+        <x-stat-card label="غائب بعذر" :value="$this->summary['excused']" tone="ink" />
         <x-stat-card
             label="نسبة الحضور"
             :value="$this->summary['rate'] !== null ? $this->summary['rate'].'%' : '—'"

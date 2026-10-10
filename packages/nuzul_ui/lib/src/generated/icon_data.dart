@@ -29,7 +29,7 @@ const Map<String, List<_NzStroke>> _nzIconData = {
   'mosque': [_NzStroke([2.5, 21, 21.5, 21], closed: false, filled: false), _NzStroke([8, 21, 8, 13, 14.25, 8.6, 20.5, 13, 20.5, 21], closed: false, filled: false), _NzStroke([12.5, 21, 12.5, 17, 16, 17, 16, 21], closed: false, filled: false), _NzStroke([3.5, 21, 3.5, 9.5], closed: false, filled: false), _NzStroke([6, 21, 6, 9.5], closed: false, filled: false), _NzStroke([3, 9.5, 4.75, 6.5, 6.5, 9.5], closed: true, filled: false)],
   // متأخر
   'clock': [_NzStroke([12, 3, 19.5, 8.25, 19.5, 15.75, 12, 21, 4.5, 15.75, 4.5, 8.25], closed: true, filled: false), _NzStroke([12, 7.5, 12, 12, 15.5, 12], closed: false, filled: false)],
-  // مستأذن
+  // غائب بعذر
   'note': [_NzStroke([6, 3.5, 18, 3.5, 18, 20.5, 6, 20.5], closed: true, filled: false), _NzStroke([9, 8, 15, 8], closed: false, filled: false), _NzStroke([9, 12, 15, 12], closed: false, filled: false), _NzStroke([9, 16, 12, 16], closed: false, filled: false)],
   // تميّز
   'star': [_NzStroke([12, 3, 14, 9.9, 21, 12, 14, 14.1, 12, 21, 10, 14.1, 3, 12, 10, 9.9], closed: true, filled: true)],
@@ -60,7 +60,7 @@ const Map<String, String> nzIconLabels = {
   'certificate': 'الشهادات',
   'mosque': 'المساجد',
   'clock': 'متأخر',
-  'note': 'مستأذن',
+  'note': 'غائب بعذر',
   'star': 'تميّز',
   'check': 'تم',
   'close': 'إغلاق',

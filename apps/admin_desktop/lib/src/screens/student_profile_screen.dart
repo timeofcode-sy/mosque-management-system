@@ -88,7 +88,7 @@ class _Body extends StatelessWidget {
             ),
             StatCard(
               value: '${profile.countOf(AttendanceStatus.excused)}',
-              label: 'مأذون',
+              label: 'غائب بعذر',
             ),
           ],
         ),

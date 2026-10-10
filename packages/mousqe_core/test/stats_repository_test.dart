@@ -79,7 +79,7 @@ void main() {
 
       final overview = await stats.loadOverview(today: today);
 
-      // حاضرٌ واحد من اثنين يُقاسان — والمأذونُ خارج المقام، وإلا عوقبت الحلقةُ
+      // حاضرٌ واحد من اثنين يُقاسان — والغائبُ بعذر خارج المقام، وإلا عوقبت الحلقةُ
       // على إذنٍ منحته هي.
       expect(overview.todayRate, 50.0);
       expect(overview.breakdown.excused, 1);

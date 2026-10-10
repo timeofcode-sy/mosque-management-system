@@ -55,7 +55,7 @@
     --color-star: var(--star);
     --color-mist: var(--mist);
 
-    /* حالات التفقّد — أزواج الهوية الثابتة (حاضر/متأخر/مستأذن/غائب). */
+    /* حالات التفقّد — أزواج الهوية الثابتة (حاضر/متأخر/غائب بعذر/غائب). */
     --color-present: var(--success);
     --color-late: var(--warning);
     --color-excused: var(--info);

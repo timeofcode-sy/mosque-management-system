@@ -122,7 +122,7 @@ class GuardianAppTest extends TestCase
     }
 
     /**
-     * ويومٌ كلُّ سجلّاته «مأذون» لا مقامَ له — فلا نسبةَ له.
+     * ويومٌ كلُّ سجلّاته «غائب بعذر» لا مقامَ له — فلا نسبةَ له.
      */
     public function test_a_fully_excused_day_has_a_null_rate_too(): void
     {

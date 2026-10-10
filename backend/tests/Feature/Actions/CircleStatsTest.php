@@ -138,7 +138,7 @@ class CircleStatsTest extends TestCase
 
         app(ReviewAbsenceExcuse::class)->handle($excuse, ExcuseStatus::Approved, $this->admin);
 
-        // الغياب صار "مأذون"، فبقي حاضرٌ واحد على واحد محسوب = 100٪
+        // الغياب صار "غائب بعذر"، فبقي حاضرٌ واحد على واحد محسوب = 100٪
         $this->assertSame(100.0, (float) $this->dailyStat($circle)->attendance_rate);
     }
 

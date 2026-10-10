@@ -133,7 +133,7 @@ class StudentProfileQuery
 
             return [
                 'date' => $date,
-                // ويومٌ كلُّ سجلّاته «مأذون» ⇒ null كذلك لا صفر: المأذونُ خارج
+                // ويومٌ كلُّ سجلّاته «غائب بعذر» ⇒ null كذلك لا صفر: الغائبُ بعذر خارج
                 // المقام في معادلة النسبة، فيومٌ لا مقامَ له لا نسبةَ له.
                 'rate' => $countable > 0 ? round($attended / $countable * 100, 1) : null,
                 'sessions' => $day->count(),

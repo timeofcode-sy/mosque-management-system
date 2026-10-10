@@ -669,7 +669,7 @@ class _Summary extends StatelessWidget {
           Expanded(
             child: StatCard(
               value: '${count(AttendanceStatus.excused)}',
-              label: 'مأذون',
+              label: 'غائب بعذر',
             ),
           ),
         ],
@@ -761,7 +761,7 @@ class _StudentTile extends StatelessWidget {
               ButtonSegment(value: AttendanceStatus.late, label: Text('متأخر')),
               ButtonSegment(
                 value: AttendanceStatus.excused,
-                label: Text('مأذون'),
+                label: Text('غائب بعذر'),
               ),
             ],
             selected: {entry.status},

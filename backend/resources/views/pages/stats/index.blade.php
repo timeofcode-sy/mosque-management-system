@@ -179,7 +179,7 @@ new #[Title('الإحصائيات')] class extends Component {
                             ['label' => 'حاضر', 'value' => $this->breakdown['present'], 'class' => 'stroke-present'],
                             ['label' => 'غائب', 'value' => $this->breakdown['absent'], 'class' => 'stroke-absent'],
                             ['label' => 'متأخّر', 'value' => $this->breakdown['late'], 'class' => 'stroke-late'],
-                            ['label' => 'مأذون', 'value' => $this->breakdown['excused'], 'class' => 'stroke-excused'],
+                            ['label' => 'غائب بعذر', 'value' => $this->breakdown['excused'], 'class' => 'stroke-excused'],
                         ]"
                     />
                 </div>

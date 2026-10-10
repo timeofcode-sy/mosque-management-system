@@ -9,7 +9,7 @@ import 'segmented.dart';
 enum NzAttendance {
   present('حاضر', NzIcons.check),
   late('متأخر', NzIcons.clock),
-  excused('مستأذن', NzIcons.note),
+  excused('غائب بعذر', NzIcons.note),
   absent('غائب', NzIcons.close);
 
   const NzAttendance(this.label, this.icon);

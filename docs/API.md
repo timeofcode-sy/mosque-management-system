@@ -405,7 +405,7 @@ user->teacher موجود؟        ⇒ حلقاتُه المسنَدة في ال�
 مطبَّقةً على السطح الخادمي بعد أن طُبِّقت في `StatsRepository` على سطح الديسكتوب. الصفرُ كان يقول
 «حضر صفراً بالمئة» عن يومِ جمعةٍ لا تفقُّدَ فيه أصلاً؛ ولم يظهر أثرُه في اللوحة لأن مكوّنَ المنحنى
 يرشّح دوائرَه بـ`sessions > 0` — لكنّ **الخطَّ الواصلَ** كان يهبط إليها، فيبدو منحنى طالبٍ مواظبٍ
-مسنَّناً بين المئة والصفر. **ويومٌ كلُّ سجلّاته «مأذون» ⇒ `null` كذلك**: المأذونُ خارج المقام،
+مسنَّناً بين المئة والصفر. **ويومٌ كلُّ سجلّاته «غائب بعذر» ⇒ `null` كذلك**: الغائبُ بعذر خارج المقام،
 ويومٌ لا مقامَ له لا نسبةَ له. **فالعميلُ يميّز الحالتين**: `null` تُعرَض «لا جلسة» لا «٠٪».
 
 `GET /student/me/progress` ⇒ `{"data": { "<اسم المنهج>": [ ProgressResource ] }}` — مجمَّعة باسم
@@ -705,7 +705,7 @@ institute() = ترويسة X-Institute إن وصلت  ⇒ يُتحقَّق أن�
 | `recitation.delete` | `recitation_uuid` | تسميعٌ لا وجود له ⇒ نجاحٌ صامت لا 404 ✅ م.5.4 |
 | `points.award` | `uuid?` ✅ م.5.4 · `student_uuid` · `points` · `reason` · `note?` · `awarded_on?` · `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 | `reason`: `behavior`/`participation`/`competition`/`reward`/`excellence`/`volunteering`/`other`. و`uuid` كنظيره في `recitation.save` |
 | `points.delete` ✅ م.5.4 | `point_uuid` | منحةٌ لا وجود لها ⇒ نجاحٌ صامت لا 404 |
-| `excuse.review` ✅ م.6.2 | `excuse_uuid` · `decision` · `note?` | `decision`: `approved`/`rejected` — وقبولُ الإذن يحوّل غيابَ الجلسات **غيرِ المقفلة** إلى «مأذون» (`ReviewAbsenceExcuse`). يتطلّب `excuses.review` |
+| `excuse.review` ✅ م.6.2 | `excuse_uuid` · `decision` · `note?` | `decision`: `approved`/`rejected` — وقبولُ الإذن يحوّل غيابَ الجلسات **غيرِ المقفلة** إلى «غائب بعذر» (`ReviewAbsenceExcuse`). يتطلّب `excuses.review` |
 | `student.save` ✅ م.6.2 | `uuid?` · `student{…}` · `guardians{father,mother}` · `trait_uuids[]?` · `memorized_item_uuids[]?` · `custom_fields{}?` · `course_circle_uuid?` | استمارةُ التسجيل كاملةً ⇐ `SaveStudentRegistration`. و`uuid` كنظيره في `recitation.save`: معرّفٌ قائم ⇒ تحريرٌ في مكانه. **والمراجعُ كلُّها بالـ`uuid`** (انظر أسفل الجدول). يتطلّب `students.manage` |
 | `enrollment.save` ✅ م.6.2 | `student_uuid` · `course_circle_uuid` · `enrolled_on?` | ⇐ `EnrollStudent` — تسجيلٌ واحد لكل دورة، والطاقةُ الاستيعابية تُحترم. يتطلّب `enrollments.manage` |
 | `student.transfer` ✅ م.6.2 | `student_uuid` · `to_course_circle_uuid` · `reason?` · `transferred_on?` | ⇐ `TransferStudent` — التسجيلُ القديم يُغلق «منقولاً» ولا يُحذف. يتطلّب `transfers.manage` |

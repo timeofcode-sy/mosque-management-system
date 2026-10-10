@@ -153,7 +153,7 @@ new #[Title('أذونات الغياب')] class extends Component {
         Flux::toast(
             variant: $status === ExcuseStatus::Approved ? 'success' : 'warning',
             text: $status === ExcuseStatus::Approved
-                ? 'قُبل الإذن، وحُوّل غياب الطالب في الجلسات غير المقفلة إلى "مأذون".'
+                ? 'قُبل الإذن، وحُوّل غياب الطالب في الجلسات غير المقفلة إلى "غائب بعذر".'
                 : 'رُفض الإذن.',
         );
     }
@@ -271,7 +271,7 @@ new #[Title('أذونات الغياب')] class extends Component {
 
             <flux:callout icon="information-circle" variant="secondary">
                 <flux:callout.text>
-                    قبول الإذن يحوّل غياب الطالب إلى «مأذون» في كل جلسة غير مقفلة يغطّيها الإذن،
+                    قبول الإذن يحوّل غياب الطالب إلى «غائب بعذر» في كل جلسة غير مقفلة يغطّيها الإذن،
                     ويعيد حساب نسبة الحلقة وترتيبها.
                 </flux:callout.text>
             </flux:callout>

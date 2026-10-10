@@ -30,7 +30,7 @@ enum BadgeStatus {
       };
 }
 
-/// شارة الحالة بأزواج الهوية الثابتة (حاضر: success · متأخر: warning · مستأذن: info · غائب: danger).
+/// شارة الحالة بأزواج الهوية الثابتة (حاضر: success · متأخر: warning · غائب بعذر: info · غائب: danger).
 /// تُكتب الحالةُ بكلمتها وأيقونتها دائماً — اللونُ وحده لا يكفي (قاعدة الهوية).
 class AttendanceStatusBadge extends StatelessWidget {
   const AttendanceStatusBadge({super.key, required this.status, this.text});
@@ -44,7 +44,7 @@ class AttendanceStatusBadge extends StatelessWidget {
     BadgeStatus.present: 'حاضر',
     BadgeStatus.absent: 'غائب',
     BadgeStatus.late: 'متأخر',
-    BadgeStatus.excused: 'مأذون',
+    BadgeStatus.excused: 'غائب بعذر',
   };
 
   static const _nz = {

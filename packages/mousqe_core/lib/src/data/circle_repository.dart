@@ -303,7 +303,7 @@ class CircleRepository {
         continue;
       }
 
-      // نظير الزرع الخادمي في OpenAttendanceSession: «حاضر» افتراضاً، و«مأذون»
+      // نظير الزرع الخادمي في OpenAttendanceSession: «حاضر» افتراضاً، و«غائب بعذر»
       // لمن يغطّيه إذنٌ مقبول — قيمةٌ مقترحة تنتظر من يؤكّدها، لا تفقُّدٌ وقع.
       roster.add(
         RosterEntry(
