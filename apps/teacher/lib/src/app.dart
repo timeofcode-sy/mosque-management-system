@@ -49,6 +49,7 @@ class _TeacherAppState extends State<TeacherApp> {
     return AppScope(
       dependencies: widget.dependencies,
       child: MousqeApp(
+        title: AppConfig.launcherName,
         theme: MousqeTheme.light(),
         darkTheme: MousqeTheme.dark(),
         home: SplashGate(

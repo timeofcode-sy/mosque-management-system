@@ -19,4 +19,8 @@ class AppConfig {
   /// اسمُ التطبيق كما يظهر لصاحبه — على شاشة الدخول، وفي `device_name` الذي
   /// يقرؤه المشرف في `system/devices`.
   static const String label = 'تطبيق ولي الأمر';
+
+  /// اسمُ التطبيق على الهاتف (أيقونةُ المشغّل وقائمةُ التطبيقات الأخيرة): نزلاً مع اسم القارئ، فتتميّز الأيقونات الثلاث.
+  /// ويُكرَّر في `android:label` بـ AndroidManifest.xml (لا يقرؤه Dart).
+  static const String launcherName = 'نزلاً · ولي الأمر';
 }

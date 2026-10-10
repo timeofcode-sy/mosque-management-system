@@ -5,7 +5,7 @@
          شهادة، فلا يُخدَم إلا بـhttp، وأندرويد يحجب http في نسخة الإصدار افتراضياً.
          الخادمُ الرئيسي https ولا يتأثّر. -->
     <application
-        android:label="نزلاً"
+        android:label="نزلاً · الطالب"
         android:usesCleartextTraffic="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

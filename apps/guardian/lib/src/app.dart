@@ -46,6 +46,7 @@ class _GuardianAppState extends State<GuardianApp> {
     return AppScope(
       dependencies: widget.dependencies,
       child: MousqeApp(
+        title: AppConfig.launcherName,
         theme: MousqeTheme.light(),
         darkTheme: MousqeTheme.dark(),
         home: SplashGate(

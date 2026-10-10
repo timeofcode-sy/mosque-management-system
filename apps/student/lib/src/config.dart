@@ -15,4 +15,8 @@ class AppConfig {
   static const String app = 'student';
 
   static const String label = 'تطبيق الطالب';
+
+  /// اسمُ التطبيق على الهاتف (أيقونةُ المشغّل وقائمةُ التطبيقات الأخيرة): نزلاً مع اسم القارئ، فتتميّز الأيقونات الثلاث.
+  /// ويُكرَّر في `android:label` بـ AndroidManifest.xml (لا يقرؤه Dart).
+  static const String launcherName = 'نزلاً · الطالب';
 }
