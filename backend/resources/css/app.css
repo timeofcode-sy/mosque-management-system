@@ -407,29 +407,60 @@
 }
 
 /**
- * القائمة الجانبية على اليسار: Flux يضع عمودها أولاً فتقع يميناً في الواجهة العربية، فنقلب ترتيب مناطق الشبكة
- * (الشريطُ آخرَ عمود = أقصى اليسار). والرأسُ العلوي (للجوال) يمتدّ على ما بقي.
+ * التمرير: الصفحةُ لا تتمرّر كلُّها بل منطقةُ المحتوى وحدها. فشريطُ تمرير الصفحة في كروم وإيدج يقع دائماً على
+ * يمين الشاشة ويدفع القائمةَ الجانبية إلى الداخل، بينما شريطُ تمرير العنصر يتبع اتجاهه (RTL = يسار العنصر).
+ * فتلاصق القائمةُ أقصى اليمين، ويقع شريطُ المحتوى الرئيسي عند أقصى اليسار، وكلاهما بألوان الثيم.
  */
-[dir='rtl'] *:has(> [data-flux-main]) {
-    grid-template-areas:
-        'header header header'
-        'aside main sidebar'
-        'aside footer sidebar';
+html,
+body {
+    height: 100%;
+    overflow: hidden;
 }
 
-[dir='rtl'] *:has(> [data-flux-sidebar] + [data-flux-header]) {
-    grid-template-areas:
-        'header header sidebar'
-        'aside main sidebar'
-        'aside footer sidebar';
+body {
+    display: grid;
+    height: 100dvh;
 }
 
-/* شريطُ تمريرٍ رفيعٌ في القائمة المفتوحة، ومخفيٌّ في المطويّة (الأيقونات قليلة العرض والتمرير بالعجلة يبقى). */
+[data-flux-main] {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
 [data-flux-sidebar] {
+    max-height: 100dvh;
+    overflow-y: auto;
+}
+
+/* أشرطةُ التمرير بألوان الهوية: مجرىً شفاف ومقبضٌ بلون line (يزداد وضوحاً عند المرور)، رفيعةٌ لا تأخذ مساحة. */
+* {
     scrollbar-width: thin;
     scrollbar-color: var(--line) transparent;
 }
 
+*::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 6px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--ink-muted);
+    background-clip: padding-box;
+}
+
+/* في القائمة المطويّة: مخفيّ (الأيقونات قليلة العرض والتمرير بالعجلة يبقى). */
 [data-flux-sidebar][data-flux-sidebar-collapsed-desktop] {
     scrollbar-width: none;
 }

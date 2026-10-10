@@ -13,7 +13,7 @@
             روابطَ تؤدّي به إلى 403، فتصير الأدوار عقوبةً مفاجئة بدل أن تكون شكلاً
             للوحة يفهمه من نظرة.
         --}}
-        <flux:sidebar sticky collapsible class="w-64 border-s border-line bg-raised transition-[width] duration-200 data-flux-sidebar-collapsed-desktop:w-16 data-flux-sidebar-collapsed-desktop:px-2 data-flux-sidebar-on-mobile:left-0! data-flux-sidebar-on-mobile:right-auto! rtl:data-flux-sidebar-on-mobile:data-flux-sidebar-collapsed-mobile:-translate-x-full! motion-reduce:transition-none" aria-label="التنقّل الرئيسي">
+        <flux:sidebar sticky collapsible class="w-64 border-e border-line bg-raised transition-[width] duration-200 data-flux-sidebar-collapsed-desktop:w-16 data-flux-sidebar-collapsed-desktop:px-2 motion-reduce:transition-none" aria-label="التنقّل الرئيسي">
             {{--
                 طيّ القائمة وتوسيعها أفقياً: على الحاسوب تنكمش من 264px إلى شريطٍ بعرض 80px أيقوناتُه وحدها (مع تلميحٍ باسم كل
                 بند)، وعلى الجوال تُغلق. الحالةُ يحفظها Flux في المتصفّح فتبقى كما تركها المستخدم.
@@ -180,7 +180,7 @@
             علامة نزلاً المصغّرة واسم المعهد، ثم قائمة المستخدم. على الحاسوب يحلّ محلّه الشريط الجانبي.
         --}}
         <flux:header class="sticky top-0 z-10 h-16 gap-2 border-b border-line bg-raised px-2 lg:hidden sm:px-4">
-            <flux:sidebar.toggle class="order-last size-12" icon="bars-2" aria-label="فتح القائمة" />
+            <flux:sidebar.toggle class="size-12" icon="bars-2" aria-label="فتح القائمة" />
 
             <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate class="min-w-0 flex-1" />
 
@@ -230,8 +230,6 @@
                 </flux:menu>
             </flux:dropdown>
         </flux:header>
-
-        <x-institute-banner />
 
         {{ $slot }}
 
