@@ -5,6 +5,7 @@
 .DESCRIPTION
     teacher        -> Android APK            (apps/teacher)
     admin_desktop  -> Windows folder + zip   (apps/admin_desktop)
+    admin_android  -> Android APK            (apps/admin_desktop, the phone layout)
     guardian       -> Android APK            (apps/guardian)  skipped until the app exists
     student        -> Android APK            (apps/student)   skipped until the app exists
 
@@ -44,7 +45,7 @@
     and VERSION.md is not touched.
 
 .PARAMETER Only
-    Build only these apps (teacher, admin_desktop, guardian, student), e.g.
+    Build only these apps (teacher, admin_desktop, admin_android, guardian, student), e.g.
     -Only teacher,admin_desktop
 
 .PARAMETER BaseUrl
@@ -108,6 +109,7 @@ $versionFile = Join-Path $root 'VERSION.md'
 $apps = @(
     @{ Name = 'teacher';       Dir = 'apps/teacher';       Kind = 'apk' },
     @{ Name = 'admin_desktop'; Dir = 'apps/admin_desktop'; Kind = 'windows' },
+    @{ Name = 'admin_android'; Dir = 'apps/admin_desktop'; Kind = 'apk' },
     @{ Name = 'guardian';      Dir = 'apps/guardian';      Kind = 'apk' },
     @{ Name = 'student';       Dir = 'apps/student';       Kind = 'apk' }
 )
@@ -255,6 +257,8 @@ if (-not $SkipPubGet) {
 }
 
 $results = @()
+# admin_desktop and admin_android share one project: its tests run once.
+$tested = @{}
 
 foreach ($app in $apps) {
     $name = $app.Name
@@ -285,8 +289,9 @@ foreach ($app in $apps) {
         Push-Location $dir
         try {
             if ($Clean) { Invoke-Native 'flutter clean' { flutter clean } }
-            if (-not $SkipTests -and (Test-Path 'test')) {
+            if (-not $SkipTests -and (Test-Path 'test') -and -not $tested[$app.Dir]) {
                 Invoke-Native "$name tests" { flutter test @pub }
+                $tested[$app.Dir] = $true
             }
 
             if ($app.Kind -eq 'apk') {

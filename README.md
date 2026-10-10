@@ -11,7 +11,7 @@
 |---|---|
 | `backend/` | Laravel 13 · Livewire 4 · Flux · Fortify · Spatie Permission — لوحة التحكم + API |
 | `apps/teacher/` | تطبيق الأستاذ (Android/iOS) — التفقّد أوف-لاين |
-| `apps/admin_desktop/` | برنامج المشرف (Windows) — إدارة كاملة أوف-لاين |
+| `apps/admin_desktop/` | برنامج المشرف (Windows + Android) — إدارة كاملة أوف-لاين، وعلى الهاتف بشريطٍ سفلي |
 | `apps/guardian/` | تطبيق أولياء الأمور — متابعةُ الأبناء وأذوناتُ الغياب ✅ م.7 |
 | `apps/student/` | تطبيق الطالب — حضورُه ورتبتُه ونقاطُه وإعلاناتُه ✅ م.8 |
 | `packages/mousqe_core/` | نماذج + drift(SQLite) + محرك المزامنة + عميل API |
@@ -47,7 +47,7 @@ vendor/bin/pint --dirty --format agent
 
 ```powershell
 .\scripts\export-apps.ps1 -DryRun             # ما الإصدار التالي؟ بلا بناء
-.\scripts\export-apps.ps1                     # بيتا جديدة للتطبيقات الأربعة في dist/
+.\scripts\export-apps.ps1                     # بيتا جديدة للتطبيقات (4 APK + ويندوز) في dist/
 .\scripts\export-apps.ps1 -Channel release    # إصدارٌ نهائي (من commit نظيف)
 ```
 

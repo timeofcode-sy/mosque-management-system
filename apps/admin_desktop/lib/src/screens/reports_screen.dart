@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 import 'package:printing/printing.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 import '../reports/report_documents.dart';
 import '../reports/report_fonts.dart';
 
@@ -123,6 +124,8 @@ class _Toolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = context.isCompact;
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Wrap(
@@ -131,6 +134,7 @@ class _Toolbar extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           SegmentedButton<String>(
+            expandedInsets: compact ? EdgeInsets.zero : null,
             segments: const [
               ButtonSegment(value: 'daily', label: Text('تفقّدُ يوم')),
               ButtonSegment(value: 'points', label: Text('النقاط')),
@@ -138,10 +142,12 @@ class _Toolbar extends StatelessWidget {
             selected: {kind},
             onSelectionChanged: (value) => onKind(value.first),
           ),
+          // الهاتف: كلُّ أداةٍ بعرض الشاشة في سطرها.
           SizedBox(
-            width: 280,
+            width: compact ? double.infinity : 280,
             child: DropdownButtonFormField<int>(
               initialValue: courseCircleId,
+              isExpanded: true,
               decoration: const InputDecoration(
                 labelText: 'الحلقة',
                 border: OutlineInputBorder(),
@@ -151,50 +157,63 @@ class _Toolbar extends StatelessWidget {
                 for (final circle in circles)
                   DropdownMenuItem(
                     value: circle.courseCircleId,
-                    child: Text('${circle.circleName} · ${circle.shiftName}'),
+                    child: Text(
+                      '${circle.circleName} · ${circle.shiftName}',
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
               ],
               onChanged: (value) => value == null ? null : onCircle(value),
             ),
           ),
           if (kind == 'daily')
-            OutlinedButton.icon(
-              onPressed: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: date,
-                  firstDate: DateTime(2024),
-                  lastDate: DateTime.now().add(const Duration(days: 1)),
-                );
+            _wide(
+              compact,
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: date,
+                    firstDate: DateTime(2024),
+                    lastDate: DateTime.now().add(const Duration(days: 1)),
+                  );
 
-                if (picked != null) {
-                  onDate(picked);
-                }
-              },
-              icon: const NzIcon(NzIcons.calendar, size: 18),
-              label: Text(_date(date)),
+                  if (picked != null) {
+                    onDate(picked);
+                  }
+                },
+                icon: const NzIcon(NzIcons.calendar, size: 18),
+                label: Text(_date(date)),
+              ),
             )
           else
-            OutlinedButton.icon(
-              onPressed: () async {
-                final picked = await showDateRangePicker(
-                  context: context,
-                  initialDateRange: range,
-                  firstDate: DateTime(2024),
-                  lastDate: DateTime.now().add(const Duration(days: 1)),
-                );
+            _wide(
+              compact,
+              OutlinedButton.icon(
+                onPressed: () async {
+                  final picked = await showDateRangePicker(
+                    context: context,
+                    initialDateRange: range,
+                    firstDate: DateTime(2024),
+                    lastDate: DateTime.now().add(const Duration(days: 1)),
+                  );
 
-                if (picked != null) {
-                  onRange(picked);
-                }
-              },
-              icon: const NzIcon(NzIcons.calendar, size: 18),
-              label: Text('${_date(range.start)} ← ${_date(range.end)}'),
+                  if (picked != null) {
+                    onRange(picked);
+                  }
+                },
+                icon: const NzIcon(NzIcons.calendar, size: 18),
+                label: Text('${_date(range.start)} ← ${_date(range.end)}'),
+              ),
             ),
         ],
       ),
     );
   }
+
+  /// بعرض السطر كلِّه على الهاتف.
+  static Widget _wide(bool compact, Widget child) =>
+      compact ? SizedBox(width: double.infinity, child: child) : child;
 
   static String _date(DateTime value) =>
       '${value.year}/${value.month.toString().padLeft(2, '0')}/'

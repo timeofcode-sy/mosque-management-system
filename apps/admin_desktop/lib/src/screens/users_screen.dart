@@ -3,6 +3,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 import '../widgets/connected_action.dart';
 import '../widgets/credentials_dialog.dart';
 
@@ -70,13 +71,11 @@ class _UsersScreenState extends State<UsersScreen> {
             onPressed: _reload,
           ),
           if (deps.session.can('users.invite'))
-            Padding(
-              padding: const EdgeInsetsDirectional.only(start: 8, end: 12),
-              child: FilledButton.icon(
-                onPressed: _invite,
-                icon: const NzIcon(NzIcons.userPlus, size: 18),
-                label: const Text('حساب جديد'),
-              ),
+            AdaptiveAction(
+              icon: NzIcons.userPlus,
+              label: 'حساب جديد',
+              filled: true,
+              onPressed: _invite,
             ),
         ],
       ),
@@ -93,7 +92,9 @@ class _UsersScreenState extends State<UsersScreen> {
               decoration: InputDecoration(
                 isDense: true,
                 prefixIcon: const NzIcon(NzIcons.search, size: 20),
-                hintText: 'ابحث بالاسم أو اسم الدخول ثم اضغط Enter',
+                hintText: context.isCompact
+                    ? 'ابحث بالاسم أو اسم الدخول'
+                    : 'ابحث بالاسم أو اسم الدخول ثم اضغط Enter',
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
                   icon: const NzIcon(NzIcons.arrowRight),
@@ -264,11 +265,14 @@ class _UserRow extends StatelessWidget {
     final deps = AppScope.of(context);
     final theme = Theme.of(context);
 
+    final canManage = deps.session.can('users.manage');
+    final canReset = deps.session.can('credentials.manage');
+
     return ListTile(
       title: Row(
         spacing: 8,
         children: [
-          Text(user.name),
+          Flexible(child: Text(user.name)),
           if (!user.isActive)
             Chip(
               label: const Text('مقفل', style: TextStyle(fontSize: 12)),
@@ -293,32 +297,57 @@ class _UserRow extends StatelessWidget {
                 .join(' · '),
         ].join(' — '),
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (deps.session.can('users.manage'))
-            IconButton(
-              tooltip: 'إسناد دور',
-              icon: const NzIcon(NzIcons.shield, size: 18),
-              onPressed: () => _assign(context),
+      // الهاتف: ثلاثُ أيقوناتٍ تأكل نصفَ الصفّ — فهي قائمةٌ بأسماء أفعالها.
+      trailing: context.isCompact
+          ? RowActionsMenu(
+              actions: [
+                if (canManage)
+                  RowAction(
+                    icon: NzIcons.shield,
+                    label: 'إسناد دور',
+                    onPressed: () => _assign(context),
+                  ),
+                if (canReset)
+                  RowAction(
+                    icon: NzIcons.key,
+                    label: 'توليد كلمة مرور جديدة',
+                    onPressed: () => _resetPassword(context),
+                  ),
+                if (canManage)
+                  RowAction(
+                    icon: user.isActive ? NzIcons.lockClosed : NzIcons.lockOpen,
+                    label: user.isActive ? 'إقفال الحساب' : 'فتح الحساب',
+                    destructive: user.isActive,
+                    onPressed: () => _toggleActivation(context),
+                  ),
+              ],
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (deps.session.can('users.manage'))
+                  IconButton(
+                    tooltip: 'إسناد دور',
+                    icon: const NzIcon(NzIcons.shield, size: 18),
+                    onPressed: () => _assign(context),
+                  ),
+                if (deps.session.can('credentials.manage'))
+                  IconButton(
+                    tooltip: 'توليد كلمة مرور جديدة',
+                    icon: const NzIcon(NzIcons.key, size: 18),
+                    onPressed: () => _resetPassword(context),
+                  ),
+                if (deps.session.can('users.manage'))
+                  IconButton(
+                    tooltip: user.isActive ? 'إقفال الحساب' : 'فتح الحساب',
+                    icon: NzIcon(
+                      user.isActive ? NzIcons.lockClosed : NzIcons.lockOpen,
+                      size: 18,
+                    ),
+                    onPressed: () => _toggleActivation(context),
+                  ),
+              ],
             ),
-          if (deps.session.can('credentials.manage'))
-            IconButton(
-              tooltip: 'توليد كلمة مرور جديدة',
-              icon: const NzIcon(NzIcons.key, size: 18),
-              onPressed: () => _resetPassword(context),
-            ),
-          if (deps.session.can('users.manage'))
-            IconButton(
-              tooltip: user.isActive ? 'إقفال الحساب' : 'فتح الحساب',
-              icon: NzIcon(
-                user.isActive ? NzIcons.lockClosed : NzIcons.lockOpen,
-                size: 18,
-              ),
-              onPressed: () => _toggleActivation(context),
-            ),
-        ],
-      ),
     );
   }
 

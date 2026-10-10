@@ -138,11 +138,13 @@ class _BackupScreenState extends State<BackupScreen> {
                                 ? theme.colorScheme.primary
                                 : theme.colorScheme.error,
                           ),
-                          Text(
-                            pending == 0
-                                ? 'الطابورُ فارغ — كلُّ ما على هذا الجهاز وصل الخادم.'
-                                : '$pending عمليةً لم تصل الخادمَ بعد — وهي وحدها '
-                                      'ما لا يوجد في مكانٍ آخر.',
+                          Expanded(
+                            child: Text(
+                              pending == 0
+                                  ? 'الطابورُ فارغ — كلُّ ما على هذا الجهاز وصل الخادم.'
+                                  : '$pending عمليةً لم تصل الخادمَ بعد — وهي وحدها '
+                                        'ما لا يوجد في مكانٍ آخر.',
+                            ),
                           ),
                         ],
                       );
@@ -155,8 +157,9 @@ class _BackupScreenState extends State<BackupScreen> {
                     'سحبُه كاملاً. والنسخةُ ملفُّ SQLite يُفتح ويُقرأ عند الحاجة.',
                     style: theme.textTheme.bodySmall,
                   ),
-                  Row(
+                  Wrap(
                     spacing: 12,
+                    runSpacing: 8,
                     children: [
                       FilledButton.icon(
                         onPressed: _busy ? null : _write,

@@ -3,6 +3,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 import '../widgets/connected_action.dart';
 
 /// بنيةُ الدورة: الدوراتُ والدواماتُ والحلقات — ✅ م.6.5.
@@ -72,7 +73,7 @@ class _CoursesTab extends StatelessWidget {
         title: Row(
           spacing: 8,
           children: [
-            Text(course.name),
+            Flexible(child: Text(course.name)),
             if (course.isCurrent)
               const Chip(
                 label: Text('الجارية', style: TextStyle(fontSize: 12)),
@@ -87,22 +88,39 @@ class _CoursesTab extends StatelessWidget {
           ' · ${course.statusLabel}'
           ' · ${course.shiftsCount} دوام · ${course.circlesCount} حلقة',
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // «اجعلها الجارية» فعلٌ مستقلّ لأنه يُنزل الجاريةَ السابقة ويمسّ كلَّ
-            // شاشةٍ تشغيلية — فلا يُدسّ داخل زرِّ الحفظ.
-            if (!course.isCurrent)
-              TextButton(
-                onPressed: () => _activate(context, course),
-                child: const Text('اجعلها الجارية'),
+        // الهاتف: الفعلان في قائمة — زرٌّ نصّيٌّ طويلٌ بجانب الاسم لا يسعه 360px.
+        trailing: context.isCompact
+            ? RowActionsMenu(
+                actions: [
+                  if (!course.isCurrent)
+                    RowAction(
+                      icon: NzIcons.checkCircle,
+                      label: 'اجعلها الجارية',
+                      onPressed: () => _activate(context, course),
+                    ),
+                  RowAction(
+                    icon: NzIcons.edit,
+                    label: 'تحرير الدورة',
+                    onPressed: () => _edit(context, course),
+                  ),
+                ],
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // «اجعلها الجارية» فعلٌ مستقلّ لأنه يُنزل الجاريةَ السابقة ويمسّ كلَّ
+                  // شاشةٍ تشغيلية — فلا يُدسّ داخل زرِّ الحفظ.
+                  if (!course.isCurrent)
+                    TextButton(
+                      onPressed: () => _activate(context, course),
+                      child: const Text('اجعلها الجارية'),
+                    ),
+                  IconButton(
+                    icon: const NzIcon(NzIcons.edit, size: 18),
+                    onPressed: () => _edit(context, course),
+                  ),
+                ],
               ),
-            IconButton(
-              icon: const NzIcon(NzIcons.edit, size: 18),
-              onPressed: () => _edit(context, course),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -384,19 +402,36 @@ class _CirclesTab extends StatelessWidget {
               ? 'تعمل في: ${circle.runningIn.join(' · ')}'
               : 'مُعرَّفة ولم تُشغَّل في الدورة الجارية',
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextButton(
-              onPressed: () => _run(context, circle),
-              child: Text(circle.isRunning ? 'تشغيل في دوام آخر' : 'تشغيل'),
-            ),
-            IconButton(
-              icon: const NzIcon(NzIcons.edit, size: 18),
-              onPressed: () => _edit(context, circle),
-            ),
-          ],
-        ),
+        trailing: context.isCompact
+            ? RowActionsMenu(
+                actions: [
+                  RowAction(
+                    icon: NzIcons.play,
+                    label: circle.isRunning ? 'تشغيل في دوام آخر' : 'تشغيل',
+                    onPressed: () => _run(context, circle),
+                  ),
+                  RowAction(
+                    icon: NzIcons.edit,
+                    label: 'تحرير الحلقة',
+                    onPressed: () => _edit(context, circle),
+                  ),
+                ],
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: () => _run(context, circle),
+                    child: Text(
+                      circle.isRunning ? 'تشغيل في دوام آخر' : 'تشغيل',
+                    ),
+                  ),
+                  IconButton(
+                    icon: const NzIcon(NzIcons.edit, size: 18),
+                    onPressed: () => _edit(context, circle),
+                  ),
+                ],
+              ),
       ),
     );
   }

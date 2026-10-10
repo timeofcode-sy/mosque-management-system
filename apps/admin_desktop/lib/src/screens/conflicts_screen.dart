@@ -3,6 +3,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 
 /// التعارضات — **رؤيةً وحكماً**، ✅ م.6.6 فوق نقطتَي م.6.1.
 ///
@@ -49,36 +50,47 @@ class _ConflictsScreenState extends State<ConflictsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = context.isCompact;
+    final filter = SegmentedButton<String>(
+      segments: const [
+        ButtonSegment(value: 'pending', label: Text('المعلَّقة')),
+        ButtonSegment(value: 'reviewed', label: Text('المراجَعة')),
+        ButtonSegment(value: 'all', label: Text('الكل')),
+      ],
+      selected: {_status},
+      expandedInsets: compact ? EdgeInsets.zero : null,
+      onSelectionChanged: (value) {
+        _status = value.first;
+        _reload();
+      },
+    );
+    final refresh = IconButton(
+      onPressed: _reload,
+      icon: const NzIcon(NzIcons.review),
+      tooltip: 'تحديث',
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('التعارضات'),
-        actions: [
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 16),
-            child: Row(
-              spacing: 12,
-              children: [
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'pending', label: Text('المعلَّقة')),
-                    ButtonSegment(value: 'reviewed', label: Text('المراجَعة')),
-                    ButtonSegment(value: 'all', label: Text('الكل')),
-                  ],
-                  selected: {_status},
-                  onSelectionChanged: (value) {
-                    _status = value.first;
-                    _reload();
-                  },
-                ),
-                IconButton(
-                  onPressed: _reload,
-                  icon: const NzIcon(NzIcons.review),
-                  tooltip: 'تحديث',
+        // على الهاتف المرشّحُ تحت العنوان بعرض الشاشة.
+        actions: compact
+            ? [refresh]
+            : [
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(end: 16),
+                  child: Row(spacing: 12, children: [filter, refresh]),
                 ),
               ],
-            ),
-          ),
-        ],
+        bottom: compact
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(60),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: filter,
+                ),
+              )
+            : null,
       ),
       body: FutureBuilder<List<SyncConflict>>(
         future: _conflicts,
@@ -157,12 +169,14 @@ class _ConflictCard extends StatelessWidget {
               spacing: 8,
               children: [
                 Text(conflict.tableName, style: theme.textTheme.titleMedium),
-                Text(
-                  conflict.rowUuid,
-                  style: theme.textTheme.bodySmall,
-                  overflow: TextOverflow.ellipsis,
+                Expanded(
+                  child: Text(
+                    conflict.rowUuid,
+                    style: theme.textTheme.bodySmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                const Spacer(),
                 if (conflict.isPending)
                   const Chip(
                     label: Text('ينتظر المراجعة'),
@@ -191,7 +205,32 @@ class _ConflictCard extends StatelessWidget {
               )
             else
               _DiffTable(conflict: conflict, keys: keys),
-            if (canReview && conflict.isPending)
+            if (canReview && conflict.isPending && context.isCompact)
+              // الهاتف: الحكمان زرّان بعرض الشاشة، والشرحُ فوقهما.
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: 8,
+                children: [
+                  Text(
+                    'اعتمادُ قيمة الجهاز يكتبها فعلاً فتصل الأجهزةَ في سحبها '
+                    'التالي؛ وإبقاءُ قيمة الخادم ختمٌ بلا كتابة.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  FilledButton.icon(
+                    onPressed: () =>
+                        _resolve(context, ConflictDecision.clientWins),
+                    icon: const NzIcon(NzIcons.phone, size: 18),
+                    label: Text(ConflictDecision.clientWins.label),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        _resolve(context, ConflictDecision.serverWins),
+                    icon: const NzIcon(NzIcons.server, size: 18),
+                    label: Text(ConflictDecision.serverWins.label),
+                  ),
+                ],
+              )
+            else if (canReview && conflict.isPending)
               Row(
                 spacing: 8,
                 children: [

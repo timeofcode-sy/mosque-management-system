@@ -4,6 +4,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 
 /// سجلُّ جلسات المعهد — **كلُّها لا جلساتُ حلقاتِ صاحب الجهاز**.
 ///
@@ -51,11 +52,21 @@ class _SessionsLogScreenState extends State<SessionsLogScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                child: Row(
+                child: Flex(
+                  // الهاتف: الحالاتُ الأربع بعرض الشاشة والعددُ تحتها.
+                  direction: context.isCompact
+                      ? Axis.vertical
+                      : Axis.horizontal,
+                  crossAxisAlignment: context.isCompact
+                      ? CrossAxisAlignment.stretch
+                      : CrossAxisAlignment.center,
                   spacing: 12,
                   children: [
                     SegmentedButton<String?>(
                       showSelectedIcon: false,
+                      expandedInsets: context.isCompact
+                          ? EdgeInsets.zero
+                          : null,
                       segments: const [
                         ButtonSegment(value: null, label: Text('الكل')),
                         ButtonSegment(value: 'draft', label: Text('مسودّة')),
@@ -69,7 +80,7 @@ class _SessionsLogScreenState extends State<SessionsLogScreen> {
                       onSelectionChanged: (values) =>
                           setState(() => _status = values.first),
                     ),
-                    const Spacer(),
+                    if (!context.isCompact) const Spacer(),
                     Text(
                       '${entries.length} جلسة',
                       style: Theme.of(context).textTheme.labelMedium,
@@ -112,6 +123,50 @@ class _SessionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final badges = Wrap(
+      spacing: 10,
+      runSpacing: 6,
+      alignment: context.isCompact ? WrapAlignment.start : WrapAlignment.end,
+      children: [
+        _StatusChip(status: entry.status),
+        if (entry.present > 0)
+          _Badge(status: BadgeStatus.present, count: entry.present),
+        if (entry.absent > 0)
+          _Badge(status: BadgeStatus.absent, count: entry.absent),
+        if (entry.late > 0) _Badge(status: BadgeStatus.late, count: entry.late),
+        if (entry.excused > 0)
+          _Badge(status: BadgeStatus.excused, count: entry.excused),
+        Text('من ${entry.total}', style: theme.textTheme.labelMedium),
+      ],
+    );
+
+    // الهاتف: الحلقةُ والتاريخُ في سطر، والشاراتُ تحتهما.
+    if (context.isCompact) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 10,
+            children: [
+              Row(
+                spacing: 12,
+                children: [
+                  Expanded(
+                    child: Text(
+                      entry.circleName,
+                      style: theme.textTheme.titleSmall,
+                    ),
+                  ),
+                  Text(DateFormat('yyyy-MM-dd').format(entry.date)),
+                ],
+              ),
+              badges,
+            ],
+          ),
+        ),
+      );
+    }
 
     return Card(
       child: Padding(
@@ -124,26 +179,7 @@ class _SessionCard extends StatelessWidget {
               child: Text(entry.circleName, style: theme.textTheme.titleSmall),
             ),
             Text(DateFormat('yyyy-MM-dd').format(entry.date)),
-            Expanded(
-              flex: 4,
-              child: Wrap(
-                spacing: 10,
-                runSpacing: 6,
-                alignment: WrapAlignment.end,
-                children: [
-                  _StatusChip(status: entry.status),
-                  if (entry.present > 0)
-                    _Badge(status: BadgeStatus.present, count: entry.present),
-                  if (entry.absent > 0)
-                    _Badge(status: BadgeStatus.absent, count: entry.absent),
-                  if (entry.late > 0)
-                    _Badge(status: BadgeStatus.late, count: entry.late),
-                  if (entry.excused > 0)
-                    _Badge(status: BadgeStatus.excused, count: entry.excused),
-                  Text('من ${entry.total}', style: theme.textTheme.labelMedium),
-                ],
-              ),
-            ),
+            Expanded(flex: 4, child: badges),
           ],
         ),
       ),

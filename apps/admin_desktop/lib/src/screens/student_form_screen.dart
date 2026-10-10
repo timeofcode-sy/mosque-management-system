@@ -3,6 +3,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 import '../widgets/form_section.dart';
 
 /// استمارةُ تسجيل الطالب كاملةً — ✅ م.6.5.
@@ -103,24 +104,35 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
         actions: [
           Padding(
             padding: const EdgeInsetsDirectional.only(end: 12),
-            child: FilledButton.icon(
-              onPressed: _saving ? null : _save,
-              icon: _saving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const NzIcon(NzIcons.save, size: 18),
-              label: const Text('حفظ'),
-            ),
+            // الهاتف: «حفظ» وحدها بلا أيقونة، فيبقى العنوانُ مقروءاً بجانبها.
+            child: context.isCompact && !_saving
+                ? FilledButton(
+                    style: FilledButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: NzSpace.s4,
+                      ),
+                    ),
+                    onPressed: _save,
+                    child: const Text('حفظ'),
+                  )
+                : FilledButton.icon(
+                    onPressed: _saving ? null : _save,
+                    icon: _saving
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const NzIcon(NzIcons.save, size: 18),
+                    label: const Text('حفظ'),
+                  ),
           ),
         ],
       ),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(context.gutter(24)),
           children: [
             if (_error != null)
               Padding(

@@ -3,6 +3,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 import 'points_dialog.dart';
 import 'recitation_dialog.dart';
 import 'student_profile_screen.dart';
@@ -51,7 +52,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.circle.circleName),
+        title: Text(
+          widget.circle.circleName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(44),
           child: _DateBar(date: _date, onPick: _pickDate),
@@ -750,6 +755,21 @@ class _StudentRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final compact = context.isCompact;
+
+    final lateButton = entry.status == AttendanceStatus.late
+        ? TextButton(
+            onPressed: editable ? onLate : null,
+            child: Text('${entry.lateMinutes ?? 0} د'),
+          )
+        : const SizedBox.shrink();
+    final menu = _RowMenu(
+      editable: editable,
+      onProfile: onProfile,
+      onRecitation: () => onRecitation(null),
+      onPoints: () => onPoint(null),
+      onNote: onNote,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -798,29 +818,32 @@ class _StudentRow extends StatelessWidget {
                   ),
                 ),
               ),
-              _StatusPicker(
+              // على الهاتف: الاسمُ والقائمةُ في سطر، والحالاتُ الأربع بعرض
+              // الشاشة تحته — أهدافُ لمسٍ بعرض ربعها لا 60px.
+              if (compact) ...[
+                lateButton,
+                menu,
+              ] else ...[
+                _StatusPicker(
+                  status: entry.status,
+                  editable: editable,
+                  onChanged: onStatus,
+                ),
+                SizedBox(width: 90, child: lateButton),
+                menu,
+              ],
+            ],
+          ),
+          if (compact)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _StatusPicker(
                 status: entry.status,
                 editable: editable,
                 onChanged: onStatus,
+                expanded: true,
               ),
-              SizedBox(
-                width: 90,
-                child: entry.status == AttendanceStatus.late
-                    ? TextButton(
-                        onPressed: editable ? onLate : null,
-                        child: Text('${entry.lateMinutes ?? 0} د'),
-                      )
-                    : const SizedBox.shrink(),
-              ),
-              _RowMenu(
-                editable: editable,
-                onProfile: onProfile,
-                onRecitation: () => onRecitation(null),
-                onPoints: () => onPoint(null),
-                onNote: onNote,
-              ),
-            ],
-          ),
+            ),
           if (entry.note != null ||
               entry.recitations.isNotEmpty ||
               entry.points.isNotEmpty)
@@ -878,16 +901,21 @@ class _StatusPicker extends StatelessWidget {
     required this.status,
     required this.editable,
     required this.onChanged,
+    this.expanded = false,
   });
 
   final AttendanceStatus status;
   final bool editable;
   final ValueChanged<AttendanceStatus> onChanged;
 
+  /// بعرض الأب كلِّه (الهاتف) لا بعرض تسمياته.
+  final bool expanded;
+
   @override
   Widget build(BuildContext context) {
     return SegmentedButton<AttendanceStatus>(
       showSelectedIcon: false,
+      expandedInsets: expanded ? EdgeInsets.zero : null,
       style: const ButtonStyle(visualDensity: VisualDensity.compact),
       segments: const [
         ButtonSegment(value: AttendanceStatus.present, label: Text('حاضر')),
@@ -991,6 +1019,35 @@ class _TeacherSection extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             )
+          else if (context.isCompact)
+            for (final entry in entries)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 6,
+                  children: [
+                    Text.rich(
+                      TextSpan(
+                        text: entry.fullName,
+                        style: theme.textTheme.bodyLarge,
+                        children: [
+                          TextSpan(
+                            text: '  ${entry.roleLabel}',
+                            style: theme.textTheme.labelSmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    _StatusPicker(
+                      status: entry.status,
+                      editable: editable,
+                      onChanged: (status) => onStatus(entry, status),
+                      expanded: true,
+                    ),
+                  ],
+                ),
+              )
           else
             for (final entry in entries)
               Padding(
@@ -1078,46 +1135,70 @@ class _ActionBar extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final complete = editable && !session.completed
+        ? OutlinedButton.icon(
+            onPressed: saving ? null : onComplete,
+            icon: const NzIcon(NzIcons.checkCircle),
+            label: const Text('إكمال'),
+          )
+        : null;
+    // ما لا يملكه المستخدم لا يظهر أصلاً — نفسُ قاعدة القائمة الجانبية
+    // ([CHECKPOINT-PHASE-6.3.MD §6]). والمقفلةُ لا تُقفل مرّتين.
+    final lock = canLock && !session.locked
+        ? OutlinedButton.icon(
+            onPressed: saving || !session.exists ? null : onLock,
+            icon: const NzIcon(NzIcons.lockClosed),
+            label: const Text('قفل نهائي'),
+          )
+        : null;
+
+    // الهاتف: الحفظُ بعرض الشاشة، والفعلان الآخران نصفين تحته.
+    if (context.isCompact) {
+      return Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 8,
+          children: [
+            if (editable) _saveButton(),
+            if (complete != null || lock != null)
+              Row(
+                spacing: 8,
+                children: [
+                  if (complete != null) Expanded(child: complete),
+                  if (lock != null) Expanded(child: lock),
+                ],
+              ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Row(
         spacing: 8,
         children: [
-          if (editable)
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: saving || !(dirty || !session.exists)
-                    ? null
-                    : onSave,
-                icon: const NzIcon(NzIcons.save),
-                // «فتح الجلسة» و«حفظ» فعلٌ واحد: الفتحُ يصفّ
-                // `attendance.session.open` وحدها، والحفظُ يُتبعها
-                // `attendance.take` بنفس الطابور وبنفس الترتيب.
-                label: Text(switch ((session.exists, session.isAmendment)) {
-                  (false, _) => 'فتح الجلسة وحفظ التفقّد',
-                  (_, true) => 'حفظ التصحيح',
-                  _ => 'حفظ التفقّد',
-                }),
-              ),
-            )
-          else
-            const Spacer(),
-          if (editable && !session.completed)
-            OutlinedButton.icon(
-              onPressed: saving ? null : onComplete,
-              icon: const NzIcon(NzIcons.checkCircle),
-              label: const Text('إكمال'),
-            ),
-          // ما لا يملكه المستخدم لا يظهر أصلاً — نفسُ قاعدة القائمة الجانبية
-          // ([CHECKPOINT-PHASE-6.3.MD §6]). والمقفلةُ لا تُقفل مرّتين.
-          if (canLock && !session.locked)
-            OutlinedButton.icon(
-              onPressed: saving || !session.exists ? null : onLock,
-              icon: const NzIcon(NzIcons.lockClosed),
-              label: const Text('قفل نهائي'),
-            ),
+          if (editable) Expanded(child: _saveButton()) else const Spacer(),
+          ?complete,
+          ?lock,
         ],
       ),
+    );
+  }
+
+  Widget _saveButton() {
+    return FilledButton.icon(
+      onPressed: saving || !(dirty || !session.exists) ? null : onSave,
+      icon: const NzIcon(NzIcons.save),
+      // «فتح الجلسة» و«حفظ» فعلٌ واحد: الفتحُ يصفّ
+      // `attendance.session.open` وحدها، والحفظُ يُتبعها
+      // `attendance.take` بنفس الطابور وبنفس الترتيب.
+      label: Text(switch ((session.exists, session.isAmendment)) {
+        (false, _) => 'فتح الجلسة وحفظ التفقّد',
+        (_, true) => 'حفظ التصحيح',
+        _ => 'حفظ التفقّد',
+      }),
     );
   }
 }

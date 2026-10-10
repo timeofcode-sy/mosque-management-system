@@ -33,7 +33,11 @@ class _InstitutesScreenState extends State<InstitutesScreen> {
   void _reload() {
     final deps = AppScope.of(context);
 
-    setState(() => _future = deps.admin.loadInstitutes());
+    // بقوسين لا بسهم: الإسنادُ بالسهم يُرجع المستقبلَ نفسَه، و`setState` يرفض
+    // دالّةً تُرجع Future.
+    setState(() {
+      _future = deps.admin.loadInstitutes();
+    });
   }
 
   @override
@@ -97,7 +101,7 @@ class _InstitutesScreenState extends State<InstitutesScreen> {
                 title: Row(
                   spacing: 8,
                   children: [
-                    Text(institute.name),
+                    Flexible(child: Text(institute.name)),
                     if (institute.uuid == active)
                       const Chip(
                         label: Text(

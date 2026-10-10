@@ -78,7 +78,7 @@ class _CurriculumCard extends StatelessWidget {
         title: Row(
           spacing: 8,
           children: [
-            Text(curriculum.name),
+            Flexible(child: Text(curriculum.name)),
             if (curriculum.isGlobal)
               Tooltip(
                 message: 'منهجٌ مزروعٌ لكل المعاهد — يُرى ولا يُحرَّر وعاؤه',

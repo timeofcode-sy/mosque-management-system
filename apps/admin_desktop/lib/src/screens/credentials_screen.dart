@@ -4,6 +4,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 
 /// بطاقاتُ الدخول — ✅ م.6.5، فوق `GET /admin/credentials`.
 ///
@@ -76,11 +77,13 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
                   child: TextField(
                     controller: _search,
                     onSubmitted: (_) => _reload(),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       isDense: true,
-                      prefixIcon: NzIcon(NzIcons.search, size: 20),
-                      hintText: 'ابحث بالاسم ثم اضغط Enter',
-                      border: OutlineInputBorder(),
+                      prefixIcon: const NzIcon(NzIcons.search, size: 20),
+                      hintText: context.isCompact
+                          ? 'ابحث بالاسم'
+                          : 'ابحث بالاسم ثم اضغط Enter',
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                 ),
@@ -148,13 +151,17 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
                   resetKey: _search.text.trim(),
                   builder: (context, page) => GridView.builder(
                     padding: const EdgeInsets.all(16),
-                    gridDelegate:
-                        const SliverGridDelegateWithMaxCrossAxisExtent(
-                          maxCrossAxisExtent: 360,
-                          mainAxisExtent: 152,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 360,
+                      // زرُّ «نسخ» بارتفاع اللمس (44px) على الهاتف.
+                      mainAxisExtent:
+                          Theme.of(context).visualDensity ==
+                              VisualDensity.compact
+                          ? 152
+                          : 176,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                    ),
                     itemCount: page.length,
                     itemBuilder: (context, index) => _Card(card: page[index]),
                   ),

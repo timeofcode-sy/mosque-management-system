@@ -3,6 +3,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 import 'transfer_dialog.dart';
 
 /// التسجيلُ والنقل — ✅ م.6.5.
@@ -62,6 +63,39 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
                   .where((s) => s.circleName == null)
                   .toList();
 
+              final content = _circle == null
+                  ? _Unassigned(
+                      students: unassigned,
+                      circles: circles,
+                      canEnroll: canEnroll,
+                    )
+                  : _Roster(
+                      circle: circles.firstWhere((c) => c.uuid == _circle),
+                      students: students,
+                      canTransfer: canTransfer,
+                    );
+
+              // الهاتف: القائمةُ الجانبية (320px) لا تجاور المحتوى في 360px —
+              // فتصير منتقياً فوقه بالخيارات نفسها.
+              if (context.isCompact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                      child: _CirclePicker(
+                        circles: circles,
+                        selected: _circle,
+                        onSelect: (uuid) => setState(() => _circle = uuid),
+                        unassignedCount: unassigned.length,
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(child: content),
+                  ],
+                );
+              }
+
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -75,21 +109,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
                     ),
                   ),
                   const VerticalDivider(width: 1),
-                  Expanded(
-                    child: _circle == null
-                        ? _Unassigned(
-                            students: unassigned,
-                            circles: circles,
-                            canEnroll: canEnroll,
-                          )
-                        : _Roster(
-                            circle: circles.firstWhere(
-                              (c) => c.uuid == _circle,
-                            ),
-                            students: students,
-                            canTransfer: canTransfer,
-                          ),
-                  ),
+                  Expanded(child: content),
                 ],
               );
             },
@@ -166,6 +186,50 @@ class _CircleList extends StatelessWidget {
   }
 }
 
+/// منتقي الحلقة على الهاتف — «بلا حلقة» أوّلاً كما في القائمة الجانبية.
+class _CirclePicker extends StatelessWidget {
+  const _CirclePicker({
+    required this.circles,
+    required this.selected,
+    required this.onSelect,
+    required this.unassignedCount,
+  });
+
+  final List<CircleView> circles;
+  final String? selected;
+  final ValueChanged<String?> onSelect;
+  final int unassignedCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<String?>(
+      initialValue: selected,
+      isExpanded: true,
+      decoration: const InputDecoration(
+        labelText: 'الحلقة',
+        prefixIcon: NzIcon(NzIcons.halaqa, size: 20),
+        border: OutlineInputBorder(),
+      ),
+      items: [
+        DropdownMenuItem<String?>(
+          value: null,
+          child: Text('بلا حلقة ($unassignedCount)'),
+        ),
+        for (final circle in circles)
+          DropdownMenuItem<String?>(
+            value: circle.uuid,
+            child: Text(
+              '${circle.circleName} — ${circle.studentsCount}'
+              '${circle.capacity == null ? '' : '/${circle.capacity}'}',
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+      ],
+      onChanged: onSelect,
+    );
+  }
+}
+
 class _Unassigned extends StatelessWidget {
   const _Unassigned({
     required this.students,
@@ -196,12 +260,18 @@ class _Unassigned extends StatelessWidget {
         return ListTile(
           title: Text(student.fullName),
           subtitle: Text(student.registrationNo ?? 'بلا رقم بطاقة'),
-          trailing: canEnroll
-              ? FilledButton.tonal(
+          trailing: !canEnroll
+              ? null
+              : context.isCompact
+              ? IconButton.filledTonal(
+                  tooltip: 'تسجيل في حلقة',
+                  onPressed: () => _enroll(context, student),
+                  icon: const NzIcon(NzIcons.userPlus, size: 20),
+                )
+              : FilledButton.tonal(
                   onPressed: () => _enroll(context, student),
                   child: const Text('تسجيل في حلقة'),
-                )
-              : null,
+                ),
         );
       },
     );

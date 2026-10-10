@@ -3,6 +3,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 
 /// مراجعةُ أعذار الغياب — ✅ م.6.5، نوعُ `excuse.review`.
 ///
@@ -29,24 +30,37 @@ class _ExcusesScreenState extends State<ExcusesScreen> {
   @override
   Widget build(BuildContext context) {
     final deps = AppScope.of(context);
+    final filter = SegmentedButton<String>(
+      segments: const [
+        ButtonSegment(value: 'pending', label: Text('المعلَّقة')),
+        ButtonSegment(value: 'all', label: Text('الكل')),
+      ],
+      selected: {_filter},
+      expandedInsets: context.isCompact ? EdgeInsets.zero : null,
+      onSelectionChanged: (value) => setState(() => _filter = value.first),
+    );
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('أعذار الغياب'),
-        actions: [
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 16),
-            child: SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'pending', label: Text('المعلَّقة')),
-                ButtonSegment(value: 'all', label: Text('الكل')),
+        // على الهاتف المرشّحُ تحت العنوان بعرض الشاشة.
+        actions: context.isCompact
+            ? null
+            : [
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(end: 16),
+                  child: filter,
+                ),
               ],
-              selected: {_filter},
-              onSelectionChanged: (value) =>
-                  setState(() => _filter = value.first),
-            ),
-          ),
-        ],
+        bottom: context.isCompact
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(60),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: filter,
+                ),
+              )
+            : null,
       ),
       body: StreamBuilder<List<ExcuseView>>(
         stream: deps.students.watchExcuses(),
@@ -104,12 +118,24 @@ class _ExcuseCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 8,
           children: [
-            Row(
+            Wrap(
               spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              alignment: WrapAlignment.spaceBetween,
               children: [
-                Text(excuse.studentName, style: theme.textTheme.titleMedium),
-                _StatusChip(excuse: excuse),
-                const Spacer(),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      excuse.studentName,
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    _StatusChip(excuse: excuse),
+                  ],
+                ),
                 Text(
                   '${_date(excuse.fromDate)} ← ${_date(excuse.toDate)}',
                   style: theme.textTheme.labelMedium,
@@ -125,8 +151,10 @@ class _ExcuseCard extends StatelessWidget {
             // البتُّ يظهر لمن يملكه وحده، والمبتوتُ فيه لا يُعاد البتُّ فيه —
             // ولا زرَّ معطَّلاً في الحالتين.
             if (canReview && excuse.isPending)
-              Row(
+              Wrap(
                 spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   FilledButton.icon(
                     onPressed: () => _review(context, approve: true),

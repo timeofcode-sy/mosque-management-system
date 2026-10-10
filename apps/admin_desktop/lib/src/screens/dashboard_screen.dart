@@ -3,6 +3,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 import 'student_profile_screen.dart' show badgeOf;
 
 /// داشبورد المعهد — ✅ م.6.6، **محسوبٌ على الجهاز** من الصفوف المتزامنة.
@@ -25,13 +26,10 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('الداشبورد'),
         actions: [
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 16),
-            child: TextButton.icon(
-              onPressed: deps.sync.syncNow,
-              icon: const NzIcon(NzIcons.review, size: 18),
-              label: const Text('مزامنة الآن'),
-            ),
+          AdaptiveAction(
+            icon: NzIcons.review,
+            label: 'مزامنة الآن',
+            onPressed: deps.sync.syncNow,
           ),
         ],
       ),
@@ -43,6 +41,7 @@ class DashboardScreen extends StatelessWidget {
           }
 
           final overview = snapshot.data!;
+          final compact = context.isCompact;
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -58,23 +57,32 @@ class DashboardScreen extends StatelessWidget {
                   icon: NzIcons.calendar,
                 )
               else ...[
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 16,
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: _TrendCard(
-                        trend: overview.trend,
-                        todayRate: overview.todayRate,
+                // على الهاتف بطاقةٌ تحت بطاقة: عمودا المنحنى والتوزيع لا يسعهما 360px.
+                if (compact) ...[
+                  _TrendCard(
+                    trend: overview.trend,
+                    todayRate: overview.todayRate,
+                  ),
+                  const SizedBox(height: 16),
+                  _BreakdownCard(breakdown: overview.breakdown),
+                ] else
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 16,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: _TrendCard(
+                          trend: overview.trend,
+                          todayRate: overview.todayRate,
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: _BreakdownCard(breakdown: overview.breakdown),
-                    ),
-                  ],
-                ),
+                      Expanded(
+                        flex: 2,
+                        child: _BreakdownCard(breakdown: overview.breakdown),
+                      ),
+                    ],
+                  ),
                 const SizedBox(height: 16),
                 _StandingsCard(standings: overview.standings),
               ],
@@ -93,36 +101,28 @@ class _Counters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      spacing: 12,
+    // أربعٌ في صفٍّ على الشاشة العريضة، واثنتان في صفٍّ على الهاتف.
+    return StatGrid(
       children: [
-        Expanded(
-          child: StatCard(
-            value: '${counters.students}',
-            label: 'طالبٌ في المعهد',
-            icon: NzIcons.certificate,
-          ),
+        StatCard(
+          value: '${counters.students}',
+          label: 'طالبٌ في المعهد',
+          icon: NzIcons.certificate,
         ),
-        Expanded(
-          child: StatCard(
-            value: '${counters.enrolled}',
-            label: 'مسجَّلٌ في الدورة الجارية',
-            icon: NzIcons.attendance,
-          ),
+        StatCard(
+          value: '${counters.enrolled}',
+          label: 'مسجَّلٌ في الدورة الجارية',
+          icon: NzIcons.attendance,
         ),
-        Expanded(
-          child: StatCard(
-            value: '${counters.circles}',
-            label: 'حلقةٌ مشغَّلة',
-            icon: NzIcons.halaqa,
-          ),
+        StatCard(
+          value: '${counters.circles}',
+          label: 'حلقةٌ مشغَّلة',
+          icon: NzIcons.halaqa,
         ),
-        Expanded(
-          child: StatCard(
-            value: '${counters.teachers}',
-            label: 'أستاذاً',
-            icon: NzIcons.user,
-          ),
+        StatCard(
+          value: '${counters.teachers}',
+          label: 'أستاذاً',
+          icon: NzIcons.user,
         ),
       ],
     );
@@ -151,10 +151,13 @@ class _TrendCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 12,
           children: [
-            Row(
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 4,
               children: [
                 Text('حضورُ آخر أسبوعين', style: theme.textTheme.titleMedium),
-                const Spacer(),
                 Text(
                   todayRate == null
                       // «لم تُقَس» خبرٌ غيرُ «قِيست فكانت صفراً» — والفرقُ بينهما
@@ -222,7 +225,14 @@ class _TrendBar extends StatelessWidget {
               // فراغٌ موسوم: خطٌّ رفيعٌ يقول «هنا يومٌ لم يُقَس» بدل عمودٍ يكذب.
               Container(height: 2, color: scheme.outlineVariant),
             const SizedBox(height: 4),
-            Text('${point.date.day}', style: const TextStyle(fontSize: 12)),
+            // سطرٌ واحد ولو ضاق العمود (14 عموداً في 300px على الهاتف): «10» لا تنكسر رقمين.
+            Text(
+              '${point.date.day}',
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.visible,
+              style: const TextStyle(fontSize: 12),
+            ),
           ],
         ),
       ),
@@ -301,43 +311,119 @@ class _StandingsCard extends StatelessWidget {
               'الترتيبُ داخلَ كل دوامٍ على حدة — حلقةُ الفجر لا تُقاس بحلقة العصر.',
               style: theme.textTheme.bodySmall,
             ),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columnSpacing: 28,
-                columns: const [
-                  DataColumn(label: Text('#')),
-                  DataColumn(label: Text('الحلقة')),
-                  DataColumn(label: Text('الدوام')),
-                  DataColumn(label: Text('الأساتذة')),
-                  DataColumn(label: Text('الطلاب')),
-                  DataColumn(label: Text('الجلسات')),
-                  DataColumn(label: Text('النسبة')),
-                ],
-                rows: [
-                  for (final row in standings)
-                    DataRow(
-                      cells: [
-                        DataCell(Text(row.rank?.toString() ?? '—')),
-                        DataCell(Text(row.circleName)),
-                        DataCell(Text(row.shiftName)),
-                        DataCell(Text(row.teachersLabel)),
-                        DataCell(Text('${row.studentsCount}')),
-                        DataCell(Text('${row.sessionsCount}')),
-                        DataCell(
-                          Text(
-                            // حلقةٌ بلا صفِّ حضورٍ واحد لا تُرسم صفراً: لم تُقَس
-                            // بعد، وهي ليست أسوأَ من حلقةٍ غاب طلابُها.
-                            row.rate == null ? 'لم تُقَس' : _percent(row.rate),
+            if (context.isCompact)
+              // سبعةُ أعمدةٍ لا يسعها الهاتف: صفٌّ لكل حلقة، رتبتُها ونسبتُها على طرفيه.
+              for (final row in standings) _StandingTile(row: row)
+            else
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: 28,
+                  columns: const [
+                    DataColumn(label: Text('#')),
+                    DataColumn(label: Text('الحلقة')),
+                    DataColumn(label: Text('الدوام')),
+                    DataColumn(label: Text('الأساتذة')),
+                    DataColumn(label: Text('الطلاب')),
+                    DataColumn(label: Text('الجلسات')),
+                    DataColumn(label: Text('النسبة')),
+                  ],
+                  rows: [
+                    for (final row in standings)
+                      DataRow(
+                        cells: [
+                          DataCell(Text(row.rank?.toString() ?? '—')),
+                          DataCell(Text(row.circleName)),
+                          DataCell(Text(row.shiftName)),
+                          DataCell(Text(row.teachersLabel)),
+                          DataCell(Text('${row.studentsCount}')),
+                          DataCell(Text('${row.sessionsCount}')),
+                          DataCell(
+                            Text(
+                              // حلقةٌ بلا صفِّ حضورٍ واحد لا تُرسم صفراً: لم تُقَس
+                              // بعد، وهي ليست أسوأَ من حلقةٍ غاب طلابُها.
+                              row.rate == null
+                                  ? 'لم تُقَس'
+                                  : _percent(row.rate),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                ],
+                        ],
+                      ),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _StandingTile extends StatelessWidget {
+  const _StandingTile({required this.row});
+
+  final CircleStanding row;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.nz;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: NzSpace.s2),
+      child: Row(
+        spacing: NzSpace.s3,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: c.bronzeSoft,
+              borderRadius: BorderRadius.circular(NzRadius.sm),
+            ),
+            child: Text(
+              row.rank?.toString() ?? '—',
+              style: NzType.label.copyWith(
+                color: c.bronzeInk,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  row.circleName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: NzType.body.copyWith(
+                    color: c.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  [
+                    row.shiftName,
+                    '${row.studentsCount} طالباً',
+                    '${row.sessionsCount} جلسة',
+                  ].join(' · '),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: NzType.caption.copyWith(color: c.inkMuted),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            row.rate == null ? 'لم تُقَس' : _percent(row.rate),
+            style: NzType.label.copyWith(
+              fontSize: 14,
+              color: c.ink,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

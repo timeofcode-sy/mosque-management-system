@@ -56,8 +56,9 @@ class _AdminDesktopAppState extends State<AdminDesktopApp> {
     return AppScope(
       dependencies: widget.dependencies,
       child: MousqeApp(
-        theme: MousqeTheme.light(),
-        darkTheme: MousqeTheme.dark(),
+        title: AppConfig.isPhone ? AppConfig.launcherName : Brand.name,
+        theme: adaptTheme(MousqeTheme.light()),
+        darkTheme: adaptTheme(MousqeTheme.dark()),
         home: SplashGate(
           ready: _session.stage != SessionStage.starting,
           caption: AppConfig.label,
@@ -87,12 +88,42 @@ class _AdminDesktopAppState extends State<AdminDesktopApp> {
           : null,
       validateLocal: ServerEndpoint.validateLocal,
       check: (primary, local) => endpoint.probe(primary: primary, local: local),
-      apply: (primary, local) => endpoint.choose(
-        primary: primary,
-        local: local,
-        session: _session,
-      ),
+      apply: (primary, local) =>
+          endpoint.choose(primary: primary, local: local, session: _session),
     );
   }
+}
 
+/// ما يزيده هذا التطبيقُ على ثيم الحزمة للّمس (الهاتف): الزرُّ العائم، والحوارُ يأخذ عرضَ الشاشة
+/// إلا 16px من كل جانب — هامشُ الصفحة نفسُه — بدل 40px تأكل ربعَ هاتفٍ بعرض 360.
+/// ونسخةُ المكتب تبقى على ثيمها كما هو.
+ThemeData adaptTheme(ThemeData theme) {
+  if (theme.visualDensity == VisualDensity.compact) {
+    return theme;
+  }
+
+  final c = theme.extension<NzPalette>()!.tokens;
+
+  return theme.copyWith(
+    // الزرُّ العائم بهوية الأزرار المصمتة: أخضرُ عميق (نحاسٌ ليلاً) بزاوية 3px،
+    // مسطّحٌ كسائر الأسطح — لا ظلَّ Material الثقيل ولا كبسولة.
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: c.primary,
+      foregroundColor: c.onPrimary,
+      elevation: 1,
+      focusElevation: 1,
+      hoverElevation: 2,
+      highlightElevation: 2,
+      extendedTextStyle: NzType.label.copyWith(fontSize: 15),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(NzRadius.sm),
+      ),
+    ),
+    dialogTheme: theme.dialogTheme.copyWith(
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: NzSpace.s4,
+        vertical: NzSpace.s5,
+      ),
+    ),
+  );
 }

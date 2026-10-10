@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/institute_menu.dart';
 import '../widgets/sync_bar.dart';
 import 'destinations.dart';
+import 'phone_shell.dart';
 import 'sidebar_prefs.dart';
 
 /// هيكلُ النافذة: قائمةٌ جانبية دائمة على اليمين، والشاشةُ الجارية إلى جانبها،
 /// وشريطُ المزامنة أسفلَ الاثنين.
+///
+/// وعلى الهاتف (دون 600px) شريطٌ سفلي بدل القائمة: أربعةُ أبوابٍ و«المزيد»
+/// ([phone_shell.dart]) — والأبوابُ والصلاحياتُ والمكدّساتُ هي هي.
 ///
 /// ### 🔑 قرار م.6.3: بلا `go_router` — وهنا حُسمت المسألة المؤجَّلة من م.5.3
 /// ([PLAN.md §7](../../../../../docs/PLAN.md))
@@ -87,6 +93,11 @@ class _DesktopShellState extends State<DesktopShell> {
         ? _selectedId!
         : sections.first.id;
 
+    // الهاتف (دون 600px): شريطٌ سفلي بأربعة أبوابٍ و«المزيد» بدل القائمة الجانبية.
+    if (MediaQuery.sizeOf(context).width < NzBreakpoint.medium) {
+      return _phone(context, sections);
+    }
+
     _visited.add(selected);
 
     // الهوية: القائمةُ الكاملة (264px) من 1024px فما فوق، ودونها شريطُ التنقّل المطويّ (80px)؛
@@ -131,6 +142,160 @@ class _DesktopShellState extends State<DesktopShell> {
           ),
           const AppSyncBar(),
         ],
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------------ الهاتف
+
+  /// هيكلُ الهاتف: الأبوابُ الأربعة الأولى ألسنةٌ في الشريط السفلي لكلٍّ مكدّسُه
+  /// (كما في المكتب)، و«المزيد» لسانٌ خامس مكدّسُه يبدأ بقائمة الباقي.
+  ///
+  /// وزرُّ الرجوع في أندرويد يمرّ على اللسان الجاري أوّلاً: يغلق ما فُتح فيه،
+  /// ثم يعود إلى اللسان الأول، ثم يُخرج من التطبيق — لا يُخرج من شاشةٍ في منتصف
+  /// استمارة.
+  Widget _phone(BuildContext context, List<DesktopSection> sections) {
+    final tabs = splitPhoneTabs(sections);
+    final ids = [for (final section in tabs.primary) section.id, moreTabId];
+    final current = ids.contains(_selectedId) ? _selectedId! : ids.first;
+
+    _visited.add(current);
+
+    final deps = AppScope.of(context);
+    final watchesExcuses = sections.any((section) => section.id == 'excuses');
+
+    return StreamBuilder<List<ExcuseView>>(
+      stream: watchesExcuses ? _excuses(deps) : null,
+      builder: (context, snapshot) {
+        final pending = (snapshot.data ?? const <ExcuseView>[])
+            .where((excuse) => excuse.isPending)
+            .length;
+        final excusesInMore = tabs.secondary.any((s) => s.id == 'excuses');
+
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) {
+              _back(current, ids.first);
+            }
+          },
+          child: Scaffold(
+            body: Column(
+              children: [
+                Expanded(
+                  child: IndexedStack(
+                    index: ids.indexOf(current),
+                    children: [
+                      for (final id in ids)
+                        if (!_visited.contains(id))
+                          SizedBox.shrink(key: ValueKey(id))
+                        else if (id == moreTabId)
+                          _MoreHost(
+                            key: const ValueKey(moreTabId),
+                            navigatorKey: _navigatorOf(moreTabId),
+                            sections: tabs.secondary,
+                            pendingExcuses: pending,
+                          )
+                        else
+                          _SectionHost(
+                            key: ValueKey(id),
+                            navigatorKey: _navigatorOf(id),
+                            section: tabs.primary.firstWhere((s) => s.id == id),
+                          ),
+                    ],
+                  ),
+                ),
+                const AppSyncBar(),
+              ],
+            ),
+            bottomNavigationBar: PhoneNavBar(
+              selectedId: current,
+              onSelect: (id) => _selectPhoneTab(id, current),
+              items: [
+                for (final section in tabs.primary)
+                  PhoneNavItem(
+                    id: section.id,
+                    icon: section.icon,
+                    label: phoneLabelOf(section),
+                    badge: section.id == 'excuses' ? pending : 0,
+                  ),
+                PhoneNavItem(
+                  id: moreTabId,
+                  icon: NzIcons.grid,
+                  label: 'المزيد',
+                  badge: excusesInMore ? pending : 0,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Stream<List<ExcuseView>>? _excusesStream;
+
+  /// تيّارٌ واحد يُبنى مرّةً — لا تيّارٌ جديد مع كل إطار يعيد الاشتراك.
+  Stream<List<ExcuseView>> _excuses(AppDependencies deps) =>
+      _excusesStream ??= deps.students.watchExcuses();
+
+  GlobalKey<NavigatorState> _navigatorOf(String id) =>
+      _navigators.putIfAbsent(id, GlobalKey<NavigatorState>.new);
+
+  /// ضغطُ اللسان الجاري ثانيةً يعيده إلى أوّل شاشاته — عادةُ الهواتف كلِّها.
+  void _selectPhoneTab(String id, String current) {
+    if (id == current) {
+      _navigators[id]?.currentState?.popUntil((route) => route.isFirst);
+
+      return;
+    }
+
+    setState(() => _selectedId = id);
+  }
+
+  Future<void> _back(String current, String home) async {
+    final navigator = _navigators[current]?.currentState;
+
+    if (navigator != null && await navigator.maybePop()) {
+      return;
+    }
+
+    if (current != home) {
+      setState(() => _selectedId = home);
+
+      return;
+    }
+
+    await SystemNavigator.pop();
+  }
+}
+
+/// لسانُ «المزيد»: مكدّسٌ جذرُه قائمةُ الأبواب الباقية، والبابُ يُفتح فوقها.
+class _MoreHost extends StatelessWidget {
+  const _MoreHost({
+    super.key,
+    required this.navigatorKey,
+    required this.sections,
+    required this.pendingExcuses,
+  });
+
+  final GlobalKey<NavigatorState> navigatorKey;
+  final List<DesktopSection> sections;
+  final int pendingExcuses;
+
+  @override
+  Widget build(BuildContext context) {
+    return Navigator(
+      key: navigatorKey,
+      onGenerateRoute: (settings) => MaterialPageRoute<void>(
+        settings: settings,
+        builder: (context) => MoreScreen(
+          sections: sections,
+          pendingExcuses: pendingExcuses,
+          onOpen: (section) =>
+              Navigator.of(context)
+                  .push(MaterialPageRoute<void>(builder: section.builder)),
+        ),
       ),
     );
   }

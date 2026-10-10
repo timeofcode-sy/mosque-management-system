@@ -3,6 +3,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 import 'student_form_screen.dart';
 import 'student_profile_screen.dart';
 import 'transfer_dialog.dart';
@@ -37,14 +38,23 @@ class _StudentsScreenState extends State<StudentsScreen> {
   Widget build(BuildContext context) {
     final deps = AppScope.of(context);
     final canManage = deps.session.can('students.manage');
+    final compact = context.isCompact;
 
     return Scaffold(
+      // على الهاتف زرٌّ عائمٌ فوق الشريط السفلي، حيث يصل إليه الإبهام.
+      floatingActionButton: canManage && compact
+          ? FloatingActionButton.extended(
+              onPressed: () => _openForm(context),
+              icon: const NzIcon(NzIcons.userPlus),
+              label: const Text('تسجيل طالب'),
+            )
+          : null,
       appBar: AppBar(
         title: const Text('طلاب المعهد'),
         actions: [
           // ما لا يملكه المستخدم لا يظهر أصلاً — لا زرَّ معطَّلاً ولا رسالةَ رفض
           // عند الضغط (نفسُ قاعدة القائمة الجانبية في م.6.3).
-          if (canManage)
+          if (canManage && !compact)
             Padding(
               padding: const EdgeInsetsDirectional.only(end: 12),
               child: FilledButton.icon(
@@ -180,45 +190,65 @@ class _Filters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final search = TextField(
+      controller: controller,
+      onChanged: onQuery,
+      decoration: InputDecoration(
+        isDense: true,
+        prefixIcon: const NzIcon(NzIcons.search, size: 20),
+        hintText: context.isCompact
+            ? 'الاسم أو البطاقة أو الجوّال أو الحلقة'
+            : 'ابحث بالاسم أو رقم البطاقة أو الجوّال أو الحلقة',
+        border: const OutlineInputBorder(),
+      ),
+    );
+    final filter = DropdownButtonFormField<String>(
+      initialValue: status,
+      isExpanded: true,
+      decoration: const InputDecoration(
+        isDense: true,
+        labelText: 'الحالة',
+        border: OutlineInputBorder(),
+      ),
+      items: [
+        for (final entry in _statuses.entries)
+          DropdownMenuItem(value: entry.key, child: Text(entry.value)),
+      ],
+      onChanged: (value) => onStatus(value ?? 'active'),
+    );
+    final count = Text(
+      shown == total ? '$total طالباً' : '$shown من $total',
+      style: Theme.of(context).textTheme.labelMedium,
+    );
+
+    // الهاتف: البحثُ بعرض الشاشة، والحالةُ والعددُ تحته.
+    if (context.isCompact) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Column(
+          spacing: 12,
+          children: [
+            search,
+            Row(
+              spacing: 12,
+              children: [
+                Expanded(child: filter),
+                count,
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Row(
         spacing: 12,
         children: [
-          Expanded(
-            flex: 3,
-            child: TextField(
-              controller: controller,
-              onChanged: onQuery,
-              decoration: const InputDecoration(
-                isDense: true,
-                prefixIcon: NzIcon(NzIcons.search, size: 20),
-                hintText: 'ابحث بالاسم أو رقم البطاقة أو الجوّال أو الحلقة',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: DropdownButtonFormField<String>(
-              initialValue: status,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                isDense: true,
-                labelText: 'الحالة',
-                border: OutlineInputBorder(),
-              ),
-              items: [
-                for (final entry in _statuses.entries)
-                  DropdownMenuItem(value: entry.key, child: Text(entry.value)),
-              ],
-              onChanged: (value) => onStatus(value ?? 'active'),
-            ),
-          ),
-          Text(
-            shown == total ? '$total طالباً' : '$shown من $total',
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
+          Expanded(flex: 3, child: search),
+          Expanded(flex: 2, child: filter),
+          count,
         ],
       ),
     );
@@ -249,6 +279,36 @@ class _StudentTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // الهاتف: خمسةُ أعمدةٍ لا يسعها 360px — صفٌّ بسطرين: الاسمُ ثم البطاقةُ
+    // والحلقةُ والجوّال، والأفعالُ في قائمة. والهامشُ السفليّ يترك الزرَّ العائم
+    // فوق آخر صفّ لا عليه.
+    if (context.isCompact) {
+      return PagedList<StudentListEntry>(
+        items: students,
+        resetKey: resetKey,
+        onTap: onOpen,
+        margin: const EdgeInsets.fromLTRB(12, 12, 12, 88),
+        rowPadding: const EdgeInsetsDirectional.fromSTEB(16, 10, 4, 10),
+        itemBuilder: (context, student) => _CompactRow(
+          student: student,
+          actions: [
+            if (canManage)
+              RowAction(
+                icon: NzIcons.edit,
+                label: 'تحرير الاستمارة',
+                onPressed: () => onEdit(student),
+              ),
+            if (canTransfer)
+              RowAction(
+                icon: NzIcons.review,
+                label: 'نقل إلى حلقة أخرى',
+                onPressed: () => onTransfer(student),
+              ),
+          ],
+        ),
+      );
+    }
 
     // قائمةٌ مرقَّمة بنمط الجدول (PagedList): بطاقةٌ بحدّ وهوامش 20/12 ورأسٌ على sunken وترقيمٌ تحتها.
     // مفتاحُ الإعادة هو البحث والحالة فيعود المشرفُ إلى الصفحة الأولى بتغيّر المرشّح.
@@ -301,6 +361,65 @@ class _StudentTable extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CompactRow extends StatelessWidget {
+  const _CompactRow({required this.student, required this.actions});
+
+  final StudentListEntry student;
+  final List<RowAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.nz;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 2,
+            children: [
+              Row(
+                spacing: 6,
+                children: [
+                  Flexible(
+                    child: Text(
+                      student.fullName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: NzType.body.copyWith(
+                        color: c.ink,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (student.pending)
+                    Tooltip(
+                      message: 'كتابةٌ لم تصل الخادمَ بعد',
+                      child: NzIcon(NzIcons.upload, size: 16, color: c.primary),
+                    ),
+                ],
+              ),
+              Text(
+                [
+                  student.registrationNo ?? '—',
+                  student.circleName ?? 'بلا حلقة',
+                  // الجوّالُ معزولٌ يساراً-يميناً: «0944 123 457» لا تنقلب
+                  // مقاطعُه في سطرٍ عربي.
+                  if (student.phone case final phone?) '\u2066$phone\u2069',
+                ].join(' · '),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: NzType.caption.copyWith(color: c.inkMuted),
+              ),
+            ],
+          ),
+        ),
+        RowActionsMenu(actions: actions),
+      ],
     );
   }
 }

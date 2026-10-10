@@ -3,6 +3,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 import 'attendance_screen.dart';
 
 /// بابُ «التفقّد» — **يومُ المعهد كلُّه في شاشة**.
@@ -30,33 +31,49 @@ class _AttendanceHubScreenState extends State<AttendanceHubScreen> {
   Widget build(BuildContext context) {
     final deps = AppScope.of(context);
 
+    // التاريخُ ثلاثةُ أزرار: في شريط العنوان على الشاشة العريضة، وتحته على الهاتف
+    // — اسمُ اليوم كاملاً لا يسعه شريطٌ فيه عنوان.
+    final dateNav = [
+      IconButton(
+        tooltip: 'اليوم السابق',
+        icon: const NzIcon(NzIcons.back),
+        onPressed: () =>
+            setState(() => _date = _date.subtract(const Duration(days: 1))),
+      ),
+      TextButton.icon(
+        onPressed: _pickDate,
+        icon: const NzIcon(NzIcons.calendar, size: 18),
+        label: Text(formatLongDate(_date)),
+      ),
+      IconButton(
+        tooltip: 'اليوم التالي',
+        // لا تفقُّدَ لغدٍ: `showDatePicker` يمنعه، فيُمنع هنا أيضاً وإلا
+        // اختلف البابان إلى نفس التاريخ.
+        icon: const NzIcon(NzIcons.chevronLeft),
+        onPressed: _date.isBefore(_today())
+            ? () => setState(() => _date = _date.add(const Duration(days: 1)))
+            : null,
+      ),
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('التفقّد'),
-        actions: [
-          IconButton(
-            tooltip: 'اليوم السابق',
-            icon: const NzIcon(NzIcons.back),
-            onPressed: () =>
-                setState(() => _date = _date.subtract(const Duration(days: 1))),
-          ),
-          TextButton.icon(
-            onPressed: _pickDate,
-            icon: const NzIcon(NzIcons.calendar, size: 18),
-            label: Text(formatLongDate(_date)),
-          ),
-          IconButton(
-            tooltip: 'اليوم التالي',
-            // لا تفقُّدَ لغدٍ: `showDatePicker` يمنعه، فيُمنع هنا أيضاً وإلا
-            // اختلف البابان إلى نفس التاريخ.
-            icon: const NzIcon(NzIcons.chevronLeft),
-            onPressed: _date.isBefore(_today())
-                ? () =>
-                      setState(() => _date = _date.add(const Duration(days: 1)))
-                : null,
-          ),
-          const SizedBox(width: 8),
-        ],
+        actions: context.isCompact
+            ? null
+            : [...dateNav, const SizedBox(width: 8)],
+        bottom: context.isCompact
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(48),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: dateNav,
+                  ),
+                ),
+              )
+            : null,
       ),
       body: StreamBuilder<List<CircleView>>(
         stream: deps.circles.watchCircles(),
@@ -160,6 +177,7 @@ class _CircleTile extends StatelessWidget {
           '${circle.studentsCount} طالباً'
           '${circle.teachers.isEmpty ? '' : ' — ${circle.teachersLabel}'}',
         ),
+        // الهاتف: الحالةُ وحدها في الطرف — السهمُ يأكل عرضاً يحتاجه السطرُ الثاني.
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           spacing: 12,
@@ -168,7 +186,7 @@ class _CircleTile extends StatelessWidget {
               _label,
               style: theme.textTheme.labelLarge?.copyWith(color: _color(theme)),
             ),
-            const NzIcon(NzIcons.chevronLeft),
+            if (!context.isCompact) const NzIcon(NzIcons.chevronLeft),
           ],
         ),
         onTap: onOpen,

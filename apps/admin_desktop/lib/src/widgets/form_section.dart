@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'adaptive.dart';
+
 /// بابٌ معنونٌ في استمارةِ مكتب — حقولُه تتدفّق في `Wrap` لا في عمود.
 ///
 /// وهو ما يفرّق استمارةَ المكتب عن استمارة الهاتف: نافذةٌ من ١٤٤٠ بكسلاً تسع
@@ -42,7 +44,16 @@ class FormSection extends StatelessWidget {
           const SizedBox(height: 4),
           const Divider(),
           const SizedBox(height: 12),
-          child ?? Wrap(spacing: 16, runSpacing: 16, children: children),
+          // على الهاتف عمودٌ بعرض الشاشة: القيدُ المحكَم يغلب عرضَ الحقل
+          // (300px) فيمتدّ كلُّ حقلٍ إلى الحافّتين.
+          child ??
+              (context.isCompact
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      spacing: 16,
+                      children: children,
+                    )
+                  : Wrap(spacing: 16, runSpacing: 16, children: children)),
         ],
       ),
     );

@@ -3,6 +3,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 import 'attendance_screen.dart';
 import 'sessions_log_screen.dart';
 
@@ -153,46 +154,64 @@ class _Filters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final search = TextField(
+      controller: controller,
+      onChanged: onQuery,
+      decoration: const InputDecoration(
+        isDense: true,
+        prefixIcon: NzIcon(NzIcons.search, size: 20),
+        hintText: 'ابحث باسم الحلقة أو الأستاذ أو القاعة',
+        border: OutlineInputBorder(),
+      ),
+    );
+    final filter = DropdownButtonFormField<String?>(
+      initialValue: shift,
+      isExpanded: true,
+      decoration: const InputDecoration(
+        isDense: true,
+        labelText: 'الدوام',
+        border: OutlineInputBorder(),
+      ),
+      items: [
+        const DropdownMenuItem(value: null, child: Text('كل الدوامات')),
+        for (final name in shifts)
+          DropdownMenuItem(value: name, child: Text(name)),
+      ],
+      onChanged: onShift,
+    );
+    final count = Text(
+      shown == total ? '$total حلقة' : '$shown من $total',
+      style: Theme.of(context).textTheme.labelMedium,
+    );
+
+    // الهاتف: البحثُ بعرض الشاشة، والدوامُ والعددُ تحته.
+    if (context.isCompact) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Column(
+          spacing: 12,
+          children: [
+            search,
+            Row(
+              spacing: 12,
+              children: [
+                Expanded(child: filter),
+                count,
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Row(
         spacing: 12,
         children: [
-          Expanded(
-            flex: 3,
-            child: TextField(
-              controller: controller,
-              onChanged: onQuery,
-              decoration: const InputDecoration(
-                isDense: true,
-                prefixIcon: NzIcon(NzIcons.search, size: 20),
-                hintText: 'ابحث باسم الحلقة أو الأستاذ أو القاعة',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: DropdownButtonFormField<String?>(
-              initialValue: shift,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                isDense: true,
-                labelText: 'الدوام',
-                border: OutlineInputBorder(),
-              ),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('كل الدوامات')),
-                for (final name in shifts)
-                  DropdownMenuItem(value: name, child: Text(name)),
-              ],
-              onChanged: onShift,
-            ),
-          ),
-          Text(
-            shown == total ? '$total حلقة' : '$shown من $total',
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
+          Expanded(flex: 3, child: search),
+          Expanded(flex: 2, child: filter),
+          count,
         ],
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 import '../widgets/color_field.dart';
 import '../widgets/connected_action.dart';
 import '../widgets/form_section.dart';
@@ -79,18 +80,17 @@ class _InstituteSettingsScreenState extends State<InstituteSettingsScreen> {
       appBar: AppBar(
         title: const Text('بيانات المعهد'),
         actions: [
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 12),
-            child: FilledButton.icon(
-              onPressed: _saving ? null : _save,
-              icon: const NzIcon(NzIcons.save, size: 18),
-              label: const Text('حفظ'),
-            ),
+          AdaptiveAction(
+            icon: NzIcons.save,
+            label: 'حفظ',
+            filled: true,
+            busy: _saving,
+            onPressed: _saving ? null : _save,
           ),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(context.gutter(24)),
         children: [
           FormSection(
             title: 'البيانات الأساسية',

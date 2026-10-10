@@ -4,6 +4,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/adaptive.dart';
 
 /// ملفُّ الطالب: حضورُه ونقاطُه ومحفوظاتُه — كلُّها من drift.
 ///
@@ -59,56 +60,50 @@ class _Body extends StatelessWidget {
               style: theme.textTheme.bodySmall,
             ),
           ),
-        Row(
+        // ستٌّ في صفٍّ على الشاشة العريضة، واثنتان في صفٍّ على الهاتف.
+        StatGrid(
           spacing: 8,
           children: [
-            Expanded(
-              child: StatCard(
-                value: rate == null ? '—' : '${rate.toStringAsFixed(1)}%',
-                label: 'نسبة الحضور',
-                icon: NzIcons.percent,
-              ),
+            StatCard(
+              value: rate == null ? '—' : '${rate.toStringAsFixed(1)}%',
+              label: 'نسبة الحضور',
+              icon: NzIcons.percent,
             ),
-            Expanded(
-              child: StatCard(
-                value: profile.totalPoints.toStringAsFixed(1),
-                label: 'مجموع النقاط',
-                icon: NzIcons.star,
-              ),
+            StatCard(
+              value: profile.totalPoints.toStringAsFixed(1),
+              label: 'مجموع النقاط',
+              icon: NzIcons.star,
             ),
-            Expanded(
-              child: StatCard(
-                value: '${profile.countOf(AttendanceStatus.present)}',
-                label: 'حاضر',
-              ),
+            StatCard(
+              value: '${profile.countOf(AttendanceStatus.present)}',
+              label: 'حاضر',
             ),
-            Expanded(
-              child: StatCard(
-                value: '${profile.countOf(AttendanceStatus.absent)}',
-                label: 'غائب',
-              ),
+            StatCard(
+              value: '${profile.countOf(AttendanceStatus.absent)}',
+              label: 'غائب',
             ),
-            Expanded(
-              child: StatCard(
-                value: '${profile.countOf(AttendanceStatus.late)}',
-                label: 'متأخر',
-              ),
+            StatCard(
+              value: '${profile.countOf(AttendanceStatus.late)}',
+              label: 'متأخر',
             ),
-            Expanded(
-              child: StatCard(
-                value: '${profile.countOf(AttendanceStatus.excused)}',
-                label: 'مأذون',
-              ),
+            StatCard(
+              value: '${profile.countOf(AttendanceStatus.excused)}',
+              label: 'مأذون',
             ),
           ],
         ),
         const SizedBox(height: 20),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        // عمودان على الشاشة العريضة، وعمودٌ واحد على الهاتف.
+        Flex(
+          direction: context.isCompact ? Axis.vertical : Axis.horizontal,
+          crossAxisAlignment: context.isCompact
+              ? CrossAxisAlignment.stretch
+              : CrossAxisAlignment.start,
           spacing: 16,
           children: [
-            Expanded(
-              child: _Section(
+            _expand(
+              context,
+              _Section(
                 title: 'المحفوظات',
                 empty: 'لا تسميعَ مسجَّلاً بعد.',
                 children: [
@@ -127,8 +122,9 @@ class _Body extends StatelessWidget {
                 ],
               ),
             ),
-            Expanded(
-              child: Column(
+            _expand(
+              context,
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _Section(
@@ -182,6 +178,10 @@ class _Body extends StatelessWidget {
       ],
     );
   }
+
+  /// عمودٌ يتقاسم العرضَ على الشاشة العريضة، وبطولِه على الهاتف.
+  static Widget _expand(BuildContext context, Widget child) =>
+      context.isCompact ? child : Expanded(child: child);
 
   static String _range(RecitationRow row) {
     if (row.fromSurah == null || row.toSurah == null) {
