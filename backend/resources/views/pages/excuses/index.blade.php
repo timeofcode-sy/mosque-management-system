@@ -235,7 +235,7 @@ new #[Title('أذونات الغياب')] class extends Component {
                 </flux:table.rows>
             </flux:table>
 
-            <div class="p-4">{{ $this->excuses->links() }}</div>
+            <flux:pagination :paginator="$this->excuses" />
         @endif
     </div>
 

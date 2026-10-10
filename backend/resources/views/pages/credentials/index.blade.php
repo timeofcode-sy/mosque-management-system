@@ -7,11 +7,13 @@ use App\Models\CourseCircle;
 use App\Models\User;
 use App\Queries\CredentialQuery;
 use Flux\Flux;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 /**
  * بيانات الدخول: عرضُها وتبديلُها وتسليمُها.
@@ -23,7 +25,10 @@ use Livewire\Component;
  * بياناتُه ومن تُبدَّل كلمتُه، والواجهة تعرض ما يُرجَع إليها لا أكثر.
  */
 new #[Title('بيانات الدخول')] class extends Component {
-    use InteractsWithInstitute;
+    use InteractsWithInstitute, WithPagination;
+
+    /** عدد الصفوف في الصفحة: كشفُ المعهد يبلغ المئات (243 في التجربة). */
+    private const PER_PAGE = 25;
 
     #[Url(as: 'q', except: '')]
     public string $search = '';
@@ -44,6 +49,22 @@ new #[Title('بيانات الدخول')] class extends Component {
     public string $new_password = '';
 
     public ?string $issuedPassword = null;
+
+    /** تغيّر المرشّح يعيد إلى الصفحة الأولى، وإلا بقي المستخدمُ على صفحةٍ لم تعد موجودة. */
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedRole(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedCircle(): void
+    {
+        $this->resetPage();
+    }
 
     public function mount(): void
     {
@@ -66,6 +87,24 @@ new #[Title('بيانات الدخول')] class extends Component {
             $this->role,
             $this->search,
             $this->circle === '' ? null : (int) $this->circle,
+        );
+    }
+
+    /**
+     * صفحةٌ من الصفوف. التقطيعُ هنا لا في الاستعلام لأن CredentialQuery يعيد مجموعةً مرتّبةً ومرشَّحةً بالرتبة،
+     * ويستعملها التصديرُ والطباعة كاملةً.
+     */
+    #[Computed]
+    public function pagedRows(): LengthAwarePaginator
+    {
+        $page = $this->getPage();
+
+        return new LengthAwarePaginator(
+            $this->rows->forPage($page, self::PER_PAGE)->values(),
+            $this->rows->count(),
+            self::PER_PAGE,
+            $page,
+            ['path' => request()->url(), 'pageName' => 'page'],
         );
     }
 
@@ -134,7 +173,7 @@ new #[Title('بيانات الدخول')] class extends Component {
             return;
         }
 
-        unset($this->rows);
+        unset($this->rows, $this->pagedRows);
         Flux::toast(variant: 'success', text: 'بُدّلت كلمة المرور.');
     }
 }; ?>
@@ -196,7 +235,7 @@ new #[Title('بيانات الدخول')] class extends Component {
                 </flux:table.columns>
 
                 <flux:table.rows>
-                    @foreach ($this->rows as $row)
+                    @foreach ($this->pagedRows as $row)
                         <flux:table.row :key="$row['id']">
                             <flux:table.cell>{{ $row['name'] }}</flux:table.cell>
                             <flux:table.cell>{{ $row['role'] }}</flux:table.cell>
@@ -230,6 +269,8 @@ new #[Title('بيانات الدخول')] class extends Component {
                     @endforeach
                 </flux:table.rows>
             </flux:table>
+
+            <flux:pagination :paginator="$this->pagedRows" />
         @endif
     </div>
 

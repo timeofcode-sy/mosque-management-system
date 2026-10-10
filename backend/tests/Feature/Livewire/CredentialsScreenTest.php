@@ -72,6 +72,25 @@ class CredentialsScreenTest extends TestCase
             ->assertSee((string) $user->username);
     }
 
+    public function test_a_long_list_is_paged_and_filters_return_to_the_first_page(): void
+    {
+        Student::factory()->count(29)->create(['institute_id' => $this->institute->id]);
+
+        $component = Livewire::test('pages::credentials.index');
+
+        // 30 حساباً بخمسةٍ وعشرين في الصفحة: صفحتان، والتذييل يقول كم يُعرض من كم.
+        $this->assertSame(30, $component->get('pagedRows')->total());
+        $this->assertCount(25, $component->get('pagedRows')->items());
+        $component->assertSee('30');
+
+        $component->call('gotoPage', 2);
+        $this->assertCount(5, $component->get('pagedRows')->items());
+
+        // تغيّرُ المرشّح يعيد إلى الصفحة الأولى، وإلا بقي المستخدمُ على صفحةٍ فارغة.
+        $component->set('search', 'أنس');
+        $this->assertSame(1, $component->get('paginators')['page'] ?? 1);
+    }
+
     public function test_the_role_filter_narrows_the_list(): void
     {
         $teacher = Teacher::factory()->create(['institute_id' => $this->institute->id, 'display_name' => 'الأستاذ خالد']);
