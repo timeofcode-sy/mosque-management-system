@@ -3,6 +3,7 @@
     Builds the Nuzuln Flutter apps in release mode and collects them in dist/.
 
 .DESCRIPTION
+    mobile         -> Android APK            (apps/nuzuln: teacher, guardian and student in one app)
     teacher        -> Android APK            (apps/teacher)
     admin_desktop  -> Windows folder + zip   (apps/admin_desktop)
     admin_android  -> Android APK            (apps/admin_desktop, the phone layout)
@@ -45,7 +46,7 @@
     and VERSION.md is not touched.
 
 .PARAMETER Only
-    Build only these apps (teacher, admin_desktop, admin_android, guardian, student), e.g.
+    Build only these apps (mobile, teacher, admin_desktop, admin_android, guardian, student), e.g.
     -Only teacher,admin_desktop
 
 .PARAMETER BaseUrl
@@ -107,6 +108,7 @@ if (-not $OutDir) { $OutDir = Join-Path $root 'dist' }
 $versionFile = Join-Path $root 'VERSION.md'
 
 $apps = @(
+    @{ Name = 'mobile';        Dir = 'apps/nuzuln';        Kind = 'apk' },
     @{ Name = 'teacher';       Dir = 'apps/teacher';       Kind = 'apk' },
     @{ Name = 'admin_desktop'; Dir = 'apps/admin_desktop'; Kind = 'windows' },
     @{ Name = 'admin_android'; Dir = 'apps/admin_desktop'; Kind = 'apk' },

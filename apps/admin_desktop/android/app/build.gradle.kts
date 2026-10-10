@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.nuzuln.admin"
+    namespace = "com.timeofcode.nuzuln.admin"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -15,8 +15,8 @@ android {
     }
 
     defaultConfig {
-        // Reverse-DNS of nuzuln.com. Fixed once the app ships to the store.
-        applicationId = "com.nuzuln.admin"
+        // Owner (timeofcode) then app (nuzuln). Fixed once the app ships to the store.
+        applicationId = "com.timeofcode.nuzuln.admin"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

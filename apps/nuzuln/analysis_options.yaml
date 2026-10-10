@@ -1,0 +1,17 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+
+linter:
+  rules:
+    # الحقول الخاصّة تُسنَد في قائمة التهيئة لأن دارت لا يقبل معاملاً مسمّى يبدأ
+    # بشرطة سفلية (`{required this._db}` خطأٌ نحوي) — والقاعدة تقترح ما لا يُكتب.
+    prefer_initializing_formals: false

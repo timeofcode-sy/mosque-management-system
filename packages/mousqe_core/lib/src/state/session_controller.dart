@@ -42,6 +42,33 @@ class ActiveInstitute {
 /// **وذاك ليس خطأً يُوقف الدخول**: من رفض الإشعارات يدخل التطبيقَ ويستعمله.
 typedef PushTokenReader = Future<String?> Function();
 
+/// يختار سطحاً واحداً حين يحمل الحسابُ أكثرَ من دورٍ يخدمه التطبيقُ الموحَّد،
+/// أو `null` إن عدل صاحبُه عن الدخول.
+typedef SurfaceChooser = Future<String?> Function(List<String> candidates);
+
+/// يُرمى حين يدخل التطبيقَ الموحَّدَ حسابٌ لا يحمل دوراً من أدواره — مشرفٌ مثلاً،
+/// وبابُه تطبيقُ الإدارة.
+class AccountNotForThisApp implements Exception {
+  const AccountNotForThisApp([
+    this.message = 'هذا الحساب لا يفتح هذا التطبيق — حسابات الإدارة تدخل من تطبيق الإدارة.',
+  ]);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+/// يُرمى حين يعدل صاحبُ حسابٍ متعدّد الأدوار عن اختيار سطحه.
+class SurfaceChoiceCancelled implements Exception {
+  const SurfaceChoiceCancelled();
+
+  String get message => 'لم يُختر حسابٌ للدخول.';
+
+  @override
+  String toString() => message;
+}
+
 /// يُرمى حين يُطلب تبديلُ المعهد والطابورُ غيرُ فارغ — [SessionController.switchInstitute].
 class PendingWorkBlocksSwitch implements Exception {
   const PendingWorkBlocksSwitch(this.count, {this.server = false});
@@ -68,21 +95,31 @@ class PendingWorkBlocksSwitch implements Exception {
 /// 🔄 م.6.3 — رُفعت من `apps/teacher/` إلى الحزمة حين احتاجها الديسكتوب: ما
 /// يختلف بين التطبيقين معاملان ([app] و[appLabel])، وما زاد عليها هو مبدّلُ
 /// المعاهد وحده ([ARCHITECTURE.md §6](../../../../../docs/ARCHITECTURE.md)).
+///
+/// 🔄 وتطبيقُ «نزلاً» الموحَّد يخدم الأستاذ وولي الأمر والطالب معاً: يمرّر
+/// [surfaces] بدل [app]، فيُحسم السطحُ **من أدوار الحساب لحظةَ الدخول** — لا من
+/// بادئة اسم المستخدم — ويُحفظ في `app_state` ليقلع الجهازُ عليه.
 class SessionController extends ChangeNotifier {
   SessionController({
     required AppDatabase db,
     required ApiClient apiClient,
     required TokenStore tokenStore,
     required String deviceUuid,
-    required String app,
+    String? app,
+    List<String> surfaces = const [],
     required String appLabel,
     ActiveInstitute? activeInstitute,
     PushTokenReader? pushToken,
-  })  : _db = db,
+  })  : assert(
+          (app != null) != surfaces.isNotEmpty,
+          'إمّا app ثابتٌ وإمّا surfaces تُحسم عند الدخول — لا الاثنان.',
+        ),
+        _db = db,
         _apiClient = apiClient,
         _tokenStore = tokenStore,
         _deviceUuid = deviceUuid,
         _app = app,
+        _surfaces = surfaces,
         _appLabel = appLabel,
         _activeInstitute = activeInstitute ?? ActiveInstitute(),
         _pushTokenReader = pushToken;
@@ -91,11 +128,15 @@ class SessionController extends ChangeNotifier {
   /// المعهد الذي أُغلق عليه، لا على معهد الحساب الأصلي.
   static const String activeInstituteKey = 'active_institute';
 
+  /// مفتاحُ السطح المختار في `app_state` — للتطبيق الموحَّد وحده.
+  static const String surfaceKey = 'surface';
+
   final AppDatabase _db;
   final ApiClient _apiClient;
   final TokenStore _tokenStore;
   final String _deviceUuid;
-  final String _app;
+  final List<String> _surfaces;
+  String? _app;
   final String _appLabel;
   final ActiveInstitute _activeInstitute;
   final PushTokenReader? _pushTokenReader;
@@ -112,6 +153,10 @@ class SessionController extends ChangeNotifier {
   String? get notice => _notice;
 
   String get deviceUuid => _deviceUuid;
+
+  /// السطحُ العامل: ثابتُ التطبيق، أو ما حُسم عند الدخول في التطبيق الموحَّد —
+  /// و`null` فيه قبل الدخول.
+  String? get app => _app;
 
   String? get teacherUuid => _snapshot?.teacherUuid;
 
@@ -139,6 +184,20 @@ class SessionController extends ChangeNotifier {
     _activeInstitute.uuid = _blankToNull(
       await _db.readAppState(activeInstituteKey),
     );
+
+    if (_surfaces.isNotEmpty) {
+      final surface = await _db.readAppState(surfaceKey);
+
+      // توكنٌ بلا سطحٍ معروف لا يفتح واجهةً — يُطلب دخولٌ جديد يحسمه.
+      if (!_surfaces.contains(surface)) {
+        await _wipe();
+        notifyListeners();
+        return;
+      }
+
+      _app = surface;
+    }
+
     _snapshot = BootstrapSnapshot.decode(
       await _db.readAppState(BootstrapSnapshot.storageKey),
     );
@@ -149,9 +208,12 @@ class SessionController extends ChangeNotifier {
     await refreshSnapshot();
   }
 
+  /// [chooseSurface] يُسأل في التطبيق الموحَّد وحده، وحين يحمل الحسابُ أكثرَ من
+  /// دورٍ من [surfaces] فقط.
   Future<void> signIn({
     required String username,
     required String password,
+    SurfaceChooser? chooseSurface,
   }) async {
     // دخولٌ جديد يبدأ من معهد الحساب الأصلي: اختيارُ مستخدمٍ سابق على هذا الجهاز
     // لا يعني شيئاً للداخل الآن، وترويسةٌ بمعهدٍ لا يعمل فيه تُردّ 403.
@@ -165,6 +227,10 @@ class SessionController extends ChangeNotifier {
 
     final body = (response.data as Map).cast<String, dynamic>();
     await _tokenStore.saveToken(body['token'] as String);
+
+    if (_surfaces.isNotEmpty) {
+      await _resolveSurface(body, chooseSurface);
+    }
 
     // خطوةٌ منفصلة عن الدخول عمداً: الدخول يُثبت هوية المستخدم، والتسجيل يفتح
     // مؤشّر مزامنة للجهاز ([API.md §1](../../../../../docs/API.md)).
@@ -243,6 +309,8 @@ class SessionController extends ChangeNotifier {
 
     await _db.clearAll();
     await _saveActiveInstitute(instituteUuid);
+    // `clearAll` يمسح `app_state` كلَّه، والسطحُ باقٍ بتبديل المعهد.
+    await _saveSurface();
     _snapshot = null;
     notifyListeners();
 
@@ -298,7 +366,57 @@ class SessionController extends ChangeNotifier {
     await _db.clearAll();
     _activeInstitute.uuid = null;
     _snapshot = null;
+    if (_surfaces.isNotEmpty) {
+      // الهاتفُ العائليّ: الداخلُ بعده قد يكون الابنَ لا الأب، فلا يرث سطحَه.
+      _app = null;
+    }
     _stage = SessionStage.signedOut;
+  }
+
+  /// يحسم السطحَ من أدوار الحساب كما ردّها `POST /auth/login`.
+  ///
+  /// والحسابُ الذي لا يحمل دوراً من [_surfaces] يُخرَج فوراً ويُبطَل توكنُه: تركُه
+  /// داخلاً يفتح واجهةً لا تجد نقطةً تجيبها إلا بـ403.
+  Future<void> _resolveSurface(
+    Map<String, dynamic> body,
+    SurfaceChooser? chooseSurface,
+  ) async {
+    final user = (body['user'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final roles = (user['roles'] as List<dynamic>? ?? const []).cast<String>();
+    final candidates = [
+      for (final surface in _surfaces)
+        if (roles.contains(surface)) surface,
+    ];
+
+    final chosen = switch (candidates) {
+      [] => null,
+      [final only] => only,
+      // بلا مختارٍ يُؤخذ الأوّلُ بترتيب [_surfaces]؛ ومختارٌ يعيد `null` عدولٌ.
+      _ when chooseSurface == null => candidates.first,
+      _ => await chooseSurface(candidates),
+    };
+
+    if (chosen == null || !candidates.contains(chosen)) {
+      try {
+        await _apiClient.logout();
+      } on Object {
+        // التوكنُ يُمسح محلياً على كل حال.
+      }
+      await _wipe();
+
+      throw candidates.isEmpty
+          ? const AccountNotForThisApp()
+          : const SurfaceChoiceCancelled();
+    }
+
+    _app = chosen;
+    await _saveSurface();
+  }
+
+  Future<void> _saveSurface() async {
+    if (_surfaces.isNotEmpty && _app != null) {
+      await _db.writeAppState(surfaceKey, _app!);
+    }
   }
 
   /// يُكتب في drift **وفي الذاكرة معاً**: الأولى ليصمد الاختيار عبر الإقلاع،

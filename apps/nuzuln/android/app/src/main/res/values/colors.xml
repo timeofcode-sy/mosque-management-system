@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand ground (night, v3 tokens: color.night). The native splash and the adaptive icon ground. -->
+    <color name="nuzuln_ground">#0A241F</color>
+</resources>

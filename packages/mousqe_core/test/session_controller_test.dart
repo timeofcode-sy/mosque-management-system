@@ -367,4 +367,114 @@ void main() {
       expect(activeInstitute.uuid, 'ins-2');
     });
   });
+
+  /// تطبيقُ «نزلاً» الموحَّد: السطحُ يُحسم من أدوار الحساب لا من بادئة اسمه.
+  group('surfaces', () {
+    SessionController unified() => SessionController(
+          db: db,
+          apiClient: api,
+          tokenStore: tokens,
+          deviceUuid: 'device-1',
+          surfaces: const ['teacher', 'guardian', 'student'],
+          appLabel: 'نزلاً',
+        );
+
+    void stubLogin(List<String> roles) {
+      _stubSignIn(api);
+      when(() => api.login(any())).thenAnswer(
+        (_) async => _response({
+          'token': '12|secret',
+          'user': {'id': 41, 'name': 'أحمد بن سعيد', 'roles': roles},
+        }),
+      );
+      when(() => api.logout()).thenAnswer((_) async => _response(null));
+    }
+
+    test('the account role picks the surface, registers the device under it and survives a restart', () async {
+      session = unified();
+      stubLogin(['guardian']);
+
+      await session.signIn(username: 'guardian1000', password: 'secret-pass');
+
+      expect(session.app, 'guardian');
+      final registration =
+          verify(() => api.registerDevice(captureAny())).captured.single
+              as Map<String, dynamic>;
+      // `NotifyGuardians` يرشّح الأجهزةَ بـ`app = guardian` — فالسطحُ هو ما يُسجَّل.
+      expect(registration['app'], 'guardian');
+
+      final restarted = unified();
+      await restarted.restore();
+
+      expect(restarted.stage, SessionStage.ready);
+      expect(restarted.app, 'guardian');
+    });
+
+    test('an account with no surface role is signed out and its token revoked', () async {
+      session = unified();
+      stubLogin(['supervisor']);
+
+      await expectLater(
+        session.signIn(username: 'supervisor@x.sy', password: 'secret-pass'),
+        throwsA(isA<AccountNotForThisApp>()),
+      );
+
+      expect(tokens.token, isNull);
+      expect(session.stage, SessionStage.signedOut);
+      verify(() => api.logout()).called(1);
+      verifyNever(() => api.registerDevice(any()));
+    });
+
+    test('several surface roles ask the chooser, and cancelling signs out', () async {
+      session = unified();
+      stubLogin(['guardian', 'teacher']);
+
+      List<String>? offered;
+      await session.signIn(
+        username: 'teacher1000',
+        password: 'secret-pass',
+        chooseSurface: (candidates) async {
+          offered = candidates;
+          return 'guardian';
+        },
+      );
+
+      // بترتيب `surfaces` لا بترتيب ردّ الخادم.
+      expect(offered, ['teacher', 'guardian']);
+      expect(session.app, 'guardian');
+
+      await session.signOut();
+      expect(session.app, isNull);
+
+      await expectLater(
+        session.signIn(
+          username: 'teacher1000',
+          password: 'secret-pass',
+          chooseSurface: (_) async => null,
+        ),
+        throwsA(isA<SurfaceChoiceCancelled>()),
+      );
+      expect(tokens.token, isNull);
+    });
+
+    test('switching institute keeps the surface', () async {
+      session = unified();
+      stubLogin(['teacher']);
+      await session.signIn(username: 'teacher1000', password: 'secret-pass');
+
+      await session.switchInstitute('ins-2');
+
+      expect(await db.readAppState(SessionController.surfaceKey), 'teacher');
+    });
+
+    test('a stored token without a surface asks for a fresh sign-in', () async {
+      tokens.token = '12|secret';
+      session = unified();
+
+      await session.restore();
+
+      expect(session.stage, SessionStage.signedOut);
+      expect(tokens.token, isNull);
+    });
+  });
 }

@@ -75,7 +75,7 @@ COLORS = """<?xml version="1.0" encoding="utf-8"?>
 </resources>
 """
 
-for app in ('teacher', 'guardian', 'student', 'admin_desktop'):
+for app in ('nuzuln', 'teacher', 'guardian', 'student', 'admin_desktop'):
     res = ROOT / 'apps' / app / 'android/app/src/main/res'
     for name, scale in DENSITIES.items():
         mip = res / f'mipmap-{name}'
