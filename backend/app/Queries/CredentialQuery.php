@@ -6,6 +6,7 @@ use App\Actions\AssignUserRole;
 use App\Enums\PanelRole;
 use App\Models\Institute;
 use App\Models\User;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -74,10 +75,26 @@ class CredentialQuery
             'name' => $this->displayName($user),
             'role' => PanelRole::labelOf((string) $user->panel_role),
             'username' => $user->username,
-            'password' => $user->generated_password,
+            'password' => $this->readablePassword($user),
             'is_active' => (bool) $user->is_active,
             'detail' => $this->detail($user),
         ])->values();
+    }
+
+    /**
+     * النسخةُ المقروءة من كلمة المرور، أو `null` إن تعذّر فكّها.
+     *
+     * العمودُ مشفَّر بـ APP_KEY. فإذا تبدّل المفتاح (نسخُ `.env.example` فوق `.env` ثم `key:generate`،
+     * أو نقلُ قاعدةٍ إلى خادمٍ بمفتاحٍ آخر) صار فكُّ كل صفٍّ يرمي «The MAC is invalid» فتسقط الشاشةُ كلُّها
+     * بخطأ 500. وكلمةٌ لا تُقرأ تُعامَل كالمُغيَّرة: تُعرض «مُغيَّرة» ويبقى للمشرف أن يعيّن لصاحبها كلمةً جديدة.
+     */
+    private function readablePassword(User $user): ?string
+    {
+        try {
+            return $user->generated_password;
+        } catch (DecryptException) {
+            return null;
+        }
     }
 
     /**

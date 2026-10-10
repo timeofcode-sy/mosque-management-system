@@ -6,6 +6,7 @@ use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\Concerns\BuildsInstitute;
 use Tests\TestCase;
@@ -52,6 +53,23 @@ class CredentialsScreenTest extends TestCase
             ->assertDontSee($password)
             ->set('revealed', true)
             ->assertSee($password);
+    }
+
+    /**
+     * العمودُ مشفَّر بـ APP_KEY: لو تبدّل المفتاح (نسخُ .env من جديد) رمى كل صفٍّ «The MAC is invalid»
+     * وسقطت الشاشةُ بـ 500. والآن تُعامَل الكلمةُ التي لا تُفَكّ كالمُغيَّرة وتبقى الشاشةُ تعمل.
+     */
+    public function test_a_password_that_cannot_be_decrypted_does_not_break_the_screen(): void
+    {
+        $user = $this->student->fresh()->user;
+
+        // يحاكي صفّاً شُفِّر بمفتاحٍ آخر.
+        DB::table('users')->where('id', $user->id)->update(['generated_password' => 'not-a-valid-payload']);
+
+        Livewire::test('pages::credentials.index')
+            ->assertOk()
+            ->assertSee('أنس')
+            ->assertSee((string) $user->username);
     }
 
     public function test_the_role_filter_narrows_the_list(): void
