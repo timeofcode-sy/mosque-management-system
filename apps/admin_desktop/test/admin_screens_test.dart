@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -8,6 +10,7 @@ import 'package:mousqe_admin_desktop/src/di/app_scope.dart';
 import 'package:mousqe_admin_desktop/src/screens/catalog_screen.dart';
 import 'package:mousqe_admin_desktop/src/screens/curricula_screen.dart';
 import 'package:mousqe_admin_desktop/src/screens/excuses_screen.dart';
+import 'package:mousqe_admin_desktop/src/screens/student_form_screen.dart';
 import 'package:mousqe_admin_desktop/src/screens/students_screen.dart';
 import 'package:mousqe_admin_desktop/src/state/institute_switcher.dart';
 import 'package:mousqe_core/mousqe_core.dart';
@@ -224,6 +227,148 @@ void main() {
       // ولا زرَّ معطَّلاً: بابٌ مقفلٌ ظاهر يجعل نصفَ البرنامج حائطاً.
       expect(find.text('تسجيل طالب'), findsNothing);
       expect(find.byTooltip('نقل إلى حلقة أخرى'), findsNothing);
+
+      await settle(tester);
+    });
+  });
+
+  group('the registration form', () {
+    /// علي ابنُ «حسن الشامي» و«مريم العلي» — كما يصلان في `sync/pull`.
+    Future<void> seedParents() async {
+      for (final (id, name, relation) in [
+        (1, 'حسن الشامي', 'father'),
+        (2, 'مريم العلي', 'mother'),
+      ]) {
+        await db.into(db.guardians).insert(
+              GuardiansCompanion.insert(
+                id: Value(id),
+                uuid: 'grd-$id',
+                instituteId: 1,
+                fullName: name,
+              ),
+            );
+        await db.into(db.guardianStudentTable).insert(
+              GuardianStudentTableCompanion.insert(
+                uuid: 'gs-$id',
+                guardianId: id,
+                studentId: 1,
+                relation: Value(relation),
+              ),
+            );
+      }
+    }
+
+    /// الاستمارةُ مفتوحةً فوق شاشةٍ أخرى، فيعود منها الحفظُ كما في التطبيق.
+    Future<void> openForm(WidgetTester tester) async {
+      await pump(
+        tester,
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const StudentFormScreen(),
+              ),
+            ),
+            child: const Text('افتح'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('افتح'));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> type(WidgetTester tester, String label, String text) =>
+        tester.enterText(find.widgetWithText(TextFormField, label), text);
+
+    testWidgets('the father full name follows the personal data, read-only',
+        (tester) async {
+      await boot(SeededRoles.supervisor);
+      await seed();
+      await openForm(tester);
+
+      await type(tester, 'اسم الأب *', 'حسان');
+      await type(tester, 'اسم العائلة *', 'الأحمد');
+      await tester.pump();
+
+      final field = tester.widget<TextField>(
+        find.descendant(
+          of: find.widgetWithText(TextFormField, 'اسم الأب الكامل'),
+          matching: find.byType(TextField),
+        ),
+      );
+
+      expect(field.controller!.text, 'حسان الأحمد');
+      expect(field.readOnly, isTrue);
+      expect(find.text('اسم الأم الكامل'), findsOneWidget);
+
+      await settle(tester);
+    });
+
+    testWidgets('a confirmed brother is linked to the registered parents',
+        (tester) async {
+      await boot(SeededRoles.supervisor);
+      await seed();
+      await seedParents();
+      await openForm(tester);
+
+      await type(tester, 'اسم الطالب *', 'عمر');
+      await type(tester, 'اسم الأب *', 'حسن');
+      await type(tester, 'اسم العائلة *', 'الشامي');
+      await type(tester, 'اسم الأم الكامل', 'مريم العلي');
+
+      await tester.tap(find.text('حفظ'));
+      // مؤشّرُ الحفظ يدور ما دام السؤال مفتوحاً، فلا يستقرّ الإطار.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(
+        find.text('هل الطالب عمر حسن الشامي هو أخ الطالب علي حسن الشامي؟'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('نعم، أخوان'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final operation = await db.select(db.pendingOperations).getSingle();
+      final payload = jsonDecode(operation.payload) as Map<String, dynamic>;
+
+      expect(
+        payload['sibling_guardian_uuids'],
+        {'father': 'grd-1', 'mother': 'grd-2'},
+      );
+
+      await settle(tester);
+    });
+
+    testWidgets('a declined brother is saved with parents of its own',
+        (tester) async {
+      await boot(SeededRoles.supervisor);
+      await seed();
+      await seedParents();
+      await openForm(tester);
+
+      await type(tester, 'اسم الطالب *', 'عمر');
+      await type(tester, 'اسم الأب *', 'حسن');
+      await type(tester, 'اسم العائلة *', 'الشامي');
+      await type(tester, 'اسم الأم الكامل', 'مريم العلي');
+
+      await tester.tap(find.text('حفظ'));
+      // مؤشّرُ الحفظ يدور ما دام السؤال مفتوحاً، فلا يستقرّ الإطار.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.text('لا، ليسا أخوين'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      final operation = await db.select(db.pendingOperations).getSingle();
+      final payload = jsonDecode(operation.payload) as Map<String, dynamic>;
+
+      expect(payload.containsKey('sibling_guardian_uuids'), isFalse);
+      expect(
+        (payload['guardians'] as Map)['father']['full_name'],
+        'حسن الشامي',
+      );
 
       await settle(tester);
     });

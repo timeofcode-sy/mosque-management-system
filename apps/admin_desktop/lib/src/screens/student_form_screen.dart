@@ -182,16 +182,20 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   'اسم الأب',
                   _form.fatherName,
                   required: true,
-                  onChanged: (value) =>
-                      _form = _form.copyWith(fatherName: value ?? ''),
+                  onChanged: (value) {
+                    _form = _form.copyWith(fatherName: value ?? '');
+                    _syncFatherFullName();
+                  },
                 ),
                 _text(
                   'family_name',
                   'اسم العائلة',
                   _form.familyName,
                   required: true,
-                  onChanged: (value) =>
-                      _form = _form.copyWith(familyName: value ?? ''),
+                  onChanged: (value) {
+                    _form = _form.copyWith(familyName: value ?? '');
+                    _syncFatherFullName();
+                  },
                 ),
                 _date(
                   label: 'تاريخ الولادة',
@@ -262,17 +266,13 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
               // ولياّن لا ستةُ أعمدة في صفّ الطالب: الوليُّ قد يتابع أكثر من
               // ابنٍ في المعهد، ويملك حساباً واحداً في تطبيق الأهل.
               children: [
+                // لا يُكتب: اسمُ الأب متبوعاً بالكنية، ويُعدَّل من البيانات الشخصية.
                 _text(
                   'father_full_name',
                   'اسم الأب الكامل',
-                  _form.father.fullName,
-                  onChanged: (value) => _form = _form.copyWith(
-                    father: GuardianDraft(
-                      fullName: value,
-                      occupation: _form.father.occupation,
-                      phone: _form.father.phone,
-                    ),
-                  ),
+                  _form.fatherFullName,
+                  readOnly: true,
+                  onChanged: (_) {},
                 ),
                 _text(
                   'father_occupation',
@@ -300,7 +300,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                 ),
                 _text(
                   'mother_full_name',
-                  'اسم الأم',
+                  'اسم الأم الكامل',
                   _form.mother.fullName,
                   onChanged: (value) => _form = _form.copyWith(
                     mother: GuardianDraft(
@@ -447,6 +447,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     int lines = 1,
     String? hint,
     TextInputType? keyboardType,
+    bool readOnly = false,
     required ValueChanged<String?> onChanged,
   }) {
     return SizedBox(
@@ -455,11 +456,15 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
         controller: _controller(key, initial),
         maxLines: lines,
         keyboardType: keyboardType,
+        readOnly: readOnly,
         decoration: InputDecoration(
           labelText: required ? '$label *' : label,
           hintText: hint,
           isDense: true,
           border: const OutlineInputBorder(),
+          suffixIcon: readOnly
+              ? const NzIcon(NzIcons.lockClosed, size: 18)
+              : null,
         ),
         validator: required
             ? (value) => (value ?? '').trim().isEmpty ? 'حقلٌ مطلوب' : null
@@ -581,6 +586,10 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     );
   }
 
+  void _syncFatherFullName() {
+    _controller('father_full_name', null).text = _form.fatherFullName;
+  }
+
   void _setCustomField(String uuid, String? value) {
     final next = Map<String, String>.from(_form.customFields);
 
@@ -605,8 +614,21 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
       _error = null;
     });
 
+    final students = AppScope.of(context).students;
+
     try {
-      await AppScope.of(context).students.saveStudent(_form);
+      final sibling = await _askAboutSiblings(students);
+
+      if (sibling == null) {
+        // أُغلق السؤال دون جواب: لا حفظَ حتى يجيب المشرف.
+        if (mounted) {
+          setState(() => _saving = false);
+        }
+
+        return;
+      }
+
+      await students.saveStudent(_form, sibling: sibling.family);
     } on Object catch (error) {
       if (!mounted) {
         return;
@@ -633,9 +655,99 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
     Navigator.of(context).pop();
   }
 
+  /// يسأل عن كلّ عائلةٍ مسجَّلةٍ يطابق أبواها ما في الاستمارة: «هل الطالب فلان هو أخ
+  /// الطالب فلان؟». الجوابُ «نعم» يربطه بوليّي أمرها على الخادم، و«لا» ينتقل إلى
+  /// العائلة التالية، فإن نفدت أُنشئ له وليّا أمر جديدان. ويعود `null` إن أُلغي.
+  Future<_SiblingAnswer?> _askAboutSiblings(StudentRepository students) async {
+    final families = await students.findSiblingFamilies(
+      fatherFullName: _form.fatherFullName,
+      motherFullName: _form.mother.fullName ?? '',
+      exceptStudentUuid: _form.uuid,
+    );
+
+    for (final family in families) {
+      if (!mounted) {
+        return null;
+      }
+
+      final answer = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text('أخٌ مسجَّل؟'),
+          content: SizedBox(
+            width: 460,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 12,
+              children: [
+                Text(
+                  _siblingQuestion(family),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                Text(
+                  'اسم الأب الكامل واسم الأم الكامل يطابقان طالباً مسجَّلاً. '
+                  'إن كانا أخوين رُبط الطالب بوليّي الأمر أنفسهما فيتابع '
+                  'حسابُهما الأبناءَ معاً، وإلا أُنشئ له وليّا أمر جديدان.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('إلغاء'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('لا، ليسا أخوين'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('نعم، أخوان'),
+            ),
+          ],
+        ),
+      );
+
+      if (answer == null) {
+        return null;
+      }
+
+      if (answer) {
+        return _SiblingAnswer(family);
+      }
+    }
+
+    return const _SiblingAnswer(null);
+  }
+
+  /// «هل الطالب فلان هو أخ الطالب فلان؟» — بصيغة المؤنّث حيث تلزم.
+  String _siblingQuestion(SiblingFamily family) {
+    final others = family.students
+        .map(
+          (sibling) =>
+              '${sibling.gender == 'female' ? 'الطالبة' : 'الطالب'} ${sibling.fullName}',
+        )
+        .join(' و');
+
+    return _form.gender == 'female'
+        ? 'هل الطالبة ${_form.fullName} هي أخت $others؟'
+        : 'هل الطالب ${_form.fullName} هو أخ $others؟';
+  }
+
   static String _isoDate(DateTime value) =>
       '${value.year}/${value.month.toString().padLeft(2, '0')}/'
       '${value.day.toString().padLeft(2, '0')}';
+}
+
+/// جوابُ سؤال الأخوّة: عائلةُ الأخ إن أُجيب «نعم»، أو `null` إن لم يكن أخاً لأحد.
+class _SiblingAnswer {
+  const _SiblingAnswer(this.family);
+
+  final SiblingFamily? family;
 }
 
 /// اختيارٌ متعدّد بمربّعات — الصفاتُ والمحفوظات.

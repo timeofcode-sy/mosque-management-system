@@ -135,6 +135,13 @@ class StudentForm {
       .where((part) => part.trim().isNotEmpty)
       .join(' ');
 
+  /// اسمُ الأب الكامل لا يُكتب في الاستمارة: هو اسمُ الأب متبوعاً بالكنية —
+  /// وبه يُطابَق الإخوةُ المسجَّلون، فيُكتب بمسافةٍ واحدةٍ بين أجزائه كما يحفظه الخادم.
+  String get fatherFullName => [fatherName, familyName]
+      .map((part) => part.trim().replaceAll(RegExp(r'\s+'), ' '))
+      .where((part) => part.isNotEmpty)
+      .join(' ');
+
   StudentForm copyWith({
     String? uuid,
     Object? registrationNo = _keep,
@@ -201,6 +208,33 @@ class StudentForm {
 
   static T? _or<T>(Object? incoming, T? current) =>
       identical(incoming, _keep) ? current : incoming as T?;
+}
+
+/// عائلةُ أخٍ مسجَّل: وليّا أمرٍ يطابق اسماهما الكاملان ما في الاستمارة، ومعهما
+/// أبناؤهما المسجَّلون — فيُسأل المشرف «هل الطالب فلان هو أخ الطالب فلان؟».
+class SiblingFamily {
+  const SiblingFamily({
+    required this.fatherUuid,
+    required this.motherUuid,
+    required this.students,
+  });
+
+  final String fatherUuid;
+  final String motherUuid;
+
+  /// الإخوةُ المسجَّلون في هذه العائلة، بأسمائهم الكاملة وجنسهم.
+  final List<SiblingStudent> students;
+
+  String get key => '$fatherUuid|$motherUuid';
+}
+
+class SiblingStudent {
+  const SiblingStudent({required this.fullName, this.gender});
+
+  final String fullName;
+
+  /// `male` \| `female` \| `null` — يحدّد «الطالب» أو «الطالبة» في السؤال.
+  final String? gender;
 }
 
 /// صفةٌ شخصية معروضةٌ في الاستمارة — عامّةٌ أو خاصّةٌ بالمعهد.

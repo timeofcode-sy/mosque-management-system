@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Enums\ExcuseStatus;
+use App\Enums\GuardianRelation;
 use App\Enums\SyncOperation;
 use App\Models\AbsenceExcuse;
 use App\Models\AttendanceSession;
@@ -11,6 +12,7 @@ use App\Models\CourseCircle;
 use App\Models\CurriculumItem;
 use App\Models\CustomField;
 use App\Models\Enrollment;
+use App\Models\Guardian;
 use App\Models\Institute;
 use App\Models\MemorizationLog;
 use App\Models\PersonalTrait;
@@ -456,7 +458,35 @@ class SyncPush
             courseCircleId: blank($op['course_circle_uuid'] ?? null)
                 ? null
                 : $this->courseCircle($op['course_circle_uuid'], $instituteId)->id,
+            siblingGuardianIds: $this->siblingGuardianIds((array) ($op['sibling_guardian_uuids'] ?? []), $instituteId),
         );
+    }
+
+    /**
+     * وليّا أمر الأخ الذي أكّد المشرف الأخوّةَ معه على الجهاز، مفتاحُهما صلةُ القرابة.
+     * معرّفٌ لا يطابق وليّاً في المعهد يُسقَط، فيُنشأ للطالب وليٌّ جديد كما لو أُجيب «لا».
+     *
+     * @param  array<string, mixed>  $uuids
+     * @return array<string, int>
+     */
+    private function siblingGuardianIds(array $uuids, int $instituteId): array
+    {
+        $relations = [GuardianRelation::Father->value, GuardianRelation::Mother->value];
+        $uuids = array_filter(
+            array_intersect_key($uuids, array_flip($relations)),
+            fn ($uuid) => is_string($uuid) && $uuid !== '',
+        );
+
+        if ($uuids === []) {
+            return [];
+        }
+
+        $ids = Guardian::query()
+            ->where('institute_id', $instituteId)
+            ->whereIn('uuid', $uuids)
+            ->pluck('id', 'uuid');
+
+        return array_filter(array_map(fn (string $uuid) => $ids[$uuid] ?? null, $uuids));
     }
 
     /**

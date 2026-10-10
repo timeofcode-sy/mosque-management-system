@@ -258,6 +258,107 @@ void main() {
     });
   });
 
+  group('siblings', () {
+    /// يربط [studentId] بوليٍّ اسمُه [fullName] في صلة [relation].
+    Future<void> link(
+      int guardianId,
+      String fullName,
+      int studentId,
+      String relation,
+    ) async {
+      await db.into(db.guardians).insertOnConflictUpdate(
+            GuardiansCompanion.insert(
+              id: Value(guardianId),
+              uuid: 'grd-$guardianId',
+              instituteId: 1,
+              fullName: fullName,
+            ),
+          );
+      await db.into(db.guardianStudentTable).insert(
+            GuardianStudentTableCompanion.insert(
+              uuid: 'gs-$guardianId-$studentId',
+              guardianId: guardianId,
+              studentId: studentId,
+              relation: Value(relation),
+            ),
+          );
+    }
+
+    setUp(() async {
+      // علي ابنُ «حسن الشامي» و«مريم العلي».
+      await link(1, 'حسن الشامي', TestInstitute.ali, 'father');
+      await link(2, 'مريم العلي', TestInstitute.ali, 'mother');
+    });
+
+    test('the father full name is the father name and the family name', () {
+      const form = StudentForm(fatherName: ' حسن ', familyName: 'الشامي');
+
+      expect(form.fatherFullName, 'حسن الشامي');
+    });
+
+    test('a registered brother is found by both parents', () async {
+      final families = await repository.findSiblingFamilies(
+        fatherFullName: 'حسن الشامي',
+        motherFullName: 'مريم العلي',
+      );
+
+      expect(families, hasLength(1));
+      expect(families.single.fatherUuid, 'grd-1');
+      expect(families.single.motherUuid, 'grd-2');
+      expect(families.single.students.single.fullName, 'علي حسن الشامي');
+    });
+
+    test('the same father with another mother is not a sibling', () async {
+      final families = await repository.findSiblingFamilies(
+        fatherFullName: 'حسن الشامي',
+        motherFullName: 'خديجة السيد',
+      );
+
+      expect(families, isEmpty);
+    });
+
+    test('a student is not asked about the family it already belongs to',
+        () async {
+      final families = await repository.findSiblingFamilies(
+        fatherFullName: 'حسن الشامي',
+        motherFullName: 'مريم العلي',
+        exceptStudentUuid: 'stu-ali',
+      );
+
+      expect(families, isEmpty);
+    });
+
+    test('a confirmed sibling sends the brother guardians by uuid', () async {
+      final families = await repository.findSiblingFamilies(
+        fatherFullName: 'حسن الشامي',
+        motherFullName: 'مريم العلي',
+      );
+
+      await repository.saveStudent(
+        const StudentForm(
+          firstName: 'عمر',
+          fatherName: 'حسن',
+          familyName: 'الشامي',
+          // ما في حقل الاسم الكامل لا يُرسَل: الاسمُ يُبنى من البيانات الشخصية.
+          father: GuardianDraft(fullName: 'اسمٌ قديم'),
+          mother: GuardianDraft(fullName: 'مريم العلي'),
+        ),
+        sibling: families.single,
+      );
+
+      final operation = (await queue()).single;
+
+      expect(
+        (operation['guardians'] as Map)['father']['full_name'],
+        'حسن الشامي',
+      );
+      expect(
+        operation['sibling_guardian_uuids'],
+        {'father': 'grd-1', 'mother': 'grd-2'},
+      );
+    });
+  });
+
   group('enrolment and transfer', () {
     test('a transfer names the destination and the reason', () async {
       await repository.transferStudent(

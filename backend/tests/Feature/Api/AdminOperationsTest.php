@@ -10,6 +10,7 @@ use App\Models\Attendance;
 use App\Models\AttendanceSession;
 use App\Models\CourseCircle;
 use App\Models\Enrollment;
+use App\Models\Guardian;
 use App\Models\Institute;
 use App\Models\PersonalTrait;
 use App\Models\Student;
@@ -92,6 +93,48 @@ class AdminOperationsTest extends TestCase
             'course_circle_id' => $this->courseCircle->id,
             'status' => EnrollmentStatus::Active->value,
         ]);
+    }
+
+    public function test_a_sibling_confirmed_on_the_device_shares_the_registered_brother_guardians(): void
+    {
+        $this->actingAsAdministrator($this->institute, 'supervisor');
+
+        $save = fn (string $firstName, array $extra = []): array => [
+            'op_uuid' => (string) Str::uuid7(),
+            'type' => 'student.save',
+            'uuid' => (string) Str::uuid7(),
+            'student' => [
+                'first_name' => $firstName, 'father_name' => 'حسان',
+                'family_name' => 'الأحمد', 'gender' => 'male', 'status' => 'active',
+            ],
+            'guardians' => [
+                'father' => ['full_name' => 'حسان الأحمد', 'phone' => null],
+                'mother' => ['full_name' => 'عائشة العلي'],
+            ],
+            ...$extra,
+        ];
+
+        $this->postJson('/api/v1/sync/push', ['operations' => [$save('محمد')]])->assertOk();
+
+        $brother = Student::query()->where('first_name', 'محمد')->sole();
+        $brother->father()->update(['phone' => '0951018624']);
+
+        $outsider = Guardian::factory()->create();
+
+        $this->postJson('/api/v1/sync/push', ['operations' => [$save('إبراهيم', [
+            'sibling_guardian_uuids' => [
+                'father' => $brother->father()->uuid,
+                // وليٌّ من معهدٍ آخر لا يُربط، فتُنشأ للطالب أمٌّ جديدة.
+                'mother' => $outsider->uuid,
+            ],
+        ])]])->assertOk()->assertJsonPath('failed', []);
+
+        $ibrahim = Student::query()->where('first_name', 'إبراهيم')->sole();
+
+        $this->assertTrue($ibrahim->father()->is($brother->father()));
+        $this->assertSame('0951018624', $ibrahim->father()->phone);
+        $this->assertFalse($ibrahim->mother()->is($brother->mother()));
+        $this->assertFalse($ibrahim->mother()->is($outsider));
     }
 
     public function test_resending_student_save_with_the_same_uuid_edits_in_place(): void

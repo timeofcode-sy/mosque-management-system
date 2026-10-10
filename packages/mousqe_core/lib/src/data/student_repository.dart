@@ -105,16 +105,30 @@ class StudentRepository {
   /// **ومعرّفُ الطالب يولّده العميل** (م.5.4)، فيصفّ الجهازُ تسجيلَ الطالب ثم
   /// تسجيلَه في حلقةٍ **في نفس الدفعة** بلا انتظار معرّفٍ من الخادم. وهذا هو
   /// الفرقُ بين استمارةٍ تعمل أوف-لاين وأخرى تحتاج شبكةً في منتصفها.
-  Future<String> saveStudent(StudentForm form) async {
+  ///
+  /// و[sibling] عائلةُ أخٍ أكّد المشرف الأخوّةَ معه: يُربط الطالب بوليّي أمرها
+  /// على الخادم بدل إنشاء وليّين جديدين.
+  Future<String> saveStudent(StudentForm form, {SiblingFamily? sibling}) async {
     final uuid = form.uuid ?? _uuid.v4();
+
+    final father = GuardianDraft(
+      fullName: form.fatherFullName,
+      occupation: form.father.occupation,
+      phone: form.father.phone,
+    );
 
     await _syncEngine.enqueue('student.save', {
       'uuid': uuid,
       'student': _studentAttributes(form),
       'guardians': {
-        if (!form.father.isEmpty) 'father': form.father.toPayload(),
+        if (!father.isEmpty) 'father': father.toPayload(),
         if (!form.mother.isEmpty) 'mother': form.mother.toPayload(),
       },
+      if (sibling != null)
+        'sibling_guardian_uuids': {
+          'father': sibling.fatherUuid,
+          'mother': sibling.motherUuid,
+        },
       'trait_uuids': form.traitUuids.toList(),
       'memorized_item_uuids': form.memorizedItemUuids.toList(),
       'custom_fields': form.customFields,
@@ -126,6 +140,100 @@ class StudentRepository {
     });
 
     return uuid;
+  }
+
+  /// الإخوةُ المسجَّلون: طلابٌ يطابق اسمُ أبيهم الكامل واسمُ أمّهم الكامل ما في
+  /// الاستمارة، مجموعين بزوج وليّي أمرهم — كما يفعل `StudentFormQuery` في اللوحة.
+  /// والعائلةُ التي يتبعها الطالب أصلاً لا تُعاد.
+  ///
+  /// والبحثُ في drift، فيعمل والشبكةُ مقطوعة؛ وطالبٌ مصفوفٌ لم يصل الخادمَ بعد
+  /// لا وليَّ له محلياً فلا يظهر هنا حتى تكتمل مزامنتُه.
+  Future<List<SiblingFamily>> findSiblingFamilies({
+    required String fatherFullName,
+    required String motherFullName,
+    String? exceptStudentUuid,
+  }) async {
+    final fatherName = fatherFullName.trim();
+    final motherName = motherFullName.trim();
+
+    if (fatherName.isEmpty || motherName.isEmpty) {
+      return const [];
+    }
+
+    final fathers = await _guardiansNamed(fatherName, 'father');
+    final mothers = await _guardiansNamed(motherName, 'mother');
+
+    final except = exceptStudentUuid == null
+        ? null
+        : await (_db.select(_db.students)
+              ..where((t) => t.uuid.equals(exceptStudentUuid)))
+            .getSingleOrNull();
+
+    final ownFather = except == null ? null : fathers[except.id];
+    final ownMother = except == null ? null : mothers[except.id];
+
+    final studentIds = fathers.keys
+        .where((id) => mothers.containsKey(id) && id != except?.id)
+        .toList();
+
+    if (studentIds.isEmpty) {
+      return const [];
+    }
+
+    final students = await (_db.select(_db.students)
+          ..where((t) => t.id.isIn(studentIds))
+          ..orderBy([(t) => OrderingTerm(expression: t.firstName)]))
+        .get();
+
+    final families = <String, SiblingFamily>{};
+
+    for (final student in students) {
+      final father = fathers[student.id]!;
+      final mother = mothers[student.id]!;
+
+      if (father == ownFather && mother == ownMother) {
+        continue;
+      }
+
+      final family = families.putIfAbsent(
+        '$father|$mother',
+        () => SiblingFamily(
+          fatherUuid: father,
+          motherUuid: mother,
+          students: [],
+        ),
+      );
+
+      family.students.add(
+        SiblingStudent(fullName: _fullName(student), gender: student.gender),
+      );
+    }
+
+    return families.values.toList();
+  }
+
+  /// `uuid` وليِّ الأمر بهذا الاسم وهذه الصلة، مفتاحُه معرّفُ الطالب.
+  Future<Map<int, String>> _guardiansNamed(
+    String fullName,
+    String relation,
+  ) async {
+    final rows = await (_db.select(_db.guardianStudentTable).join([
+      innerJoin(
+        _db.guardians,
+        _db.guardians.id.equalsExp(_db.guardianStudentTable.guardianId),
+      ),
+    ])
+          ..where(
+            _db.guardianStudentTable.relation.equals(relation) &
+                _db.guardians.fullName.equals(fullName),
+          ))
+        .get();
+
+    return {
+      for (final row in rows)
+        row.readTable(_db.guardianStudentTable).studentId:
+            row.readTable(_db.guardians).uuid,
+    };
   }
 
   // ------------------------------------------------------ التسجيل والنقل
