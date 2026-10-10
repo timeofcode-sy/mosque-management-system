@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
 
+/** صفحتا الموقع العامتان: مفتوحتان للزائر والمستخدم معاً، ويُرجَع إليهما من تذييل اللوحة وقائمة المستخدم. */
+Route::view('about', 'site.about')->name('about');
+Route::view('developer', 'site.developer')->name('developer');
+
 /**
  * كل مجموعة خلف صلاحيتها. لوحة المعلومات وحدها مفتوحة لكل مستخدم موثَّق لأن محتواها
  * مشتقّ من صلاحياته أصلاً — وما عداها كان مفتوحاً للجميع حتى الآن، بمن فيهم الطالب

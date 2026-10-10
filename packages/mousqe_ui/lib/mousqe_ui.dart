@@ -3,6 +3,8 @@ library mousqe_ui;
 // الهويةُ كلُّها (رموز، أيقونات، علامة، نقش، مكوّنات Nz) تُعاد تصديرها فلا تعتمد التطبيقاتُ إلا هذه الحزمة.
 export 'package:nuzul_ui/nuzul_ui.dart';
 
+export 'src/about/about_screens.dart';
+export 'src/about/developer.dart';
 export 'src/brand/brand.dart';
 export 'src/format/dates.dart';
 export 'src/brand/server_choice.dart';

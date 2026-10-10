@@ -1,3 +1,5 @@
+import 'package:mousqe_ui/mousqe_ui.dart';
+
 /// إعدادات البناء — تُمرَّر بـ`--dart-define` ولا تُقرأ من ملفٍ في زمن التشغيل.
 class AppConfig {
   const AppConfig._();
@@ -18,6 +20,13 @@ class AppConfig {
   /// اسمُ التطبيق على الهاتف — ويُكرَّر في `android:label` بـ AndroidManifest.xml
   /// (لا يقرؤه Dart).
   static const String launcherName = 'نزلاً';
+
+  /// «حول التطبيق» — والنظامُ ومطوّرُه مشتركان في `mousqe_ui`.
+  static const AboutAppInfo about = AboutAppInfo(
+    title: launcherName,
+    summary: 'تطبيقُ الهاتف للأستاذ ووليّ الأمر والطالب: دخولٌ واحد، '
+        'ولكلٍّ شاشاتُه بحسب حسابه.',
+  );
 }
 
 /// أسطحُ التطبيق، وكلٌّ منها **اسمُ دورٍ** على الخادم وقيمةُ `app` التي يُسجَّل

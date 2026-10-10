@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
+import '../config.dart';
 import '../di/app_scope.dart';
 import '../widgets/institute_menu.dart';
 import '../widgets/sync_bar.dart';
@@ -571,10 +572,16 @@ class _AccountFooter extends StatelessWidget {
     if (rail) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: NzSpace.s2),
-        child: IconButton(
-          tooltip: 'خروج — ${snapshot?.userName ?? ''}',
-          icon: const NzIcon(NzIcons.logout, size: 22),
-          onPressed: session.signOut,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const AboutMenuButton(app: AppConfig.about),
+            IconButton(
+              tooltip: 'خروج — ${snapshot?.userName ?? ''}',
+              icon: const NzIcon(NzIcons.logout, size: 22),
+              onPressed: session.signOut,
+            ),
+          ],
         ),
       );
     }
@@ -592,10 +599,16 @@ class _AccountFooter extends StatelessWidget {
         style: theme.textTheme.labelSmall,
         overflow: TextOverflow.ellipsis,
       ),
-      trailing: IconButton(
-        tooltip: 'خروج',
-        icon: const NzIcon(NzIcons.logout, size: 18),
-        onPressed: session.signOut,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const AboutMenuButton(app: AppConfig.about),
+          IconButton(
+            tooltip: 'خروج',
+            icon: const NzIcon(NzIcons.logout, size: 18),
+            onPressed: session.signOut,
+          ),
+        ],
       ),
     );
   }

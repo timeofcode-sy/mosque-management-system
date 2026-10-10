@@ -18,11 +18,17 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.3
+  # «حول التطبيق» يقرأ نسختَه، و«حول المطوِّر» يفتح البريدَ والهاتفَ والروابط.
+  package_info_plus: ^8.3.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
 flutter:
-  # الخطوط والأيقونات والشعار تأتي من حزمة nuzul_ui (هوية نزلاً v3) فلا أصول هنا.
+  # الخطوط والأيقونات والشعار تأتي من حزمة nuzul_ui (هوية نزلاً v3)؛ وأصلُ هذه الحزمة
+  # الوحيد شعارُ المطوِّر في «حول المطوِّر».
   uses-material-design: true
+  assets:
+    - assets/timeofcode_logo.png

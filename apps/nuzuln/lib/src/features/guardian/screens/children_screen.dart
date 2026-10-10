@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
+import '../../../config.dart';
 import '../di/app_scope.dart';
 import 'announcements_screen.dart';
 import 'child_screen.dart';
@@ -26,6 +27,7 @@ class ChildrenScreen extends StatelessWidget {
         leading: const Center(child: BrandMark(size: 40)),
         title: const Text('أبنائي'),
         actions: [
+          const AboutMenuButton(app: AppConfig.about),
           IconButton(
             tooltip: 'الإعلانات',
             icon: const NzIcon(NzIcons.megaphone),

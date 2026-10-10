@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:mousqe_ui/mousqe_ui.dart';
 
 /// إعدادات البناء — تُمرَّر بـ`--dart-define` ولا تُقرأ من ملفٍ في زمن التشغيل.
 class AppConfig {
@@ -34,4 +35,11 @@ class AppConfig {
   /// اسمُ التطبيق على الهاتف (أيقونةُ المشغّل وقائمةُ التطبيقات الأخيرة)، كأسماء
   /// التطبيقات الثلاثة الأخرى. ويُكرَّر في `android:label` بـ AndroidManifest.xml.
   static const String launcherName = 'نزلاً · الإدارة';
+
+  /// «حول التطبيق» — والنظامُ ومطوّرُه مشتركان في `mousqe_ui`.
+  static const AboutAppInfo about = AboutAppInfo(
+    title: launcherName,
+    summary: 'برنامجُ المشرف ومدير المعهد على الحاسوب والهاتف: الحلقاتُ والتفقّدُ '
+        'والطلابُ والتقاريرُ والإدارةُ كاملة، يعمل دون اتصال ويتزامن حين يعود.',
+  );
 }

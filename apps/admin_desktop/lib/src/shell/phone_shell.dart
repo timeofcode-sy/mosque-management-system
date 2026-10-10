@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
+import '../config.dart';
 import '../di/app_scope.dart';
 import 'destinations.dart';
 
@@ -348,6 +349,21 @@ class MoreScreen extends StatelessWidget {
               ],
             ),
           ],
+          const _GroupLabel('حول'),
+          _Group(
+            children: [
+              _DoorTile(
+                icon: NzIcons.informationCircle,
+                label: 'حول التطبيق',
+                onTap: () => openAboutApp(context, AppConfig.about),
+              ),
+              _DoorTile(
+                icon: NzIcons.star,
+                label: 'حول المطوِّر',
+                onTap: () => openAboutDeveloper(context),
+              ),
+            ],
+          ),
           const _GroupLabel('الحساب'),
           const _Group(children: [_SignOutTile()]),
           const SizedBox(height: NzSpace.s5),

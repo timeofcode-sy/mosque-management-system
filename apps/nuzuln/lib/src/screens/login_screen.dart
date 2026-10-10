@@ -30,6 +30,9 @@ class LoginScreen extends StatelessWidget {
           ),
         ),
       ),
+      bottomNavigationBar: const SafeArea(
+        child: AboutLinks(app: AppConfig.about),
+      ),
     );
   }
 

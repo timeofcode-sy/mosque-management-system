@@ -27,6 +27,9 @@ class LoginScreen extends StatelessWidget {
         onSubmit: (username, password) =>
             session.signIn(username: username, password: password),
       ),
+      bottomNavigationBar: const SafeArea(
+        child: AboutLinks(app: AppConfig.about),
+      ),
     );
   }
 }

@@ -211,6 +211,9 @@
                         <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
                             الإعدادات الشخصية
                         </flux:menu.item>
+                        <flux:menu.item :href="route('about')" icon="information-circle">
+                            حول نزلاً
+                        </flux:menu.item>
                     </flux:menu.radio.group>
 
                     <flux:menu.separator />

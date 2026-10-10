@@ -9,8 +9,10 @@
         </span>
 
         <span class="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <a href="{{ route('about') }}" class="rounded-sm hover:text-ink hover:underline">حول نزلاً</a>
+            <a href="{{ route('developer') }}" class="rounded-sm hover:text-ink hover:underline">المطوِّر</a>
             <a href="https://nuzuln.com" class="rounded-sm hover:text-ink hover:underline" dir="ltr">nuzuln.com</a>
-            <span>© {{ now()->year }}</span>
+            <span>© <span dir="ltr">{{ now()->year }} {{ config('developer.name') }}</span></span>
         </span>
     </div>
 </footer>
