@@ -41,6 +41,7 @@ export 'src/data/stats_views.dart';
 export 'src/data/snapshot_store.dart';
 export 'src/data/student_repository.dart';
 export 'src/data/student_self_repository.dart';
+export 'src/data/teacher_announcements_repository.dart';
 
 export 'src/api/api_client.dart';
 export 'src/api/api_errors.dart';

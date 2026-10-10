@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_guardian/src/di/app_scope.dart';
+import 'package:mousqe_guardian/src/screens/announcements_screen.dart';
 import 'package:mousqe_guardian/src/screens/child_screen.dart';
 import 'package:mousqe_guardian/src/screens/children_screen.dart';
 import 'package:mousqe_guardian/src/screens/excuses_screen.dart';
@@ -268,5 +269,33 @@ void main() {
     expect(find.text('مرفوض'), findsOneWidget);
     expect(find.text('الدورة في أيامها الأخيرة.'), findsOneWidget);
   });
-}
 
+  testWidgets('guardian announcements: the circle one carries the "my child" badge', (tester) async {
+    when(api.guardianAnnouncements).thenAnswer(
+      (_) async => _response({
+        'data': [
+          {'uuid': 'a1', 'title': 'اجتماع الأولياء', 'body': 'السبت بعد العصر.', 'scope': 'all', 'published_at': null},
+          {'uuid': 'a2', 'title': 'رحلة الحلقة', 'body': 'يوم الجمعة.', 'scope': 'circle', 'published_at': null},
+        ],
+      }),
+    );
+
+    await tester.pumpWidget(_wrap(dependencies, const AnnouncementsScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('اجتماع الأولياء'), findsOneWidget);
+    expect(find.text('رحلة الحلقة'), findsOneWidget);
+    // الشارةُ على إعلان حلقة الابن وحده.
+    expect(find.text('لحلقة ابني'), findsOneWidget);
+    verifyNever(() => api.studentAnnouncements());
+  });
+
+  testWidgets('guardian with no announcements is told so', (tester) async {
+    when(api.guardianAnnouncements).thenAnswer((_) async => _response({'data': <dynamic>[]}));
+
+    await tester.pumpWidget(_wrap(dependencies, const AnnouncementsScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('لا إعلاناتٍ بعد'), findsOneWidget);
+  });
+}

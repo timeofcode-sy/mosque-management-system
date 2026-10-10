@@ -3,6 +3,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import 'announcements_screen.dart';
 import 'child_screen.dart';
 import 'excuses_screen.dart';
 
@@ -26,6 +27,15 @@ class ChildrenScreen extends StatelessWidget {
         title: const Text('أبنائي'),
         actions: [
           IconButton(
+            tooltip: 'الإعلانات',
+            icon: const NzIcon(NzIcons.megaphone),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const AnnouncementsScreen(),
+              ),
+            ),
+          ),
+          IconButton(
             tooltip: 'أذونات الغياب',
             icon: const NzIcon(NzIcons.calendar),
             onPressed: () => Navigator.of(context).push(
@@ -41,7 +51,8 @@ class ChildrenScreen extends StatelessWidget {
       ),
       body: SnapshotView<List<GuardianChild>>(
         load: () async => (await scope.repository.children()).ui,
-        emptyMessage: 'لا أبناءَ مسجَّلون على هذا الحساب.\n'
+        emptyMessage:
+            'لا أبناءَ مسجَّلون على هذا الحساب.\n'
             'راجع إدارة المعهد إن كان هذا غيرَ متوقَّع.',
         errorMessageBuilder: messageFor,
         isEmpty: (children) => children.isEmpty,

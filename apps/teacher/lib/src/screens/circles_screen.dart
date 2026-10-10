@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/sync_bar.dart';
+import 'announcements_screen.dart';
 import 'attendance_screen.dart';
 import 'sessions_log_screen.dart';
 
@@ -27,6 +28,15 @@ class CirclesScreen extends StatelessWidget {
         leading: const Center(child: BrandMark(size: 40)),
         title: Text(snapshot?.institute.name ?? 'حلقاتي'),
         actions: [
+          IconButton(
+            tooltip: 'الإعلانات',
+            icon: const NzIcon(NzIcons.megaphone),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const AnnouncementsScreen(),
+              ),
+            ),
+          ),
           IconButton(
             tooltip: 'سجل الجلسات',
             icon: const NzIcon(NzIcons.clock),

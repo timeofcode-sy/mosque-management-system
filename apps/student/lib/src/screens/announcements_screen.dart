@@ -26,50 +26,13 @@ class AnnouncementsScreen extends StatelessWidget {
         builder: (context, announcements) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            for (final announcement in announcements) _Card(announcement: announcement),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Card extends StatelessWidget {
-  const _Card({required this.announcement});
-
-  final Announcement announcement;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(announcement.title, style: theme.textTheme.titleSmall),
-                ),
-                // «لحلقتي» شارةٌ تقول للقارئ إن الإعلانَ يخصّه هو لا المعهدَ
-                // كلَّه — فيقدّر أهميّتَه بلا أن يعرف بقيّةَ المشمولين.
-                if (announcement.isForMyCircle)
-                  const StatusBadge('لحلقتي', tone: StatusTone.bronze),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(announcement.body, style: theme.textTheme.bodyMedium),
-            if (announcement.publishedAt case final String at) ...[
-              const SizedBox(height: 8),
-              Text(
-                DateTime.tryParse(at) == null ? at : formatStamp(DateTime.parse(at)),
-                style: theme.textTheme.bodySmall,
+            for (final announcement in announcements)
+              AnnouncementCard(
+                title: announcement.title,
+                body: announcement.body,
+                publishedAt: announcement.publishedAt,
+                circleBadge: announcement.isForMyCircle ? 'لحلقتي' : null,
               ),
-            ],
           ],
         ),
       ),

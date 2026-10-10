@@ -1,6 +1,7 @@
 import '../api/api_client.dart';
 import '../db/database.dart';
 import '../models/absence_excuse.dart';
+import '../models/announcement.dart';
 import '../models/child_attendance.dart';
 import '../models/curriculum_progress_entry.dart';
 import '../models/guardian_child.dart';
@@ -39,6 +40,7 @@ class GuardianRepository {
 
   static const String _childrenKey = 'guardian_children';
   static const String _excusesKey = 'guardian_excuses';
+  static const String _announcementsKey = 'guardian_announcements';
 
   /// مفاتيحُ اللقطات المعلَّقة بابنٍ بعينه — لكلِّ ابنٍ لقطتُه، فتبديلُ الابن
   /// المعروض لا يمحو ما قُرئ عن أخيه.
@@ -119,4 +121,17 @@ class GuardianRepository {
     return AbsenceExcuse.fromJson((response.data as Map).cast<String, dynamic>());
   }
 
+
+  /// إعلاناتُ المعهد وحلقاتِ أبنائه الموجَّهة إلى أولياء الأمور — **والترشيحُ وقع في الخادم**: إعلانٌ لحلقةٍ ليس
+  /// فيها ابنٌ له لا يصل جهازَه أصلاً.
+  Future<Snapshot<List<Announcement>>> announcements() {
+    return _snapshots.read(
+      key: _announcementsKey,
+      fetch: () async => (await _apiClient.guardianAnnouncements()).data,
+      decode: (json) => [
+        for (final row in json['data'] as List<dynamic>? ?? const [])
+          Announcement.fromJson((row as Map).cast<String, dynamic>()),
+      ],
+    );
+  }
 }

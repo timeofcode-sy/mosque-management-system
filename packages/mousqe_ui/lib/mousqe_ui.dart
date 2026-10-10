@@ -12,6 +12,7 @@ export 'src/l10n/mousqe_app.dart';
 export 'src/widgets/paged_list.dart';
 export 'src/widgets/stat_card.dart';
 export 'src/widgets/status_badge.dart';
+export 'src/widgets/announcement_card.dart';
 export 'src/widgets/attendance_status_badge.dart';
 export 'src/widgets/sync_bar.dart';
 export 'src/widgets/sync_status_indicator.dart';

@@ -330,4 +330,12 @@ abstract class ApiClient {
 
   @GET('/student/me/announcements')
   Future<HttpResponse<dynamic>> studentAnnouncements();
+
+  /// إعلاناتُ المعهد وحلقاتِ أبنائه الموجَّهة إلى أولياء الأمور — والترشيحُ في الخادم.
+  @GET('/guardian/announcements')
+  Future<HttpResponse<dynamic>> guardianAnnouncements();
+
+  /// إعلاناتُ المعهد وحلقاتِه الموجَّهة إلى الأساتذة — والترشيحُ في الخادم.
+  @GET('/teacher/announcements')
+  Future<HttpResponse<dynamic>> teacherAnnouncements();
 }

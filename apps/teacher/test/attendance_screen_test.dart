@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_teacher/src/di/app_scope.dart';
+import 'package:mousqe_teacher/src/screens/announcements_screen.dart';
 import 'package:mousqe_teacher/src/screens/attendance_screen.dart';
 import 'package:mousqe_teacher/src/screens/circles_screen.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
@@ -303,4 +304,30 @@ void main() {
 
     await settle(tester);
   });
+
+  /// إعلاناتُ الأستاذ: يقرؤها من `/teacher/announcements` لا من نقطة الطالب، والترشيحُ في الخادم.
+  testWidgets('the announcements screen reads the teacher endpoint and badges a circle one', (tester) async {
+    await boot();
+    when(api.teacherAnnouncements).thenAnswer(
+      (_) async => _response({
+        'data': [
+          {'uuid': 'a1', 'title': 'اجتماع الأساتذة', 'body': 'الخميس.', 'scope': 'all', 'published_at': null},
+          {'uuid': 'a2', 'title': 'خطة الحلقة', 'body': 'للأستاذ.', 'scope': 'circle', 'published_at': null},
+        ],
+      }),
+    );
+
+    await pump(tester, const AnnouncementsScreen());
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('اجتماع الأساتذة'), findsOneWidget);
+    expect(find.text('خطة الحلقة'), findsOneWidget);
+    expect(find.text('لحلقتي'), findsOneWidget);
+    verify(() => api.teacherAnnouncements()).called(1);
+    verifyNever(() => api.studentAnnouncements());
+
+    await settle(tester);
+  }
+  );
 }
