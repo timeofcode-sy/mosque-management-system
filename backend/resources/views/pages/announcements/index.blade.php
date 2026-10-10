@@ -188,9 +188,9 @@ new #[Title('الإعلانات')] class extends Component {
                                 @endif
                             </td>
                             <td class="p-3 text-left">
-                                <flux:button wire:click="edit({{ $announcement->id }})" size="sm" variant="ghost" icon="pencil">تعديل</flux:button>
+                                <flux:button wire:click="edit('{{ $announcement->uuid }}')" size="sm" variant="ghost" icon="pencil">تعديل</flux:button>
                                 @if ($announcement->published_at !== null)
-                                    <flux:button wire:click="unpublish({{ $announcement->id }})" size="sm" variant="ghost" icon="eye-slash">سحب</flux:button>
+                                    <flux:button wire:click="unpublish('{{ $announcement->uuid }}')" size="sm" variant="ghost" icon="eye-slash">سحب</flux:button>
                                 @endif
                             </td>
                         </tr>

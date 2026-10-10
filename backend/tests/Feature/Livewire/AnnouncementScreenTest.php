@@ -122,4 +122,28 @@ class AnnouncementScreenTest extends TestCase
         $this->assertNull($announcement->refresh()->published_at);
         $this->assertDatabaseCount('announcements', 1);
     }
+
+    /**
+     * الأزرارُ تمرّر ما يمرّره المتصفّح لا ما يمرّره الاختبار: مفتاحُ المسار نصّيٌّ (uuid). كان الزرّان يمرّران
+     * الرقمَ فيفشل ربطُ النموذج بـ 404 وتظهر صفحةُ الخطأ فوق الشاشة.
+     */
+    public function test_edit_and_unpublish_work_with_the_key_the_buttons_send(): void
+    {
+        $announcement = Announcement::create([
+            'institute_id' => $this->institute->id,
+            'title' => 'منشور',
+            'body' => 'نصّ.',
+            'scope' => 'all',
+            'published_at' => now(),
+        ]);
+
+        $component = Livewire::test('pages::announcements.index')
+            ->assertSeeHtml("wire:click=\"edit('{$announcement->uuid}')\"")
+            ->assertSeeHtml("wire:click=\"unpublish('{$announcement->uuid}')\"");
+
+        $component->call('edit', $announcement->uuid)->assertSet('title', 'منشور');
+        $component->call('unpublish', $announcement->uuid);
+
+        $this->assertNull($announcement->refresh()->published_at);
+    }
 }
