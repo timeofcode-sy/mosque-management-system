@@ -21,6 +21,15 @@ _لا إصدار نهائيّ بعد._ <!-- placeholder -->
 ## البيتا (Beta)
 <!-- beta-entries -->
 
+### 1.0.0-beta.4 - build 4 - 2026-10-11
+
+Commit `4c487ef` - apps: mobile, admin_desktop, admin_android
+
+- تطبيق «نزلاً» واحد للهاتف يجمع الأستاذ وولي الأمر والطالب، ويُحسم سطحه من دور الحساب عند الدخول.
+- صفحتا «حول التطبيق» (مع الدعم الفني والتقني) و«حول المطوِّر» Time of Code في تطبيق الهاتف وبرنامج الإدارة والموقع.
+- معرّفا أندرويد الجديدان: com.timeofcode.nuzuln وcom.timeofcode.nuzuln.admin.
+- إصلاح: الصفحة الرئيسية للموقع تتمرّر من جديد.
+
 ### 1.0.0-beta.3 - build 3 - 2026-10-10
 
 Commit `a69333b` - apps: teacher, admin_desktop, admin_android, guardian, student
