@@ -105,6 +105,8 @@ $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
 if (-not $OutDir) { $OutDir = Join-Path $root 'dist' }
+# Each app builds from its own folder, so a relative -OutDir is pinned to where the script was run.
+$OutDir = [IO.Path]::GetFullPath($OutDir, (Get-Location).Path)
 $versionFile = Join-Path $root 'VERSION.md'
 
 $apps = @(
