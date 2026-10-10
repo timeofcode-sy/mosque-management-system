@@ -154,6 +154,18 @@ class CredentialsScreenTest extends TestCase
     }
 
     /**
+     * app.css يثبّت html/body على ارتفاع الشاشة مع overflow:hidden، فكان PDF الطباعة يقتصر على أول صفحة.
+     * ورقة التقرير تُعيد التدفّق الطبيعي وتطلب A4.
+     */
+    public function test_the_print_sheet_flows_across_pages_on_a4(): void
+    {
+        $this->get(route('credentials.print'))
+            ->assertOk()
+            ->assertSee('size: A4 portrait', false)
+            ->assertSee('overflow: visible', false);
+    }
+
+    /**
      * الشاشة خلف credentials.export — والطالبُ لا يبلغها.
      */
     public function test_a_student_cannot_reach_the_screen(): void

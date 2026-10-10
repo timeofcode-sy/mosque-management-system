@@ -12,7 +12,12 @@
 
     <style>
         /* الطباعة: A4 بهوامش معقولة، وإخفاء شريط الأدوات، ومنع كسر الجداول بين الصفحات */
-        @page { size: A4; margin: 14mm 12mm 24mm; }
+        @page { size: A4 portrait; margin: 14mm 12mm 24mm; }
+
+        /* app.css يثبّت html/body على ارتفاع الشاشة مع overflow:hidden لتمرير لوحة التحكم؛ هنا يجب أن تتدفّق الصفحة
+           بطولها، وإلا اقتُطع التقرير عند أول صفحة في الطباعة وتعذّر تمريره على الشاشة. */
+        html, body { height: auto; min-height: 100%; overflow: visible; }
+        body { display: block; }
 
         .sheet-footer {
             -webkit-print-color-adjust: exact;
