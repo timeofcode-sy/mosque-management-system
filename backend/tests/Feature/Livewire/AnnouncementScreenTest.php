@@ -3,6 +3,9 @@
 namespace Tests\Feature\Livewire;
 
 use App\Models\Announcement;
+use App\Models\Enrollment;
+use App\Models\Student;
+use App\Queries\AnnouncementQuery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\Concerns\BuildsInstitute;
@@ -145,5 +148,67 @@ class AnnouncementScreenTest extends TestCase
         $component->call('unpublish', $announcement->uuid);
 
         $this->assertNull($announcement->refresh()->published_at);
+    }
+
+    /**
+     * 🔴 عيبٌ حقيقي: مربّعاتُ الحلقات في المتصفّح تُرسل معرّفاتٍ **نصّية** ("3") فخُزّنت في json نصوصاً،
+     * بينما يبحث الطالبُ بالرقم (whereJsonContains) فلا يطابق شيءٌ ولا يصل إعلانُ الحلقة أحداً.
+     * اختبارُ الـAPI كان يكتب أرقاماً مباشرةً فلم يرَ الفرق.
+     */
+    public function test_a_circle_announcement_written_from_the_form_reaches_its_students(): void
+    {
+        $circle = $this->makeCourseCircle();
+        $other = $this->makeCourseCircle();
+        $student = Student::factory()->create(['institute_id' => $this->institute->id]);
+        Enrollment::factory()->create([
+            'course_circle_id' => $circle->id,
+            'student_id' => $student->id,
+            'enrolled_on' => '2026-09-01',
+        ]);
+
+        Livewire::test('pages::announcements.index')
+            ->set('title', 'لحلقةٍ بعينها')
+            ->set('body', 'نصّ.')
+            ->set('scope', 'circle')
+            ->set('circleIds', [(string) $circle->id])
+            ->set('publishNow', true)
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $announcement = Announcement::where('title', 'لحلقةٍ بعينها')->firstOrFail();
+
+        // أرقامٌ صحيحة في json لا نصوص.
+        $this->assertSame([$circle->id], $announcement->scope_ids);
+
+        $titles = app(AnnouncementQuery::class)->forStudent($student)->pluck('title')->all();
+        $this->assertSame(['لحلقةٍ بعينها'], $titles);
+
+        $outsider = Student::factory()->create(['institute_id' => $this->institute->id]);
+        Enrollment::factory()->create([
+            'course_circle_id' => $other->id,
+            'student_id' => $outsider->id,
+            'enrolled_on' => '2026-09-01',
+        ]);
+        $this->assertSame([], app(AnnouncementQuery::class)->forStudent($outsider)->pluck('title')->all());
+    }
+
+    public function test_the_form_saves_the_chosen_audiences_and_refuses_none(): void
+    {
+        $component = Livewire::test('pages::announcements.index')
+            ->set('title', 'للأولياء والأساتذة')
+            ->set('body', 'نصّ.')
+            ->set('scope', 'all')
+            ->set('publishNow', true);
+
+        // فئةٌ واحدة على الأقل: إعلانٌ بلا قرّاء لا يراه أحد.
+        $component->set('audience', [])->call('save')->assertHasErrors(['audience']);
+
+        $component->set('audience', ['guardians', 'teachers'])->call('save')->assertHasNoErrors();
+
+        $announcement = Announcement::where('title', 'للأولياء والأساتذة')->firstOrFail();
+        $this->assertSame(['guardians', 'teachers'], $announcement->audience);
+
+        // وما لا يُعرف من الفئات يُرفض.
+        $component->set('audience', ['everyone'])->call('save')->assertHasErrors(['audience.0']);
     }
 }

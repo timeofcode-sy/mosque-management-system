@@ -29,6 +29,9 @@ class AnnouncementResource extends JsonResource
             // «لمن وُجِّه» لا «لمن وُجِّه بالضبط»: يعرف الطالبُ أن الإعلانَ لحلقته
             // أو للمعهد كلِّه، فيقدّر أهميّتَه بلا أن يعرف بقيّةَ المشمولين.
             'scope' => $this->scope,
+            // الفئاتُ المستهدفة (students/guardians/teachers) — لا تكشف شيئاً عن الآخرين، وتُظهر للقارئ أن الإعلانَ
+            // مشتركٌ بينه وبين فئاتٍ أخرى إن شاء العميل أن يقول ذلك.
+            'audience' => $this->audience ?? ['students'],
             'published_at' => $this->published_at,
         ];
     }

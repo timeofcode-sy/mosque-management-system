@@ -33,6 +33,13 @@ new #[Title('الإعلانات')] class extends Component {
     /** @var array<int, int> */
     public array $circleIds = [];
 
+    /**
+     * الفئاتُ المستهدفة: طلاب وأولياء أمور وأساتذة، فئةٌ أو أكثر. الافتراضيُّ الطلاب كما كان قبل الفئات.
+     *
+     * @var array<int, string>
+     */
+    public array $audience = ['students'];
+
     public bool $publishNow = true;
 
     public function mount(): void
@@ -71,8 +78,9 @@ new #[Title('الإعلانات')] class extends Component {
 
     public function create(): void
     {
-        $this->reset('editingId', 'title', 'body', 'scope', 'circleIds', 'publishNow');
+        $this->reset('editingId', 'title', 'body', 'scope', 'circleIds', 'publishNow', 'audience');
         $this->publishNow = true;
+        $this->audience = ['students'];
         $this->resetValidation();
 
         Flux::modal('announcement-form')->show();
@@ -85,6 +93,7 @@ new #[Title('الإعلانات')] class extends Component {
         $this->body = $announcement->body;
         $this->scope = $announcement->scope;
         $this->circleIds = array_map('intval', $announcement->scope_ids ?? []);
+        $this->audience = $announcement->audience ?? ['students'];
         $this->publishNow = $announcement->published_at !== null;
         $this->resetValidation();
 
@@ -101,11 +110,15 @@ new #[Title('الإعلانات')] class extends Component {
             // الاستمارة لا يُكتشَف بعد النشر.
             'circleIds' => ['array', 'required_if:scope,circle'],
             'circleIds.*' => ['integer'],
+            // فئةٌ واحدة على الأقل، وما يُعرف منها فقط: إعلانٌ بلا قرّاء لا يراه أحد.
+            'audience' => ['required', 'array', 'min:1'],
+            'audience.*' => ['in:'.implode(',', Announcement::AUDIENCES)],
         ], attributes: [
             'title' => 'العنوان',
             'body' => 'النص',
             'scope' => 'النطاق',
             'circleIds' => 'الحلقات',
+            'audience' => 'الفئات المستهدفة',
         ]);
 
         app(PublishAnnouncement::class)->handle(
@@ -115,6 +128,7 @@ new #[Title('الإعلانات')] class extends Component {
                 'body' => $validated['body'],
                 'scope' => $validated['scope'],
                 'scope_ids' => $validated['circleIds'] ?? [],
+                'audience' => $validated['audience'],
                 'published_at' => $this->publishNow ? now() : null,
             ],
             auth()->user(),
@@ -126,7 +140,7 @@ new #[Title('الإعلانات')] class extends Component {
         Flux::modal('announcement-form')->close();
         Flux::toast(
             variant: 'success',
-            text: $this->publishNow ? 'نُشر الإعلان ويظهر للطلاب الآن.' : 'حُفظ الإعلان مسودّةً ولا يظهر لأحد.',
+            text: $this->publishNow ? 'نُشر الإعلان ويظهر للفئات المستهدفة الآن.' : 'حُفظ الإعلان مسودّةً ولا يظهر لأحد.',
         );
     }
 
@@ -150,8 +164,8 @@ new #[Title('الإعلانات')] class extends Component {
     </x-page-header>
 
     <flux:text>
-        الإعلانُ يظهر في تطبيق الطالب. ووجّهه إلى المعهد كلِّه أو إلى حلقاتٍ بعينها —
-        وما وُجِّه إلى حلقةٍ لا يصل طلابَ غيرها.
+        اختر من يقرؤه: الطلاب أو أولياء الأمور أو الأساتذة، فئةً أو أكثر. ووجّهه إلى المعهد كلِّه أو إلى حلقاتٍ بعينها —
+        فيصل طلابَ تلك الحلقات وأولياءَ أمورهم وأساتذتَها، ولا يصل غيرَهم.
     </flux:text>
 
     @if ($this->announcements->isEmpty())
@@ -164,6 +178,7 @@ new #[Title('الإعلانات')] class extends Component {
                 <thead class="border-b border-line text-right">
                     <tr>
                         <th class="p-3 font-medium">العنوان</th>
+                        <th class="p-3 font-medium">الفئات</th>
                         <th class="p-3 font-medium">النطاق</th>
                         <th class="p-3 font-medium">الحالة</th>
                         <th class="p-3"></th>
@@ -175,6 +190,13 @@ new #[Title('الإعلانات')] class extends Component {
                             <td class="p-3">
                                 <div class="font-medium">{{ $announcement->title }}</div>
                                 <flux:text size="sm">{{ Str::limit($announcement->body, 80) }}</flux:text>
+                            </td>
+                            <td class="p-3">
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach ($announcement->audience ?? ['students'] as $audienceKey)
+                                        <flux:badge size="sm" color="zinc">{{ Announcement::AUDIENCE_LABELS[$audienceKey] ?? $audienceKey }}</flux:badge>
+                                    @endforeach
+                                </div>
                             </td>
                             <td class="p-3">
                                 {{ $announcement->scope === 'all' ? 'المعهد كلّه' : 'حلقات محدّدة (' . count($announcement->scope_ids ?? []) . ')' }}
@@ -206,6 +228,13 @@ new #[Title('الإعلانات')] class extends Component {
 
             <flux:input wire:model="title" label="العنوان" data-test="announcement-title" />
             <flux:textarea wire:model="body" label="النص" rows="5" data-test="announcement-body" />
+
+            <flux:checkbox.group wire:model="audience" label="الفئات المستهدفة" data-test="announcement-audience">
+                @foreach (Announcement::AUDIENCE_LABELS as $key => $label)
+                    <flux:checkbox value="{{ $key }}" label="{{ $label }}" />
+                @endforeach
+            </flux:checkbox.group>
+            <flux:error name="audience" />
 
             <flux:select wire:model.live="scope" label="النطاق" data-test="announcement-scope">
                 <flux:select.option value="all">المعهد كلّه</flux:select.option>

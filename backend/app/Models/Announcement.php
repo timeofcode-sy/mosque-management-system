@@ -10,10 +10,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['institute_id', 'scope', 'scope_ids', 'title', 'body', 'created_by', 'published_at'])]
+#[Fillable(['institute_id', 'scope', 'scope_ids', 'audience', 'title', 'body', 'created_by', 'published_at'])]
 class Announcement extends Model implements Syncable
 {
     use HasUuid, RecordsSyncChanges, SoftDeletes;
+
+    /** فئاتُ القرّاء: الطلاب وأولياء الأمور والأساتذة. */
+    public const AUDIENCES = ['students', 'guardians', 'teachers'];
+
+    public const AUDIENCE_LABELS = [
+        'students' => 'الطلاب',
+        'guardians' => 'أولياء الأمور',
+        'teachers' => 'الأساتذة',
+    ];
 
     /**
      * @return array<string, string>
@@ -22,6 +31,7 @@ class Announcement extends Model implements Syncable
     {
         return [
             'scope_ids' => 'array',
+            'audience' => 'array',
             'published_at' => 'datetime',
         ];
     }

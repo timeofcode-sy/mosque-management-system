@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api\V1;
 use App\Actions\SubmitAbsenceExcuse;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\AbsenceExcuseResource;
+use App\Http\Resources\V1\AnnouncementResource;
 use App\Http\Resources\V1\AttendanceResource;
 use App\Http\Resources\V1\ProgressResource;
 use App\Http\Resources\V1\StudentResource;
 use App\Models\Guardian;
 use App\Models\Student;
+use App\Queries\AnnouncementQuery;
 use App\Queries\GuardianChildrenQuery;
 use App\Queries\StudentProfileQuery;
 use Illuminate\Http\JsonResponse;
@@ -35,6 +37,16 @@ class GuardianController extends Controller
     {
         return response()->json([
             'data' => StudentResource::collection($query->children($this->guardian($request))),
+        ]);
+    }
+
+    /**
+     * إعلاناتُ المعهد وحلقاتِ أبنائه الموجَّهة إلى أولياء الأمور — والترشيحُ في الخادم كما للطالب.
+     */
+    public function announcements(Request $request, AnnouncementQuery $query): JsonResponse
+    {
+        return response()->json([
+            'data' => AnnouncementResource::collection($query->forGuardian($this->guardian($request))),
         ]);
     }
 

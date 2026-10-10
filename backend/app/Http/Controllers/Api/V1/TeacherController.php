@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\V1\AnnouncementResource;
 use App\Http\Resources\V1\AttendanceSessionResource;
 use App\Http\Resources\V1\CourseCircleResource;
 use App\Models\CourseCircle;
 use App\Models\Teacher;
+use App\Queries\AnnouncementQuery;
 use App\Queries\TeacherCircleQuery;
 use App\Support\ApiScope;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +28,16 @@ class TeacherController extends Controller
 
         return response()->json([
             'data' => CourseCircleResource::collection($query->circles($teacher, $course)),
+        ]);
+    }
+
+    /**
+     * إعلاناتُ المعهد وحلقاتِه الموجَّهة إلى الأساتذة — والترشيحُ في الخادم: حلقةٌ لم تُسنَد إليه لا يصله إعلانُها.
+     */
+    public function announcements(Request $request, AnnouncementQuery $query): JsonResponse
+    {
+        return response()->json([
+            'data' => AnnouncementResource::collection($query->forTeacher($this->teacher($request))),
         ]);
     }
 

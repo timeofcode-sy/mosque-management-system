@@ -106,6 +106,7 @@ Route::prefix('v1')->group(function (): void {
         Route::middleware('role:teacher')->prefix('/teacher')->group(function (): void {
             Route::get('/circles', [TeacherController::class, 'circles']);
             Route::get('/sessions/{date}', [TeacherController::class, 'session']);
+            Route::get('/announcements', [TeacherController::class, 'announcements']);
         });
 
         Route::middleware('role:guardian')->prefix('/guardian')->group(function (): void {
@@ -116,6 +117,7 @@ Route::prefix('v1')->group(function (): void {
             // إذنه وتقدُّمُ حفظِ ابنه — صار له نقطتُه.
             Route::get('/children/{student}/progress', [GuardianController::class, 'childProgress']);
             Route::get('/excuses', [GuardianController::class, 'excuses']);
+            Route::get('/announcements', [GuardianController::class, 'announcements']);
             Route::post('/excuses', [GuardianController::class, 'submitExcuse']);
         });
 

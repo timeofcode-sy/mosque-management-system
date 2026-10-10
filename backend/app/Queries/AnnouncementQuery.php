@@ -3,10 +3,14 @@
 namespace App\Queries;
 
 use App\Models\Announcement;
+use App\Models\Enrollment;
+use App\Models\Guardian;
 use App\Models\Institute;
 use App\Models\Student;
+use App\Models\Teacher;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 
 /**
  * الإعلاناتُ المنشورة — ✅ م.8.1.
@@ -23,7 +27,7 @@ use Illuminate\Support\Collection;
 class AnnouncementQuery
 {
     /**
-     * ما يقرؤه هذا الطالب: إعلانُ معهده وإعلانُ حلقته.
+     * ما يقرؤه هذا الطالب: إعلانُ معهده وإعلانُ حلقته الموجَّهان إلى «الطلاب».
      *
      * 🔑 **والترشيحُ في الخادم لا في العميل**: إعلانٌ وُجِّه إلى حلقةٍ ليست له لا
      * يصل جهازَه أصلاً، فلا يعرف بوجوده. وهو نفسُ مبدأ هذه المرحلة كلِّها — ما
@@ -35,11 +39,58 @@ class AnnouncementQuery
     {
         $circleIds = $student->enrollments()
             ->whereNull('left_on')
-            ->pluck('course_circle_id')
-            ->filter()
-            ->values();
+            ->pluck('course_circle_id');
 
-        return $this->published($student->institute)
+        return $this->forAudience($student->institute, 'students', $circleIds, $limit);
+    }
+
+    /**
+     * ما يقرؤه وليُّ الأمر: إعلاناتُ المعهد الموجَّهة إلى «أولياء الأمور»، وإعلاناتُ **حلقات أبنائه** (من تسجيلاتهم
+     * القائمة) الموجَّهة إليهم. وليٌّ بلا ابنٍ مسجَّل في حلقة لا يرى إلا الشاملَ للمعهد.
+     *
+     * @return Collection<int, Announcement>
+     */
+    public function forGuardian(Guardian $guardian, int $limit = 30): Collection
+    {
+        $circleIds = Enrollment::query()
+            ->whereNull('left_on')
+            ->whereIn('student_id', $guardian->students()->pluck('students.id'))
+            ->pluck('course_circle_id');
+
+        return $this->forAudience($guardian->institute, 'guardians', $circleIds, $limit);
+    }
+
+    /**
+     * ما يقرؤه الأستاذ: الإعلاناتُ الموجَّهة إلى «الأساتذة» للمعهد كلِّه أو لحلقاتٍ **أُسندت إليه**.
+     *
+     * @return Collection<int, Announcement>
+     */
+    public function forTeacher(Teacher $teacher, int $limit = 30): Collection
+    {
+        $circleIds = $teacher->courseCircles()->pluck('course_circles.id');
+
+        return $this->forAudience($teacher->institute, 'teachers', $circleIds, $limit);
+    }
+
+    /**
+     * الإعلاناتُ المنشورة لفئةٍ في معهد: ما كان `scope = all`، وما وُجِّه إلى إحدى [$circleIds].
+     *
+     * @param  SupportCollection<int, int|string|null>  $circleIds
+     * @return Collection<int, Announcement>
+     */
+    private function forAudience(?Institute $institute, string $audience, SupportCollection $circleIds, int $limit): Collection
+    {
+        $circleIds = $circleIds->filter()->map(fn ($id) => (int) $id)->unique()->values();
+
+        return $this->published($institute)
+            // الفئة: العمودُ json؛ والإعلاناتُ القديمة بلا فئةٍ (null) كانت للطلاب فقط.
+            ->where(function ($query) use ($audience) {
+                $query->whereJsonContains('audience', $audience);
+
+                if ($audience === 'students') {
+                    $query->orWhereNull('audience');
+                }
+            })
             ->where(function ($query) use ($circleIds) {
                 $query->where('scope', 'all');
 

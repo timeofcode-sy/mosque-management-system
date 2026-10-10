@@ -17,11 +17,19 @@ use App\Models\User;
 class PublishAnnouncement
 {
     /**
-     * @param  array{title: string, body: string, scope: string, scope_ids?: array<int, int>|null, published_at?: string|null}  $attributes
+     * @param  array{title: string, body: string, scope: string, scope_ids?: array<int|string>|null, audience?: array<int, string>|null, published_at?: string|null}  $attributes
      */
     public function handle(Institute $institute, array $attributes, ?User $author = null, ?Announcement $existing = null): Announcement
     {
         $scope = $attributes['scope'] === 'circle' ? 'circle' : 'all';
+
+        // 🔴 معرّفاتُ الحلقات أرقامٌ صحيحة دائماً: مربّعاتُ المتصفّح ترسلها نصوصاً ("3")، فإن خُزّنت كذلك لم
+        // يطابقها البحثُ بالرقم (whereJsonContains) ولم يصل إعلانُ الحلقة أحداً.
+        $circleIds = array_values(array_unique(array_map('intval', $attributes['scope_ids'] ?? [])));
+
+        // الفئاتُ المستهدفة: ما يُعرف منها فقط، وفئةٌ واحدة على الأقل (الافتراضيُّ الطلاب كما كان قبل الفئات).
+        $audience = array_values(array_intersect(Announcement::AUDIENCES, $attributes['audience'] ?? []));
+        $audience = $audience === [] ? ['students'] : $audience;
 
         $payload = [
             'institute_id' => $institute->id,
@@ -31,7 +39,8 @@ class PublishAnnouncement
             // 🔑 نطاقٌ عامّ ⇒ **المعرّفاتُ تُمحى لا تُترك**: إعلانٌ حُوِّل من
             // «حلقة» إلى «الكلّ» وبقيت معرّفاتُه يبدو عامّاً ويحمل قائمةً تناقضه،
             // فيقرؤها من يبني عليها لاحقاً.
-            'scope_ids' => $scope === 'circle' ? array_values($attributes['scope_ids'] ?? []) : null,
+            'scope_ids' => $scope === 'circle' ? $circleIds : null,
+            'audience' => $audience,
             'published_at' => $attributes['published_at'] ?? null,
         ];
 
