@@ -66,7 +66,8 @@ class _StudentsScreenState extends State<StudentsScreen> {
 
           if (all.isEmpty) {
             return EmptyState(
-              message: 'لا طلاب في هذا المعهد بعد.\n'
+              message:
+                  'لا طلاب في هذا المعهد بعد.\n'
                   'سجّل أوّلَ طالب، أو زامِن الجهازَ إن كان المعهد قائماً.',
               icon: NzIcons.certificate,
               onRetry: deps.sync.syncNow,
@@ -93,6 +94,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                         icon: NzIcons.search,
                       )
                     : _StudentTable(
+                        resetKey: '$_query|$_status',
                         students: students,
                         canManage: canManage,
                         canTransfer: deps.session.can('transfers.manage'),
@@ -233,8 +235,10 @@ class _StudentTable extends StatelessWidget {
     required this.onOpen,
     required this.onEdit,
     required this.onTransfer,
+    this.resetKey,
   });
 
+  final Object? resetKey;
   final List<StudentListEntry> students;
   final bool canManage;
   final bool canTransfer;
@@ -246,73 +250,57 @@ class _StudentTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: students.length + 1,
-      separatorBuilder: (_, _) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: DefaultTextStyle(
-              style: theme.textTheme.labelMedium ?? const TextStyle(),
-              child: const _Row(
-                registration: Text('رقم البطاقة'),
-                name: Text('الاسم'),
-                circle: Text('الحلقة'),
-                phone: Text('الجوّال'),
-                actions: SizedBox.shrink(),
+    // قائمةٌ مرقَّمة بنمط الجدول (PagedList): بطاقةٌ بحدّ وهوامش 20/12 ورأسٌ على sunken وترقيمٌ تحتها.
+    // مفتاحُ الإعادة هو البحث والحالة فيعود المشرفُ إلى الصفحة الأولى بتغيّر المرشّح.
+    return PagedList<StudentListEntry>(
+      items: students,
+      resetKey: resetKey,
+      onTap: onOpen,
+      header: const _Row(
+        registration: Text('رقم البطاقة'),
+        name: Text('الاسم'),
+        circle: Text('الحلقة'),
+        phone: Text('الجوّال'),
+        actions: SizedBox.shrink(),
+      ),
+      itemBuilder: (context, student) => _Row(
+        registration: Text(student.registrationNo ?? '—'),
+        name: Row(
+          spacing: 8,
+          children: [
+            Flexible(child: Text(student.fullName)),
+            // وسمُ «لم تصل بعد» — وإلا ظنّ المشرف أن حفظَه ضاع فأعاده.
+            if (student.pending)
+              Tooltip(
+                message: 'كتابةٌ لم تصل الخادمَ بعد',
+                child: NzIcon(
+                  NzIcons.upload,
+                  size: 16,
+                  color: theme.colorScheme.primary,
+                ),
               ),
-            ),
-          );
-        }
-
-        final student = students[index - 1];
-
-        return InkWell(
-          onTap: () => onOpen(student),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: _Row(
-              registration: Text(student.registrationNo ?? '—'),
-              name: Row(
-                spacing: 8,
-                children: [
-                  Flexible(child: Text(student.fullName)),
-                  // وسمُ «لم تصل بعد» — وإلا ظنّ المشرف أن حفظَه ضاع فأعاده.
-                  if (student.pending)
-                    Tooltip(
-                      message: 'كتابةٌ لم تصل الخادمَ بعد',
-                      child: NzIcon(NzIcons.upload,
-                        size: 16,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                ],
+          ],
+        ),
+        circle: Text(student.circleName ?? 'بلا حلقة'),
+        phone: Text(student.phone ?? '—'),
+        actions: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            if (canManage)
+              IconButton(
+                tooltip: 'تحرير الاستمارة',
+                icon: const NzIcon(NzIcons.edit, size: 18),
+                onPressed: () => onEdit(student),
               ),
-              circle: Text(student.circleName ?? 'بلا حلقة'),
-              phone: Text(student.phone ?? '—'),
-              actions: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (canManage)
-                    IconButton(
-                      tooltip: 'تحرير الاستمارة',
-                      icon: const NzIcon(NzIcons.edit, size: 18),
-                      onPressed: () => onEdit(student),
-                    ),
-                  if (canTransfer)
-                    IconButton(
-                      tooltip: 'نقل إلى حلقة أخرى',
-                      icon: const NzIcon(NzIcons.review, size: 18),
-                      onPressed: () => onTransfer(student),
-                    ),
-                ],
+            if (canTransfer)
+              IconButton(
+                tooltip: 'نقل إلى حلقة أخرى',
+                icon: const NzIcon(NzIcons.review, size: 18),
+                onPressed: () => onTransfer(student),
               ),
-            ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }

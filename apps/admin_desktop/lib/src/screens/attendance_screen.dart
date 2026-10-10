@@ -241,9 +241,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             child: const Text('احسبها تلقائياً'),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(
-              context,
-            ).pop(int.tryParse(controller.text.trim()) ?? -1),
+            onPressed: () =>
+                Navigator.of(context)
+                    .pop(int.tryParse(controller.text.trim()) ?? -1),
             child: const Text('حفظ'),
           ),
         ],
@@ -389,14 +389,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
       messenger.showSnackBar(
         SnackBar(
-          content: Text(
-            switch ((andLock, andComplete, session.isAmendment)) {
-              (true, _, _) => 'قُفلت الجلسة نهائياً وصُفَّ القفل للمزامنة.',
-              (_, true, _) => 'أُكملت الجلسة وصُفَّت للمزامنة.',
-              (_, _, true) => 'صُفَّ التصحيح للمزامنة — تعديلٌ بعد الإقفال.',
-              _ => 'حُفظ التفقّد محلياً وصُفَّ للمزامنة.',
-            },
-          ),
+          content: Text(switch ((andLock, andComplete, session.isAmendment)) {
+            (true, _, _) => 'قُفلت الجلسة نهائياً وصُفَّ القفل للمزامنة.',
+            (_, true, _) => 'أُكملت الجلسة وصُفَّت للمزامنة.',
+            (_, _, true) => 'صُفَّ التصحيح للمزامنة — تعديلٌ بعد الإقفال.',
+            _ => 'حُفظ التفقّد محلياً وصُفَّ للمزامنة.',
+          }),
         ),
       );
     } finally {
@@ -443,7 +441,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       body: session.completed
           ? 'بعد القفل لا يعدّلها أحد ولا يعيد فتحها أحد — ولا صلاحيةَ تنقضه.'
           : 'ستُكمَل الجلسةُ ثم تُقفَل في دفعةٍ واحدة.\n'
-              'وبعد القفل لا يعدّلها أحد ولا يعيد فتحها أحد.',
+                'وبعد القفل لا يعدّلها أحد ولا يعيد فتحها أحد.',
       action: 'قفل نهائي',
     );
 
@@ -668,7 +666,8 @@ class _Header extends StatelessWidget {
                 icon: NzIcons.note,
                 // بانرٌ لا مجرّد سماحٍ صامت: من يعدّل جلسةً أُكملت يجب أن يعرف
                 // أنه يصحّح رجعياً لا يتفقّد اليوم.
-                message: 'تصحيحٌ رجعي: هذه الجلسة أُكملت، وما تحفظه الآن يُرسَل '
+                message:
+                    'تصحيحٌ رجعي: هذه الجلسة أُكملت، وما تحفظه الآن يُرسَل '
                     'بعلامة «تعديلٍ بعد الإقفال».',
                 accent: true,
               ),
@@ -779,7 +778,8 @@ class _StudentRow extends StatelessWidget {
                         if (entry.origin == AttendanceOrigin.pending)
                           Tooltip(
                             message: 'كتابةٌ لم تصل الخادم بعد',
-                            child: NzIcon(NzIcons.upload,
+                            child: NzIcon(
+                              NzIcons.upload,
                               size: 16,
                               color: theme.colorScheme.primary,
                             ),
@@ -787,7 +787,8 @@ class _StudentRow extends StatelessWidget {
                         else if (entry.origin == AttendanceOrigin.suggested)
                           Tooltip(
                             message: 'قيمةٌ مقترحة لم يؤكّدها أحد',
-                            child: NzIcon(NzIcons.informationCircle,
+                            child: NzIcon(
+                              NzIcons.informationCircle,
                               size: 16,
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -820,7 +821,8 @@ class _StudentRow extends StatelessWidget {
               ),
             ],
           ),
-          if (entry.note != null || entry.recitations.isNotEmpty ||
+          if (entry.note != null ||
+              entry.recitations.isNotEmpty ||
               entry.points.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(right: 4, bottom: 6),
@@ -836,9 +838,7 @@ class _StudentRow extends StatelessWidget {
                     ),
                   for (final recitation in entry.recitations)
                     InputChip(
-                      avatar: const NzIcon(NzIcons.mushaf,
-                        size: 16,
-                      ),
+                      avatar: const NzIcon(NzIcons.mushaf, size: 16),
                       label: Text(
                         '${recitationTypeLabels[recitation.type]} · '
                         '${recitation.rangeLabel}'
@@ -1019,13 +1019,15 @@ class _TeacherSection extends StatelessWidget {
                               // لا حضورَ بالسكوت: الخادم يزرع صفوف الطلاب عند
                               // فتح الجلسة ولا يزرع للأساتذة شيئاً.
                               message: 'لم يُسجَّل بعد',
-                              child: NzIcon(NzIcons.radioOff,
+                              child: NzIcon(
+                                NzIcons.radioOff,
                                 size: 16,
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
                             )
                           else if (entry.pending)
-                            NzIcon(NzIcons.upload,
+                            NzIcon(
+                              NzIcons.upload,
                               size: 16,
                               color: theme.colorScheme.primary,
                             ),
@@ -1084,18 +1086,18 @@ class _ActionBar extends StatelessWidget {
           if (editable)
             Expanded(
               child: FilledButton.icon(
-                onPressed: saving || !(dirty || !session.exists) ? null : onSave,
+                onPressed: saving || !(dirty || !session.exists)
+                    ? null
+                    : onSave,
                 icon: const NzIcon(NzIcons.save),
                 // «فتح الجلسة» و«حفظ» فعلٌ واحد: الفتحُ يصفّ
                 // `attendance.session.open` وحدها، والحفظُ يُتبعها
                 // `attendance.take` بنفس الطابور وبنفس الترتيب.
-                label: Text(
-                  switch ((session.exists, session.isAmendment)) {
-                    (false, _) => 'فتح الجلسة وحفظ التفقّد',
-                    (_, true) => 'حفظ التصحيح',
-                    _ => 'حفظ التفقّد',
-                  },
-                ),
+                label: Text(switch ((session.exists, session.isAmendment)) {
+                  (false, _) => 'فتح الجلسة وحفظ التفقّد',
+                  (_, true) => 'حفظ التصحيح',
+                  _ => 'حفظ التفقّد',
+                }),
               ),
             )
           else

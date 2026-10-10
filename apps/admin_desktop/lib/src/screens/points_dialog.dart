@@ -15,17 +15,12 @@ Future<void> showPointsDialog({
 }) {
   return showDialog<void>(
     context: context,
-    builder: (_) =>
-        _PointsDialog(session: session, entry: entry, award: award),
+    builder: (_) => _PointsDialog(session: session, entry: entry, award: award),
   );
 }
 
 class _PointsDialog extends StatefulWidget {
-  const _PointsDialog({
-    required this.session,
-    required this.entry,
-    this.award,
-  });
+  const _PointsDialog({required this.session, required this.entry, this.award});
 
   final SessionView session;
   final RosterEntry entry;

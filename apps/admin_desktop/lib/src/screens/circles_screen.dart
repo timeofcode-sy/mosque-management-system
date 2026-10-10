@@ -67,7 +67,8 @@ class _CirclesScreenState extends State<CirclesScreen> {
             return EmptyState(
               // حالتان تنتهيان إلى كشفٍ فارغ، ونصٌّ واحد لا يفرّق بينهما يترك
               // المشرفَ يظنّ الجهازَ معطّلاً: لا دورةَ جارية، أو لم تصل بعد.
-              message: 'لا حلقات في الدورة الجارية.\n'
+              message:
+                  'لا حلقات في الدورة الجارية.\n'
                   'إن كانت الدورة قد بدأت للتوّ فزامِن الجهازَ ليصلك كشفُها.',
               icon: NzIcons.halaqa,
               onRetry: deps.sync.syncNow,
@@ -210,7 +211,10 @@ class _CircleCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 10,
+        ),
         title: Text(circle.circleName, style: theme.textTheme.titleMedium),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
@@ -221,7 +225,9 @@ class _CircleCard extends StatelessWidget {
               '${circle.studentsCount} طالباً',
               // حلقةٌ بلا أستاذ ليست خطأً في البيانات بل عملاً ينتظر المشرف،
               // فتُقال صراحةً بدل أن تُترك فراغاً يُقرأ سهواً.
-              circle.teachers.isEmpty ? 'بلا أستاذ مسنَد' : circle.teachersLabel,
+              circle.teachers.isEmpty
+                  ? 'بلا أستاذ مسنَد'
+                  : circle.teachersLabel,
             ].join(' — '),
           ),
         ),

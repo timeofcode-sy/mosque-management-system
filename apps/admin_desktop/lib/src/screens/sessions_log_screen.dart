@@ -84,12 +84,16 @@ class _SessionsLogScreenState extends State<SessionsLogScreen> {
                         message: 'لا جلسة بهذه الحالة.',
                         icon: NzIcons.funnel,
                       )
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: entries.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 8),
-                        itemBuilder: (context, index) =>
-                            _SessionCard(entry: entries[index]),
+                    : PagedView<SessionLogEntry>(
+                        items: entries,
+                        resetKey: _status,
+                        builder: (context, page) => ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: page.length,
+                          separatorBuilder: (_, _) => const SizedBox(height: 8),
+                          itemBuilder: (context, index) =>
+                              _SessionCard(entry: page[index]),
+                        ),
                       ),
               ),
             ],
@@ -158,7 +162,10 @@ class _Badge extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       spacing: 4,
-      children: [AttendanceStatusBadge(status: status), Text('$count')],
+      children: [
+        AttendanceStatusBadge(status: status),
+        Text('$count'),
+      ],
     );
   }
 }

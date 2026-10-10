@@ -133,9 +133,7 @@ class _BackupScreenState extends State<BackupScreen> {
                         spacing: 8,
                         children: [
                           NzIcon(
-                            pending == 0
-                                ? NzIcons.checkCircle
-                                : NzIcons.upload,
+                            pending == 0 ? NzIcons.checkCircle : NzIcons.upload,
                             color: pending == 0
                                 ? theme.colorScheme.primary
                                 : theme.colorScheme.error,
@@ -166,7 +164,9 @@ class _BackupScreenState extends State<BackupScreen> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const NzIcon(NzIcons.save, size: 18),
                         label: const Text('احفظ نسخةً الآن'),

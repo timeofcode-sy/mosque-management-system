@@ -97,7 +97,9 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.uuid == null ? 'تسجيل طالب جديد' : 'تحرير الاستمارة'),
+        title: Text(
+          widget.uuid == null ? 'تسجيل طالب جديد' : 'تحرير الاستمارة',
+        ),
         actions: [
           Padding(
             padding: const EdgeInsetsDirectional.only(end: 12),
@@ -138,8 +140,9 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                 _date(
                   label: 'تاريخ التسجيل',
                   value: _form.registrationDate,
-                  onChanged: (value) =>
-                      setState(() => _form = _form.copyWith(registrationDate: value)),
+                  onChanged: (value) => setState(
+                    () => _form = _form.copyWith(registrationDate: value),
+                  ),
                 ),
                 _text(
                   'registration_date_hijri',
@@ -200,7 +203,8 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   'birth_place',
                   'مكان الولادة',
                   _form.birthPlace,
-                  onChanged: (value) => _form = _form.copyWith(birthPlace: value),
+                  onChanged: (value) =>
+                      _form = _form.copyWith(birthPlace: value),
                 ),
                 _dropdown(
                   label: 'الجنس',
@@ -214,19 +218,22 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   'national_id',
                   'الرقم الوطني',
                   _form.nationalId,
-                  onChanged: (value) => _form = _form.copyWith(nationalId: value),
+                  onChanged: (value) =>
+                      _form = _form.copyWith(nationalId: value),
                 ),
                 _text(
                   'grade_level',
                   'الصف الدراسي',
                   _form.gradeLevel,
-                  onChanged: (value) => _form = _form.copyWith(gradeLevel: value),
+                  onChanged: (value) =>
+                      _form = _form.copyWith(gradeLevel: value),
                 ),
                 _text(
                   'student_job',
                   'عمل الطالب أو مهنته',
                   _form.studentJob,
-                  onChanged: (value) => _form = _form.copyWith(studentJob: value),
+                  onChanged: (value) =>
+                      _form = _form.copyWith(studentJob: value),
                 ),
                 _text(
                   'phone',
@@ -384,17 +391,15 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                     },
                     selected: _form.memorizedItemUuids,
                     onChanged: (selected) => setState(
-                      () => _form =
-                          _form.copyWith(memorizedItemUuids: selected),
+                      () =>
+                          _form = _form.copyWith(memorizedItemUuids: selected),
                     ),
                   ),
                 ),
             if (_fields.isNotEmpty)
               FormSection(
                 title: 'واصفات المعهد',
-                children: [
-                  for (final field in _fields) _customField(field),
-                ],
+                children: [for (final field in _fields) _customField(field)],
               ),
             FormSection(
               title: 'التسجيل في حلقة',
@@ -404,8 +409,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   value: _form.courseCircleUuid,
                   options: {
                     for (final circle in _circles)
-                      circle.uuid:
-                          '${circle.circleName} — ${circle.shiftName}',
+                      circle.uuid: '${circle.circleName} — ${circle.shiftName}',
                   },
                   allowEmpty: true,
                   emptyLabel: 'بلا تسجيل الآن',
@@ -547,7 +551,8 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
         value: _form.customFields[field.uuid],
         options: {for (final option in field.options) option: option},
         allowEmpty: !field.isRequired,
-        onChanged: (value) => setState(() => _setCustomField(field.uuid, value)),
+        onChanged: (value) =>
+            setState(() => _setCustomField(field.uuid, value)),
       );
     }
 
@@ -569,8 +574,9 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
       field.isRequired ? '${field.label} *' : field.label,
       _form.customFields[field.uuid],
       lines: field.type == 'textarea' ? 3 : 1,
-      keyboardType:
-          field.type == 'number' ? TextInputType.number : TextInputType.text,
+      keyboardType: field.type == 'number'
+          ? TextInputType.number
+          : TextInputType.text,
       onChanged: (value) => _setCustomField(field.uuid, value),
     );
   }
@@ -683,7 +689,11 @@ class _ErrorBanner extends StatelessWidget {
       child: Row(
         spacing: 8,
         children: [
-          NzIcon(NzIcons.exclamationCircle, color: scheme.onErrorContainer, size: 20),
+          NzIcon(
+            NzIcons.exclamationCircle,
+            color: scheme.onErrorContainer,
+            size: 20,
+          ),
           Expanded(
             child: Text(
               message,

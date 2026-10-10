@@ -41,6 +41,7 @@
 - `mousqe_ui` تلفّها: `MousqeTheme.light()` و`MousqeTheme.dark()` (الكثافة تُختار من المنصة)، وتعيد تصدير `nuzul_ui` فتعتمد التطبيقات حزمة واحدة. ودجتس مشتركة: `StatCard` `StatusBadge` `NoticeBanner` `AttendanceStatusBadge` `EmptyState` `LoginForm` `SyncBar` `SnapshotView`.
 - **في الشاشات:** خذ اللون من `context.nz` (مثل `c.ink` و`c.surfaceRaised`)، والنص من `NzType`، والمسافة من `NzSpace`. لا `Colors.x` ولا `Color(0x…)` ولا `BorderRadius.circular(999)`، ولا نص أصغر من 12px.
 - **الأيقونات:** `NzIcon(NzIcons.x)`، لا `Icons.x` من Material.
+- **الترقيم في Flutter:** `PagedList` (قائمة بنمط الجدول: بطاقة بحدّ، رأس على sunken، صفوف بهوامش 20/12، وترقيم تحتها) و`PagedView` (ترقيم لأي جسم قابل للتمرير) و`PaginationBar` في `mousqe_ui`. مستعملة في الطلاب والمستخدمين وبطاقات الدخول وسجل الجلسات والأعذار والتعارضات (المكتب) وسجل جلسات الأستاذ. تُعاد الصفحة إلى الأولى حين يتغيّر `resetKey` (بحث أو مرشّح).
 - **القائمة الجانبية في المكتب:** `desktop_shell.dart`؛ 264px أو شريط 80px، ويُطوى بزر في أسفل القائمة ويُحفظ الخيار في `nuzuln_ui.json` بجانب بيانات التطبيق، وتُطوى قسراً دون 1024px.
 - **تقارير PDF من الجهاز:** `reports/report_documents.dart` تستعمل الشعار المضمَّن (`report_brand.dart`) وReem Kufi للعنوان.
 

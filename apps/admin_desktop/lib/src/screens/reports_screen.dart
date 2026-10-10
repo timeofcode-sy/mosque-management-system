@@ -225,7 +225,8 @@ class _Preview extends StatelessWidget {
       canDebug: false,
       canChangeOrientation: false,
       canChangePageFormat: false,
-      pdfFileName: '${kind == 'daily' ? 'daily' : 'points'}-$courseCircleId.pdf',
+      pdfFileName:
+          '${kind == 'daily' ? 'daily' : 'points'}-$courseCircleId.pdf',
       build: (format) async {
         final fonts = await ReportFonts.load();
         final snapshot = deps.session.snapshot;
@@ -253,7 +254,8 @@ class _Preview extends StatelessWidget {
           // 🔑 قيمُ المعهد من اللقطة لا افتراضياتُ الحزمة — `institutes.settings`
           // جدولٌ لا يُزامَن، فلولا حملُها في `/bootstrap` لَخالف الرقمُ المطبوع
           // رقمَ اللوحة بلا أن يشكوَ أحد.
-          points: deps.session.snapshot?.institute.points ?? const PointsSettings(),
+          points:
+              deps.session.snapshot?.institute.points ?? const PointsSettings(),
         );
 
         final document = await ReportDocuments.points(

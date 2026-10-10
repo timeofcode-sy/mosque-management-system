@@ -45,12 +45,17 @@ class SessionsLogScreen extends StatelessWidget {
                         );
                       }
 
-                      return ListView.separated(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: entries.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 8),
-                        itemBuilder: (context, index) =>
-                            _SessionCard(entry: entries[index]),
+                      return PagedView<SessionLogEntry>(
+                        items: entries,
+                        pageSize: 20,
+                        builder: (context, page) => ListView.separated(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: page.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 8),
+                          itemBuilder: (context, index) =>
+                              _SessionCard(entry: page[index]),
+                        ),
                       );
                     },
                   ),

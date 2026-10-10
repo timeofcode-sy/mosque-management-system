@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
+
 import '../di/app_scope.dart';
 import '../widgets/color_field.dart';
 import '../widgets/connected_action.dart';
@@ -180,29 +181,25 @@ class _InstituteSettingsScreenState extends State<InstituteSettingsScreen> {
 
     final deps = AppScope.of(context);
 
-    await runConnected(
-      context,
-      () async {
-        await deps.admin.updateInstitute({
-          'name': _name.text.trim(),
-          'short_name': _text(_shortName),
-          'phone': _text(_phone),
-          'email': _text(_email),
-          'address': _text(_address),
-          'theme': {
-            'primary': _primary,
-            'secondary': _secondary,
-            'surface': _surface,
-          },
-          'attendance': {'late_grace_minutes': _grace},
-        });
+    await runConnected(context, () async {
+      await deps.admin.updateInstitute({
+        'name': _name.text.trim(),
+        'short_name': _text(_shortName),
+        'phone': _text(_phone),
+        'email': _text(_email),
+        'address': _text(_address),
+        'theme': {
+          'primary': _primary,
+          'secondary': _secondary,
+          'surface': _surface,
+        },
+        'attendance': {'late_grace_minutes': _grace},
+      });
 
-        // اللقطةُ تُعاد قراءتُها فيتبدّل ثيمُ النافذة في مكانه — وإلا بقي
-        // المستخدمُ يرى ألوانَه القديمة حتى يخرج ويعود.
-        await deps.session.refreshSnapshot();
-      },
-      success: 'حُفظت بيانات المعهد.',
-    );
+      // اللقطةُ تُعاد قراءتُها فيتبدّل ثيمُ النافذة في مكانه — وإلا بقي
+      // المستخدمُ يرى ألوانَه القديمة حتى يخرج ويعود.
+      await deps.session.refreshSnapshot();
+    }, success: 'حُفظت بيانات المعهد.');
 
     if (mounted) {
       setState(() => _saving = false);

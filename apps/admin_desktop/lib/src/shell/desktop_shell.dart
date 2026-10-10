@@ -205,40 +205,44 @@ class _Sidebar extends StatelessWidget {
           else
             const InstituteMenu(),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: NzSpace.s3,
-                vertical: NzSpace.s2,
-              ),
-              children: [
-                for (final entry in groups.entries) ...[
-                  if (!rail)
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                        NzSpace.s3,
-                        NzSpace.s4,
-                        NzSpace.s3,
-                        NzSpace.s1,
-                      ),
-                      child: Text(
-                        entry.key.label,
-                        style: NzType.caption.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: c.inkMuted,
+            // شريطُ تمرير القائمة عند أقصى اليمين (حافّة النافذة) لا بينها وبين المحتوى.
+            child: Scrollbar(
+              scrollbarOrientation: ScrollbarOrientation.right,
+              child: ListView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: NzSpace.s3,
+                  vertical: NzSpace.s2,
+                ),
+                children: [
+                  for (final entry in groups.entries) ...[
+                    if (!rail)
+                      Padding(
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                          NzSpace.s3,
+                          NzSpace.s4,
+                          NzSpace.s3,
+                          NzSpace.s1,
                         ),
+                        child: Text(
+                          entry.key.label,
+                          style: NzType.caption.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: c.inkMuted,
+                          ),
+                        ),
+                      )
+                    else
+                      const SizedBox(height: NzSpace.s3),
+                    for (final section in entry.value)
+                      _SidebarTile(
+                        section: section,
+                        selected: section.id == selectedId,
+                        rail: rail,
+                        onTap: () => onSelect(section.id),
                       ),
-                    )
-                  else
-                    const SizedBox(height: NzSpace.s3),
-                  for (final section in entry.value)
-                    _SidebarTile(
-                      section: section,
-                      selected: section.id == selectedId,
-                      rail: rail,
-                      onTap: () => onSelect(section.id),
-                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
           if (onToggle != null) _CollapseTile(rail: rail, onTap: onToggle!),

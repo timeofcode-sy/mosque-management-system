@@ -37,7 +37,8 @@ class PlaceholderScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              NzIcon(NzIcons.settings,
+              NzIcon(
+                NzIcons.settings,
                 size: 44,
                 color: theme.colorScheme.onSurfaceVariant,
               ),

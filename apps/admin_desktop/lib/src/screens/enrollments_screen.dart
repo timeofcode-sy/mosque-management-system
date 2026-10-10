@@ -39,7 +39,8 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
 
           if (circles.isEmpty) {
             return EmptyState(
-              message: 'لا حلقات في الدورة الجارية.\n'
+              message:
+                  'لا حلقات في الدورة الجارية.\n'
                   'هيّئ الدورةَ ودواماتِها وحلقاتِها أوّلاً من باب «الدورات والدوامات».',
               icon: NzIcons.halaqa,
               onRetry: deps.sync.syncNow,
@@ -57,8 +58,9 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
                   .where((student) => student.status == 'active')
                   .toList();
 
-              final unassigned =
-                  students.where((s) => s.circleName == null).toList();
+              final unassigned = students
+                  .where((s) => s.circleName == null)
+                  .toList();
 
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -81,8 +83,9 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
                             canEnroll: canEnroll,
                           )
                         : _Roster(
-                            circle: circles
-                                .firstWhere((c) => c.uuid == _circle),
+                            circle: circles.firstWhere(
+                              (c) => c.uuid == _circle,
+                            ),
                             students: students,
                             canTransfer: canTransfer,
                           ),
@@ -144,11 +147,13 @@ class _CircleList extends StatelessWidget {
             ),
             // الحلقةُ الممتلئة تُقال قبل الضغط لا بعده: الطاقةُ الاستيعابية
             // يحرسها `EnrollStudent` على الخادم، وردُّه يصل بعد دورة مزامنة.
-            trailing: circle.capacity != null &&
+            trailing:
+                circle.capacity != null &&
                     circle.studentsCount >= circle.capacity!
                 ? Tooltip(
                     message: 'بلغت طاقتها الاستيعابية',
-                    child: NzIcon(NzIcons.xCircle,
+                    child: NzIcon(
+                      NzIcons.xCircle,
                       size: 18,
                       color: Theme.of(context).colorScheme.error,
                     ),
@@ -223,10 +228,8 @@ class _Unassigned extends StatelessWidget {
 
     final messenger = ScaffoldMessenger.of(context);
 
-    await AppScope.of(context).students.enrollStudent(
-          studentUuid: student.uuid,
-          courseCircleUuid: target,
-        );
+    await AppScope.of(context).students
+        .enrollStudent(studentUuid: student.uuid, courseCircleUuid: target);
 
     messenger.showSnackBar(
       const SnackBar(content: Text('صُفَّ التسجيلُ للمزامنة.')),

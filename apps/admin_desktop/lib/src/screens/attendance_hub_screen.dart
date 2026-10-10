@@ -37,9 +37,8 @@ class _AttendanceHubScreenState extends State<AttendanceHubScreen> {
           IconButton(
             tooltip: 'اليوم السابق',
             icon: const NzIcon(NzIcons.back),
-            onPressed: () => setState(
-              () => _date = _date.subtract(const Duration(days: 1)),
-            ),
+            onPressed: () =>
+                setState(() => _date = _date.subtract(const Duration(days: 1))),
           ),
           TextButton.icon(
             onPressed: _pickDate,
@@ -52,7 +51,8 @@ class _AttendanceHubScreenState extends State<AttendanceHubScreen> {
             // اختلف البابان إلى نفس التاريخ.
             icon: const NzIcon(NzIcons.chevronLeft),
             onPressed: _date.isBefore(_today())
-                ? () => setState(() => _date = _date.add(const Duration(days: 1)))
+                ? () =>
+                      setState(() => _date = _date.add(const Duration(days: 1)))
                 : null,
           ),
           const SizedBox(width: 8),
@@ -69,7 +69,8 @@ class _AttendanceHubScreenState extends State<AttendanceHubScreen> {
 
           if (circles.isEmpty) {
             return EmptyState(
-              message: 'لا حلقات في الدورة الجارية.\n'
+              message:
+                  'لا حلقات في الدورة الجارية.\n'
                   'إن كانت الدورة قد بدأت للتوّ فزامِن الجهازَ ليصلك كشفُها.',
               icon: NzIcons.attendance,
               onRetry: deps.sync.syncNow,
@@ -97,10 +98,8 @@ class _AttendanceHubScreenState extends State<AttendanceHubScreen> {
                   status: byStatus[sorted[index].id],
                   onOpen: () => Navigator.of(context).push(
                     MaterialPageRoute<void>(
-                      builder: (_) => AttendanceScreen(
-                        circle: sorted[index],
-                        date: _date,
-                      ),
+                      builder: (_) =>
+                          AttendanceScreen(circle: sorted[index], date: _date),
                     ),
                   ),
                 ),
@@ -165,9 +164,10 @@ class _CircleTile extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           spacing: 12,
           children: [
-            Text(_label, style: theme.textTheme.labelLarge?.copyWith(
-              color: _color(theme),
-            )),
+            Text(
+              _label,
+              style: theme.textTheme.labelLarge?.copyWith(color: _color(theme)),
+            ),
             const NzIcon(NzIcons.chevronLeft),
           ],
         ),

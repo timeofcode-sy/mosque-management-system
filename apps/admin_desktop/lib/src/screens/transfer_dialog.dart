@@ -124,10 +124,10 @@ class _TransferDialogState extends State<_TransferDialog> {
     final navigator = Navigator.of(context);
 
     await AppScope.of(context).students.transferStudent(
-          studentUuid: widget.student.uuid,
-          toCourseCircleUuid: _target!,
-          reason: _reason.text,
-        );
+      studentUuid: widget.student.uuid,
+      toCourseCircleUuid: _target!,
+      reason: _reason.text,
+    );
 
     messenger.showSnackBar(
       const SnackBar(content: Text('صُفَّ النقلُ للمزامنة.')),

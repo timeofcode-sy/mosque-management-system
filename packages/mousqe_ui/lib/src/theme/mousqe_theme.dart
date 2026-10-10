@@ -160,9 +160,21 @@ class MousqeTheme {
         selectionColor: c.bronzeSoft,
         selectionHandleColor: c.focus,
       ),
+      // أشرطةُ التمرير بألوان الهوية: رفيعةٌ بمقبضٍ line (يزداد وضوحاً عند المرور) ومجرىً شفّاف.
+      // في الواجهة العربية يقع شريطُ المحتوى الرئيسي عند أقصى اليسار (اتجاهُ العنصر)، وشريطُ القائمة الجانبية
+      // يُجعل يميناً بـ `ScrollbarOrientation.right` عند بنائها.
       scrollbarTheme: ScrollbarThemeData(
-        thumbColor: WidgetStatePropertyAll(c.line),
-        radius: Radius.zero,
+        thickness: const WidgetStatePropertyAll(8),
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.hovered) ||
+                  states.contains(WidgetState.dragged)
+              ? c.inkMuted
+              : c.line,
+        ),
+        trackColor: const WidgetStatePropertyAll(Colors.transparent),
+        trackBorderColor: const WidgetStatePropertyAll(Colors.transparent),
+        radius: const Radius.circular(NzRadius.sm),
+        crossAxisMargin: 2,
       ),
     );
   }

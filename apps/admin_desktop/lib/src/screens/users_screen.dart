@@ -47,7 +47,9 @@ class _UsersScreenState extends State<UsersScreen> {
     setState(() {
       _future = () async {
         final roles = await deps.admin.loadRoles();
-        final users = await deps.admin.loadUsers(search: _query.isEmpty ? null : _query);
+        final users = await deps.admin.loadUsers(
+          search: _query.isEmpty ? null : _query,
+        );
 
         return (users, roles);
       }();
@@ -128,15 +130,12 @@ class _UsersScreenState extends State<UsersScreen> {
                   );
                 }
 
-                return ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: users.length,
-                  separatorBuilder: (_, _) => const Divider(height: 1),
-                  itemBuilder: (context, index) => _UserRow(
-                    user: users[index],
-                    roles: roles,
-                    onChanged: _reload,
-                  ),
+                return PagedList<AdminUser>(
+                  items: users,
+                  resetKey: _query,
+                  rowPadding: const EdgeInsets.symmetric(horizontal: 4),
+                  itemBuilder: (context, user) =>
+                      _UserRow(user: user, roles: roles, onChanged: _reload),
                 );
               },
             ),
@@ -227,17 +226,13 @@ class _UsersScreenState extends State<UsersScreen> {
 
     IssuedCredentials? credentials;
 
-    final ok = await runConnected(
-      context,
-      () async {
-        credentials = await deps.admin.inviteUser(
-          firstName: first.text.trim(),
-          lastName: last.text.trim(),
-          role: role!,
-        );
-      },
-      success: 'أُنشئ الحساب.',
-    );
+    final ok = await runConnected(context, () async {
+      credentials = await deps.admin.inviteUser(
+        firstName: first.text.trim(),
+        lastName: last.text.trim(),
+        role: role!,
+      );
+    }, success: 'أُنشئ الحساب.');
 
     if (!ok || !mounted) {
       return;
@@ -290,7 +285,11 @@ class _UserRow extends StatelessWidget {
             'بلا دور'
           else
             user.roles
-                .map((r) => r.institute == null ? r.label : '${r.label} (${r.institute})')
+                .map(
+                  (r) => r.institute == null
+                      ? r.label
+                      : '${r.label} (${r.institute})',
+                )
                 .join(' · '),
         ].join(' — '),
       ),
@@ -337,7 +336,9 @@ class _UserRow extends StatelessWidget {
                   ? null
                   : () => Navigator.of(dialogContext).pop(role.name),
               child: Text(
-                held.contains(role.name) ? '${role.label} (مُسنَد)' : role.label,
+                held.contains(role.name)
+                    ? '${role.label} (مُسنَد)'
+                    : role.label,
               ),
             ),
         ],
@@ -350,9 +351,8 @@ class _UserRow extends StatelessWidget {
 
     final ok = await runConnected(
       context,
-      () => AppScope.of(context)
-          .admin
-          .assignRole(userId: user.id, role: picked),
+      () =>
+          AppScope.of(context).admin.assignRole(userId: user.id, role: picked),
       success: 'أُسند الدور.',
     );
 
@@ -388,14 +388,9 @@ class _UserRow extends StatelessWidget {
 
     IssuedCredentials? credentials;
 
-    final ok = await runConnected(
-      context,
-      () async {
-        credentials =
-            await AppScope.of(context).admin.resetPassword(user.id);
-      },
-      success: 'وُلّدت كلمةُ مرورٍ جديدة.',
-    );
+    final ok = await runConnected(context, () async {
+      credentials = await AppScope.of(context).admin.resetPassword(user.id);
+    }, success: 'وُلّدت كلمةُ مرورٍ جديدة.');
 
     if (!ok || !context.mounted) {
       return;
@@ -419,7 +414,7 @@ class _UserRow extends StatelessWidget {
           closing
               // وهو أثرٌ لا يعرفه من لم يقرأ البروتوكول، فيُقال هنا.
               ? 'لن يدخل ${user.name} بعدها، و**يُمسح مخزنُ جهازه** عند أوّل '
-                  'محاولةٍ يرفضها الخادم — فما لم يُزامَن من كتاباته يضيع.'
+                    'محاولةٍ يرفضها الخادم — فما لم يُزامَن من كتاباته يضيع.'
               : 'يعود ${user.name} إلى الدخول بكلمته الحالية.',
         ),
         actions: [
@@ -441,9 +436,9 @@ class _UserRow extends StatelessWidget {
 
     final ok = await runConnected(
       context,
-      () => AppScope.of(context)
-          .admin
-          .setActivation(userId: user.id, active: !closing),
+      () =>
+          AppScope.of(context).admin
+              .setActivation(userId: user.id, active: !closing),
       success: closing ? 'أُقفل الحساب.' : 'فُتح الحساب.',
     );
 
@@ -466,7 +461,7 @@ class _NetworkError extends StatelessWidget {
     return EmptyState(
       message: isOffline(error)
           ? 'هذا البابُ يحتاج اتصالاً: الحساباتُ لا تُزامَن ولا تُخزَّن على الجهاز.\n'
-              'أعِد المحاولة حين تعود الشبكة.'
+                'أعِد المحاولة حين تعود الشبكة.'
           : messageFor(error),
       icon: isOffline(error) ? NzIcons.offline : NzIcons.exclamationCircle,
       onRetry: onRetry,

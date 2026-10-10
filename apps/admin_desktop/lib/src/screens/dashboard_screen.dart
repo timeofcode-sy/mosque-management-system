@@ -202,7 +202,7 @@ class _TrendBar extends StatelessWidget {
       message: rate == null
           ? '${point.date.day}/${point.date.month} — لا جلسة'
           : '${point.date.day}/${point.date.month} — ${_percent(rate)}'
-              ' في ${point.sessions} جلسة',
+                ' في ${point.sessions} جلسة',
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 2),
         child: Column(
@@ -293,7 +293,10 @@ class _StandingsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: 8,
           children: [
-            Text('ترتيبُ الحلقات في دوامها', style: theme.textTheme.titleMedium),
+            Text(
+              'ترتيبُ الحلقات في دوامها',
+              style: theme.textTheme.titleMedium,
+            ),
             Text(
               'الترتيبُ داخلَ كل دوامٍ على حدة — حلقةُ الفجر لا تُقاس بحلقة العصر.',
               style: theme.textTheme.bodySmall,

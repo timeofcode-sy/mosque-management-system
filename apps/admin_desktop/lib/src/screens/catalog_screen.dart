@@ -44,9 +44,7 @@ class CatalogScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('الدورات والدوامات والحلقات'),
-          bottom: TabBar(
-            tabs: [for (final tab in tabs) Tab(text: tab.$1)],
-          ),
+          bottom: TabBar(tabs: [for (final tab in tabs) Tab(text: tab.$1)]),
         ),
         body: TabBarView(children: [for (final tab in tabs) tab.$2]),
       ),
@@ -65,7 +63,8 @@ class _CoursesTab extends StatelessWidget {
 
     return _TabBody<CourseView>(
       stream: deps.catalog.watchCourses(),
-      emptyMessage: 'لا دورات في هذا المعهد بعد.\nأنشئ الدورة الأولى لتبدأ الحلقات.',
+      emptyMessage:
+          'لا دورات في هذا المعهد بعد.\nأنشئ الدورة الأولى لتبدأ الحلقات.',
       emptyIcon: NzIcons.calendar,
       onCreate: () => _edit(context),
       createLabel: 'دورة جديدة',
@@ -217,12 +216,12 @@ class _CoursesTab extends StatelessWidget {
     await runConnected(
       context,
       () => AppScope.of(context).catalog.saveCourse(
-            uuid: course?.uuid,
-            name: name.text.trim(),
-            startsOn: startsOn,
-            endsOn: endsOn,
-            status: status,
-          ),
+        uuid: course?.uuid,
+        name: name.text.trim(),
+        startsOn: startsOn,
+        endsOn: endsOn,
+        status: status,
+      ),
       success: 'حُفظت الدورة.',
     );
   }
@@ -239,7 +238,8 @@ class _ShiftsTab extends StatelessWidget {
 
     return _TabBody<ShiftView>(
       stream: deps.catalog.watchShifts(),
-      emptyMessage: 'لا دوامات في الدورة الجارية.\n'
+      emptyMessage:
+          'لا دوامات في الدورة الجارية.\n'
           'الدوامُ هو ما يحدّد أيامَ الحلقة وساعتَها، ولا جلسةَ بلا دوام.',
       emptyIcon: NzIcons.clock,
       onCreate: () => _edit(context),
@@ -314,7 +314,8 @@ class _ShiftsTab extends StatelessWidget {
                         label: Text(ShiftView.weekdayName(day)),
                         selected: weekdays.contains(day),
                         onSelected: (value) => setDialogState(
-                          () => value ? weekdays.add(day) : weekdays.remove(day),
+                          () =>
+                              value ? weekdays.add(day) : weekdays.remove(day),
                         ),
                       ),
                   ],
@@ -347,13 +348,13 @@ class _ShiftsTab extends StatelessWidget {
     await runConnected(
       context,
       () => AppScope.of(context).catalog.saveShift(
-            uuid: shift?.uuid,
-            courseUuid: shift?.courseUuid,
-            name: name.text.trim(),
-            startsAt: startsAt,
-            endsAt: endsAt,
-            weekdays: weekdays.toList()..sort(),
-          ),
+        uuid: shift?.uuid,
+        courseUuid: shift?.courseUuid,
+        name: name.text.trim(),
+        startsAt: startsAt,
+        endsAt: endsAt,
+        weekdays: weekdays.toList()..sort(),
+      ),
       success: 'حُفظ الدوام.',
     );
   }
@@ -455,10 +456,10 @@ class _CirclesTab extends StatelessWidget {
     await runConnected(
       context,
       () => AppScope.of(context).catalog.saveCircle(
-            uuid: circle?.uuid,
-            name: name.text.trim(),
-            level: level.text.trim().isEmpty ? null : level.text.trim(),
-          ),
+        uuid: circle?.uuid,
+        name: name.text.trim(),
+        level: level.text.trim().isEmpty ? null : level.text.trim(),
+      ),
       success: 'حُفظت الحلقة.',
     );
   }
@@ -510,8 +511,7 @@ class _CirclesTab extends StatelessWidget {
                         child: Text('${shift.name} — ${shift.timeLabel}'),
                       ),
                   ],
-                  onChanged: (value) =>
-                      setDialogState(() => shiftUuid = value),
+                  onChanged: (value) => setDialogState(() => shiftUuid = value),
                 ),
                 TextField(
                   controller: room,
@@ -683,7 +683,10 @@ class _TimeField extends StatelessWidget {
 
     return InkWell(
       onTap: () async {
-        final picked = await showTimePicker(context: context, initialTime: time);
+        final picked = await showTimePicker(
+          context: context,
+          initialTime: time,
+        );
 
         if (picked != null) {
           onChanged(

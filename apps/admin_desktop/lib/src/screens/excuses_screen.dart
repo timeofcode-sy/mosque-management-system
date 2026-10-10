@@ -69,13 +69,16 @@ class _ExcusesScreenState extends State<ExcusesScreen> {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: excuses.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, index) => _ExcuseCard(
-              excuse: excuses[index],
-              canReview: deps.session.can('excuses.review'),
+          return PagedView<ExcuseView>(
+            items: excuses,
+            builder: (context, page) => ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: page.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) => _ExcuseCard(
+                excuse: page[index],
+                canReview: deps.session.can('excuses.review'),
+              ),
             ),
           );
         },
@@ -156,15 +159,16 @@ class _ExcuseCard extends StatelessWidget {
 
     final messenger = ScaffoldMessenger.of(context);
 
-    await AppScope.of(context).students.reviewExcuse(
-          excuseUuid: excuse.uuid,
-          approve: approve,
-          note: note,
-        );
+    await AppScope.of(context).students
+        .reviewExcuse(excuseUuid: excuse.uuid, approve: approve, note: note);
 
     messenger.showSnackBar(
       SnackBar(
-        content: Text(approve ? 'قُبل الإذن وصُفَّ للمزامنة.' : 'رُفض الإذن وصُفَّ للمزامنة.'),
+        content: Text(
+          approve
+              ? 'قُبل الإذن وصُفَّ للمزامنة.'
+              : 'رُفض الإذن وصُفَّ للمزامنة.',
+        ),
       ),
     );
   }

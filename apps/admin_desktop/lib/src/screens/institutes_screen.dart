@@ -100,7 +100,10 @@ class _InstitutesScreenState extends State<InstitutesScreen> {
                     Text(institute.name),
                     if (institute.uuid == active)
                       const Chip(
-                        label: Text('المعهد العامل', style: TextStyle(fontSize: 12)),
+                        label: Text(
+                          'المعهد العامل',
+                          style: TextStyle(fontSize: 12),
+                        ),
                         padding: EdgeInsets.zero,
                         visualDensity: VisualDensity.compact,
                       ),
@@ -147,8 +150,7 @@ class _InstitutesScreenState extends State<InstitutesScreen> {
                   contentPadding: EdgeInsets.zero,
                   title: const Text('فعّال'),
                   value: isActive,
-                  onChanged: (value) =>
-                      setDialogState(() => isActive = value),
+                  onChanged: (value) => setDialogState(() => isActive = value),
                 ),
                 if (institute == null)
                   Text(

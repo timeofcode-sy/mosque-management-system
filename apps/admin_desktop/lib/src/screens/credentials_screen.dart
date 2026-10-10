@@ -97,8 +97,14 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
                     items: const [
                       DropdownMenuItem(value: null, child: Text('الكل')),
                       DropdownMenuItem(value: 'student', child: Text('الطلاب')),
-                      DropdownMenuItem(value: 'guardian', child: Text('أولياء الأمور')),
-                      DropdownMenuItem(value: 'teacher', child: Text('الأساتذة')),
+                      DropdownMenuItem(
+                        value: 'guardian',
+                        child: Text('أولياء الأمور'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'teacher',
+                        child: Text('الأساتذة'),
+                      ),
                     ],
                     onChanged: (value) {
                       _role = value;
@@ -137,18 +143,21 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
                   );
                 }
 
-                return GridView.builder(
-                  padding: const EdgeInsets.all(16),
-                  gridDelegate:
-                      const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 360,
-                    mainAxisExtent: 152,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
+                return PagedView<CredentialCard>(
+                  items: cards,
+                  resetKey: _search.text.trim(),
+                  builder: (context, page) => GridView.builder(
+                    padding: const EdgeInsets.all(16),
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
+                          maxCrossAxisExtent: 360,
+                          mainAxisExtent: 152,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                    itemCount: page.length,
+                    itemBuilder: (context, index) => _Card(card: page[index]),
                   ),
-                  itemCount: cards.length,
-                  itemBuilder: (context, index) =>
-                      _Card(card: cards[index]),
                 );
               },
             ),
@@ -184,7 +193,8 @@ class _Card extends StatelessWidget {
                   ),
                 ),
                 if (!card.isActive)
-                  NzIcon(NzIcons.lockClosed,
+                  NzIcon(
+                    NzIcons.lockClosed,
                     size: 16,
                     color: theme.colorScheme.error,
                   ),

@@ -43,7 +43,8 @@ class CurriculaScreen extends StatelessWidget {
 
           if (curricula.isEmpty) {
             return EmptyState(
-              message: 'لم تصل المناهجُ بعد.\n'
+              message:
+                  'لم تصل المناهجُ بعد.\n'
                   'القرآنُ والحديثُ والمتون مزروعةٌ عامةً — زامِن الجهازَ لتصلك.',
               icon: NzIcons.mushaf,
               onRetry: deps.sync.syncNow,
@@ -181,10 +182,17 @@ Future<void> _editCurriculum(
                 ),
                 items: const [
                   DropdownMenuItem(value: 'custom', child: Text('منهج مخصّص')),
-                  DropdownMenuItem(value: 'hadith', child: Text('الحديث الشريف')),
-                  DropdownMenuItem(value: 'mutun', child: Text('المتون العلمية')),
+                  DropdownMenuItem(
+                    value: 'hadith',
+                    child: Text('الحديث الشريف'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'mutun',
+                    child: Text('المتون العلمية'),
+                  ),
                 ],
-                onChanged: (value) => setDialogState(() => type = value ?? type),
+                onChanged: (value) =>
+                    setDialogState(() => type = value ?? type),
               ),
               Text(
                 // ولماذا لا «قرآن» في القائمة؟ لأن أجزاءه ثابتةٌ ومزروعةٌ عامةً،
@@ -216,10 +224,10 @@ Future<void> _editCurriculum(
   await runConnected(
     context,
     () => AppScope.of(context).catalog.saveCurriculum(
-          uuid: curriculum?.uuid,
-          name: name.text.trim(),
-          type: type,
-        ),
+      uuid: curriculum?.uuid,
+      name: name.text.trim(),
+      type: type,
+    ),
     success: 'حُفظ المنهج.',
   );
 }
@@ -285,11 +293,11 @@ Future<void> _editItem(
   await runConnected(
     context,
     () => AppScope.of(context).catalog.saveCurriculumItem(
-          uuid: item?.uuid,
-          curriculumUuid: curriculum.uuid,
-          name: name.text.trim(),
-          count: int.tryParse(count.text),
-        ),
+      uuid: item?.uuid,
+      curriculumUuid: curriculum.uuid,
+      name: name.text.trim(),
+      count: int.tryParse(count.text),
+    ),
     success: 'حُفظ البند.',
   );
 }

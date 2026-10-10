@@ -111,14 +111,17 @@ class _ConflictsScreenState extends State<ConflictsScreen> {
             );
           }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: conflicts.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, index) => _ConflictCard(
-              conflict: conflicts[index],
-              canReview: AppScope.of(context).session.can('conflicts.review'),
-              onResolved: _reload,
+          return PagedView<SyncConflict>(
+            items: conflicts,
+            builder: (context, page) => ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: page.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) => _ConflictCard(
+                conflict: page[index],
+                canReview: AppScope.of(context).session.can('conflicts.review'),
+                onResolved: _reload,
+              ),
             ),
           );
         },
