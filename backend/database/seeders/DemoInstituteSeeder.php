@@ -3,15 +3,16 @@
 namespace Database\Seeders;
 
 use App\Actions\RecalculateCircleStats;
+use App\Actions\TransferStudent;
 use App\Enums\AttendanceStatus;
 use App\Enums\CourseStatus;
+use App\Enums\EnrollmentStatus;
+use App\Enums\ExcuseStatus;
 use App\Enums\GuardianRelation;
-use App\Enums\MemorizationType;
-use App\Enums\PointReason;
-use App\Enums\RecitationGrade;
+use App\Enums\NotePolarity;
 use App\Enums\SessionStatus;
 use App\Enums\TeacherRole;
-use App\Models\Announcement;
+use App\Models\AbsenceExcuse;
 use App\Models\Attendance;
 use App\Models\AttendanceSession;
 use App\Models\Circle;
@@ -22,14 +23,13 @@ use App\Models\Enrollment;
 use App\Models\Guardian;
 use App\Models\GuardianStudent;
 use App\Models\Institute;
-use App\Models\MemorizationLog;
 use App\Models\PersonalTrait;
 use App\Models\Shift;
 use App\Models\ShiftDay;
 use App\Models\Student;
-use App\Models\StudentPoint;
 use App\Models\StudentTrait;
 use App\Models\Teacher;
+use App\Models\TeacherAttendance;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
@@ -38,11 +38,15 @@ use Illuminate\Support\Facades\App;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
- * معهد تجريبي كامل: دورة جارية، دوامان، ست حلقات، ثمانون طالباً بأولياء أمورهم،
- * وتفقّد لآخر أسبوعين — يكفي لتجربة اللوحة والتقارير والمزامنة.
+ * معهد عمر الفاروق التجريبي: دورة جارية، دوامان، ست حلقات، ثمانون طالباً بأولياء أمورهم،
+ * وتفقّد لآخر أسبوعين بحضور الأساتذة وأعذار الغياب وانتقالات الطلاب بين الحلقات.
+ * ثم يستدعي بذرتي المحفوظات (`DemoMemorizationSeeder`) وما يحيط بالطالب
+ * (`DemoExtrasSeeder`) — يكفي كلُّه لتجربة اللوحة والتقارير والمزامنة والتطبيقات الثلاثة.
  */
 class DemoInstituteSeeder extends Seeder
 {
+    private const INSTITUTE_NAME = 'معهد عمر الفاروق';
+
     /**
      * @var array<int, string>
      */
@@ -51,7 +55,35 @@ class DemoInstituteSeeder extends Seeder
         'أبي موسى الأشعري', 'معاذ بن جبل', 'عثمان بن عفان',
     ];
 
+    /**
+     * مناطق من البلدة لعنوان الطالب الدائم — المعهد في عربين فأغلب طلابه من حولها.
+     *
+     * @var array<int, string>
+     */
+    private const QUARTERS = ['الحي الشرقي', 'الحي الغربي', 'الحي الشمالي', 'الحي الجنوبي', 'وسط البلد'];
+
+    /**
+     * @var array<int, string>
+     */
+    private const EXCUSE_REASONS = ['مرض', 'موعد طبي', 'سفر مع العائلة', 'ظرف عائلي', 'امتحانات المدرسة'];
+
+    /**
+     * ملاحظات الأستاذ على سلوك الحاضر: إيجابية وسلبية، وهي ما يبني مقياس «الأدب» في الإحصائيات.
+     *
+     * @var array<string, array<int, string>>
+     */
+    private const BEHAVIOUR_NOTES = [
+        'positive' => ['مشاركة فعّالة في الحلقة.', 'ساعد زملاءه في المراجعة.', 'حسن الأدب مع الأستاذ.', 'التزم بالهدوء طوال الحصة.'],
+        'negative' => ['كثر الكلام أثناء التسميع.', 'نسي مصحفه.', 'تأخر في الاستعداد للحصة.', 'شغل زملاءه عن الحفظ.'],
+    ];
+
     private const STUDENTS_PER_CIRCLE = 13;
+
+    /** @var array<int, Teacher> الأستاذ الأساسي لكل حلقة، بمفتاح course_circle_id */
+    private array $mainTeachers = [];
+
+    /** @var array<int, int|null> حساب ولي الأمر الأساسي لكل طالب، بمفتاح student_id */
+    private array $guardianUsers = [];
 
     /**
      * البذرُ يُنشئ حسابات بأسماء مستخدمين ثابتة (admin1000 …)، فتشغيلُه على قاعدةٍ مبذورةٍ يسقط بخرق
@@ -67,8 +99,11 @@ class DemoInstituteSeeder extends Seeder
         }
 
         $institute = Institute::factory()->create([
-            'name' => 'معهد النور لتحفيظ القرآن الكريم',
-            'short_name' => 'معهد النور',
+            'name' => self::INSTITUTE_NAME,
+            'short_name' => self::INSTITUTE_NAME,
+            'phone' => '+963935650325',
+            'email' => null,
+            'address' => 'ريف دمشق - عربين',
         ]);
 
         /** إسناد الأدوار في Spatie مرتبط بمعهد (teams) عبر المفتاح institute_id */
@@ -121,20 +156,30 @@ class DemoInstituteSeeder extends Seeder
                 'room' => 'القاعة '.($index + 1),
             ]);
 
+            $teacher = Teacher::factory()->create(['institute_id' => $institute->id]);
+
             CourseCircleTeacher::create([
                 'course_circle_id' => $courseCircle->id,
-                'teacher_id' => Teacher::factory()->create(['institute_id' => $institute->id])->id,
+                'teacher_id' => $teacher->id,
                 'role' => TeacherRole::Main,
                 'joined_on' => $course->starts_on,
             ]);
+
+            $this->mainTeachers[$courseCircle->id] = $teacher;
 
             $this->enrollStudents($institute, $courseCircle, $personalTraits);
 
             $courseCircles->push($courseCircle);
         }
 
+        // الانتقالات قبل التفقّد: الطالب المنقول يُتفقَّد في حلقته الجديدة فقط.
+        $this->transferStudents($courseCircles, $admin);
         $this->recordAttendance($courseCircles, $admin);
-        $this->seedAnnouncements($institute, $admin);
+        $this->seedExcuses($admin);
+
+        // بعد الحضور لا قبله: لا تسميع لغائب، والوسوم تُشتقّ من الحفظ والحضور المبذورَين.
+        $this->callWith(DemoMemorizationSeeder::class, ['institute' => $institute, 'admin' => $admin]);
+        $this->callWith(DemoExtrasSeeder::class, ['institute' => $institute, 'admin' => $admin]);
 
         // الإحصاء يُحسب عادةً لحظة إغلاق كل جلسة؛ البذور تكتب الجلسات مباشرةً فتحتاج تشغيله مرّة.
         app(RecalculateCircleStats::class)->forCourse($course->id);
@@ -166,8 +211,15 @@ class DemoInstituteSeeder extends Seeder
      */
     private function enrollStudents(Institute $institute, CourseCircle $courseCircle, Collection $personalTraits): void
     {
+        $courseStart = Carbon::parse($courseCircle->course->starts_on);
+
         for ($i = 0; $i < self::STUDENTS_PER_CIRCLE; $i++) {
-            $student = Student::factory()->create(['institute_id' => $institute->id]);
+            $student = Student::factory()->create([
+                'institute_id' => $institute->id,
+                // التسجيل في المعهد سابقٌ لبدء الدورة: الطالب يدخل الدورة وله محفوظٌ من قبلها.
+                'registration_date' => $courseStart->copy()->subDays(fake()->numberBetween(14, 600)),
+                'permanent_address' => 'ريف دمشق - عربين - '.fake()->randomElement(self::QUARTERS),
+            ]);
 
             $father = Guardian::factory()->create([
                 'institute_id' => $institute->id,
@@ -175,6 +227,8 @@ class DemoInstituteSeeder extends Seeder
             ]);
 
             $mother = Guardian::factory()->mother()->create(['institute_id' => $institute->id]);
+
+            $this->guardianUsers[$student->id] = $father->user_id;
 
             GuardianStudent::create([
                 'guardian_id' => $father->id,
@@ -199,8 +253,34 @@ class DemoInstituteSeeder extends Seeder
             Enrollment::factory()->create([
                 'course_circle_id' => $courseCircle->id,
                 'student_id' => $student->id,
-                'enrolled_on' => $courseCircle->course->starts_on,
+                'enrolled_on' => $courseStart,
             ]);
+        }
+    }
+
+    /**
+     * ثلاثة انتقالات بين الدوامين قبل ثلاثة أسابيع، عبر إجراء النقل الحقيقي: يُغلق تسجيلُ
+     * الطالب القديم «منقولاً» ويُفتح له تسجيلٌ جديد، فيظهر سجلّ النقل في ملفه.
+     *
+     * @param  Collection<int, CourseCircle>  $courseCircles
+     */
+    private function transferStudents(Collection $courseCircles, User $admin): void
+    {
+        $transfers = [
+            [0, 4, 'ارتباطه بالمدرسة صباحاً فنُقل إلى الدوام المسائي.'],
+            [3, 1, 'رغبة ولي الأمر في الدوام الصباحي.'],
+            [2, 5, 'ملاءمة الحلقة الأخرى لمستواه في الحفظ.'],
+        ];
+
+        foreach ($transfers as [$from, $to, $reason]) {
+            $enrollment = $courseCircles[$from]->enrollments()->where('status', EnrollmentStatus::Active)->inRandomOrder()->first();
+            $student = $enrollment === null ? null : Student::find($enrollment->student_id);
+
+            if ($student === null) {
+                continue;
+            }
+
+            app(TransferStudent::class)->handle($student, $courseCircles[$to], $reason, $admin, Carbon::today()->subDays(21)->toDateString());
         }
     }
 
@@ -211,7 +291,9 @@ class DemoInstituteSeeder extends Seeder
     {
         foreach ($courseCircles as $courseCircle) {
             $weekdays = $courseCircle->shift->days->pluck('weekday')->all();
-            $enrollments = $courseCircle->enrollments()->get();
+
+            // الجارية وحدها: المنقول عن الحلقة لا يُتفقَّد فيها بعد انتقاله.
+            $enrollments = $courseCircle->enrollments()->where('status', EnrollmentStatus::Active)->get();
 
             for ($daysAgo = 14; $daysAgo >= 1; $daysAgo--) {
                 $date = Carbon::today()->subDays($daysAgo);
@@ -229,106 +311,146 @@ class DemoInstituteSeeder extends Seeder
                     'taken_by' => $admin->id,
                 ]);
 
+                $this->recordTeacherAttendance($session, $this->mainTeachers[$courseCircle->id], $date, $admin);
+
                 foreach ($enrollments as $enrollment) {
-                    $attendance = Attendance::factory()->create([
+                    if (Carbon::parse($enrollment->enrolled_on)->gt($date)) {
+                        continue;
+                    }
+
+                    $status = fake()->randomElement([
+                        AttendanceStatus::Present, AttendanceStatus::Present,
+                        AttendanceStatus::Present, AttendanceStatus::Present,
+                        AttendanceStatus::Present, AttendanceStatus::Present,
+                        AttendanceStatus::Late, AttendanceStatus::Absent, AttendanceStatus::Excused,
+                    ]);
+
+                    Attendance::factory()->create([
                         'attendance_session_id' => $session->id,
                         'student_id' => $enrollment->student_id,
                         'enrollment_id' => $enrollment->id,
-                        'status' => fake()->randomElement([
-                            AttendanceStatus::Present, AttendanceStatus::Present,
-                            AttendanceStatus::Present, AttendanceStatus::Present,
-                            AttendanceStatus::Present, AttendanceStatus::Present,
-                            AttendanceStatus::Late, AttendanceStatus::Absent, AttendanceStatus::Excused,
-                        ]),
+                        'status' => $status,
                         'recorded_by' => $admin->id,
                         'recorded_at' => $date->copy()->setTime(9, 0),
+                        ...$this->detailsFor($status),
                     ]);
-
-                    $this->recordLesson($session, $enrollment, $attendance, $date, $admin);
                 }
             }
         }
     }
 
     /**
-     * تسميعُ الحاضر ونقاطُه — ✅ م.8.1.
+     * ما يلحق بحالة الطالب: دقائق التأخر للمتأخر، وللحاضر ملاحظةٌ على سلوكه أحياناً.
      *
-     * 🔴 **وكان حاجباً موثَّقاً منذ م.4.5**: البذرةُ تنتج حضوراً وحده، فـ
-     * `migrate:fresh --seed` يعطي معهداً بلا تسميعةٍ ولا نقطة — ويبدو تطبيقُ
-     * الطالب **شاشةَ حضورٍ فقط** ([APPS-FEATURES.md §6.4](../../docs/APPS-FEATURES.md)
-     * البند 2). وهو صنفُ نقصٍ لا يُكتشف باختبار: الاختبارُ ينشئ ما يحتاجه، ولا
-     * يشكو أحدٌ إلا من يفتح التطبيقَ على قاعدةٍ مبذورة.
-     *
-     * **والغائبُ لا يُسمّع**: القاعدةُ نفسُها التي تحكم الإحصاءَ كلَّه — ما لم
-     * يُسجَّل لا يُفترض. وبذرةٌ تعطي تسميعاً لطالبٍ غائب تصنع بياناً لا يقع في
-     * الواقع، فتُخفي عطباً يقع.
+     * @return array<string, mixed>
      */
-    private function recordLesson(
-        AttendanceSession $session,
-        Enrollment $enrollment,
-        Attendance $attendance,
-        Carbon $date,
-        User $admin,
-    ): void {
-        if (! in_array($attendance->status, [AttendanceStatus::Present, AttendanceStatus::Late], true)) {
-            return;
+    private function detailsFor(AttendanceStatus $status): array
+    {
+        if ($status === AttendanceStatus::Late) {
+            return ['late_minutes' => fake()->numberBetween(5, 30)];
         }
 
-        // ثلاثةُ أخماسِ الحاضرين يسمّعون: حصّةٌ لا يسمّع فيها الجميعُ هي الواقع،
-        // وبذرةٌ يسمّع فيها الكلُّ تجعل «لا تسميعَ اليوم» حالةً لا تُرى قطّ.
-        if (fake()->boolean(60)) {
-            $lines = fake()->numberBetween(3, 20);
-
-            MemorizationLog::create([
-                'student_id' => $enrollment->student_id,
-                'course_circle_id' => $session->course_circle_id,
-                'attendance_session_id' => $session->id,
-                'date' => $date->toDateString(),
-                'type' => fake()->randomElement(MemorizationType::cases()),
-                'grade' => fake()->randomElement(RecitationGrade::cases()),
-                'lines' => $lines,
-                'new_lines' => $lines,
-                // النقاطُ **مجمَّدةٌ في الصفّ** كما يفعل `StudentPoints` على
-                // الخادم — والعميلُ يقرؤها ولا يعيد حسابها.
-                'points' => round($lines / 15 * 10, 2),
-                'teacher_id' => null,
-            ]);
+        if ($status !== AttendanceStatus::Present || ! fake()->boolean(12)) {
+            return [];
         }
 
-        if (fake()->boolean(20)) {
-            StudentPoint::create([
-                'student_id' => $enrollment->student_id,
-                'course_circle_id' => $session->course_circle_id,
-                'attendance_session_id' => $session->id,
-                'points' => fake()->numberBetween(1, 5),
-                'reason' => fake()->randomElement(PointReason::cases()),
-                'awarded_by' => $admin->id,
-                'awarded_on' => $date->toDateString(),
-            ]);
-        }
+        $polarity = fake()->boolean(70) ? NotePolarity::Positive : NotePolarity::Negative;
+
+        return [
+            'note' => fake()->randomElement(self::BEHAVIOUR_NOTES[$polarity->value]),
+            'note_polarity' => $polarity,
+        ];
     }
 
     /**
-     * إعلانان — ✅ م.8.1، فشاشةُ الطالب لا تُفتح فارغة.
+     * حضور أستاذ الحلقة: يواظب غالباً، ويتأخر أو يستأذن نادراً.
      */
-    private function seedAnnouncements(Institute $institute, User $admin): void
+    private function recordTeacherAttendance(AttendanceSession $session, Teacher $teacher, Carbon $date, User $admin): void
     {
-        Announcement::create([
-            'institute_id' => $institute->id,
-            'title' => 'انتظام الدوام',
-            'body' => 'نذكّر الطلابَ بالحضور قبل بداية الحصّة بعشر دقائق، وجزاكم الله خيراً.',
-            'scope' => 'all',
-            'created_by' => $admin->id,
-            'published_at' => now()->subDays(3),
-        ]);
+        $roll = fake()->numberBetween(1, 100);
 
-        Announcement::create([
-            'institute_id' => $institute->id,
-            'title' => 'مسابقة حفظ جزء عمّ',
-            'body' => 'تُقام المسابقةُ نهايةَ الشهر، والتسجيلُ عند أستاذ الحلقة.',
-            'scope' => 'all',
-            'created_by' => $admin->id,
-            'published_at' => now()->subDay(),
+        $status = match (true) {
+            $roll <= 90 => AttendanceStatus::Present,
+            $roll <= 97 => AttendanceStatus::Late,
+            default => AttendanceStatus::Excused,
+        };
+
+        TeacherAttendance::create([
+            'attendance_session_id' => $session->id,
+            'teacher_id' => $teacher->id,
+            'status' => $status,
+            'late_minutes' => $status === AttendanceStatus::Late ? fake()->numberBetween(5, 20) : null,
+            'note' => $status === AttendanceStatus::Excused ? 'ظرفٌ طارئ وأُنيب عنه أحد الأساتذة.' : null,
+            'recorded_by' => $admin->id,
+            'recorded_at' => $date->copy()->setTime(8, 45),
+        ]);
+    }
+
+    /**
+     * أعذار الغياب، متّسقةً مع التفقّد المبذور:
+     * - كل «مأذون» له عذرٌ **مقبول** يغطّي يومه، لأن قبول العذر هو ما يحوّل الغياب إلى إذن.
+     * - ثلث «الغائبين» قدّم أولياؤهم عذراً لم يُقبل بعد، أو رُفض لعدم كفاية السبب.
+     * - وثلاثة أعذار لأيامٍ قادمة تنتظر البتّ — ما يراه المشرف أول ما يفتح لوحته.
+     */
+    private function seedExcuses(User $admin): void
+    {
+        $attendances = Attendance::query()
+            ->whereIn('status', [AttendanceStatus::Excused, AttendanceStatus::Absent])
+            ->with('attendanceSession')
+            ->get();
+
+        foreach ($attendances as $attendance) {
+            $date = Carbon::parse($attendance->attendanceSession->session_date);
+
+            if ($attendance->status === AttendanceStatus::Excused) {
+                $this->excuse($attendance->student_id, $date, $date, ExcuseStatus::Approved, $admin, $date->copy()->subDay()->setTime(18, 0));
+
+                continue;
+            }
+
+            if (fake()->boolean(33)) {
+                $rejected = fake()->boolean(60);
+
+                $this->excuse(
+                    $attendance->student_id,
+                    $date,
+                    $date,
+                    $rejected ? ExcuseStatus::Rejected : ExcuseStatus::Pending,
+                    $rejected ? $admin : null,
+                    $rejected ? $date->copy()->addDay()->setTime(10, 0) : null,
+                    $rejected ? 'لم يُرفق ما يثبت العذر.' : null,
+                );
+            }
+        }
+
+        $upcoming = Student::query()->inRandomOrder()->limit(3)->pluck('id');
+
+        foreach ($upcoming as $studentId) {
+            $from = Carbon::today()->addDays(fake()->numberBetween(1, 3));
+
+            $this->excuse($studentId, $from, $from->copy()->addDays(fake()->numberBetween(0, 2)), ExcuseStatus::Pending);
+        }
+    }
+
+    private function excuse(
+        int $studentId,
+        Carbon $from,
+        Carbon $to,
+        ExcuseStatus $status,
+        ?User $reviewer = null,
+        ?Carbon $reviewedAt = null,
+        ?string $reviewNote = null,
+    ): void {
+        AbsenceExcuse::create([
+            'student_id' => $studentId,
+            'from_date' => $from->toDateString(),
+            'to_date' => $to->toDateString(),
+            'reason' => fake()->randomElement(self::EXCUSE_REASONS),
+            'submitted_by' => $this->guardianUsers[$studentId] ?? null,
+            'status' => $status,
+            'reviewed_by' => $reviewer?->id,
+            'reviewed_at' => $reviewedAt,
+            'review_note' => $reviewNote,
         ]);
     }
 }
