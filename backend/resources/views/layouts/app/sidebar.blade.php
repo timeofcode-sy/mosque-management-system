@@ -13,7 +13,7 @@
             روابطَ تؤدّي به إلى 403، فتصير الأدوار عقوبةً مفاجئة بدل أن تكون شكلاً
             للوحة يفهمه من نظرة.
         --}}
-        <flux:sidebar sticky collapsible class="w-64 border-e border-line bg-raised transition-[width] duration-200 data-flux-sidebar-collapsed-desktop:w-16 data-flux-sidebar-collapsed-desktop:px-2 motion-reduce:transition-none" aria-label="التنقّل الرئيسي">
+        <flux:sidebar sticky collapsible class="w-64 border-s border-line bg-raised transition-[width] duration-200 data-flux-sidebar-collapsed-desktop:w-16 data-flux-sidebar-collapsed-desktop:px-2 motion-reduce:transition-none" aria-label="التنقّل الرئيسي">
             {{--
                 طيّ القائمة وتوسيعها أفقياً: على الحاسوب تنكمش من 264px إلى شريطٍ بعرض 80px أيقوناتُه وحدها (مع تلميحٍ باسم كل
                 بند)، وعلى الجوال تُغلق. الحالةُ يحفظها Flux في المتصفّح فتبقى كما تركها المستخدم.
