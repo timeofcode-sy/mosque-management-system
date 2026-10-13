@@ -106,3 +106,43 @@ These are review limitations and test gaps, not additional confirmed vulnerabili
 No full application test suite, Android or Windows release build, merged-manifest
 inspection, device/emulator test, or deployed-service test was run. This is a
 source-focused review with targeted local checks, not a full penetration test.
+
+## Android Studio emulator checks
+
+### Environment and execution
+
+- Opened the `apps/nuzuln` Flutter project in Android Studio.
+- Started the configured `Pixel_8_Pro` AVD (Android 14, API 34).
+- Installed and launched the existing beta.5 APKs for the unified mobile app and
+  the administration app:
+  `dist/nuzuln-mobile-1.0.0-beta.5-b5.apk` and
+  `dist/nuzuln-admin-android-1.0.0-beta.5-b5.apk`.
+- Both app processes remained alive at their login screens. No app-specific fatal
+  exception appeared in the inspected logcat output.
+- No credentials were entered and no API request to a production service was
+  intentionally made.
+
+### Runtime package checks
+
+- The compiled manifests of both installed APKs contain
+  `android:usesCleartextTraffic="true"` and the `INTERNET` permission. This
+  confirms Android does not block cleartext connections for these apps; an actual
+  credential interception test was not performed.
+- Both beta.5 APKs verify as signed by `CN=Android Debug`, with SHA-256 certificate
+  digest `f67d8e67098630014fd72ab8941c2889ccfa4475e68cbcc43abba756d489af34`.
+  The Android Gradle release build types also select the debug signing
+  configuration. Use a protected release signing key for distributable builds.
+
+### Build limitation and untested flows
+
+A fresh debug build was attempted with an emulator-only API base URL
+(`http://10.0.2.2:8765/api/v1`) so it could not target the production host. Gradle
+failed before compilation because it could not resolve
+`androidx.annotation:annotation-jvm:1.9.1` and
+`com.android.tools.build:gradle:8.11.1` from Google Maven. The already-built beta.5
+APK artifacts were used for the emulator launch instead.
+
+Login, authenticated requests, and cleartext traffic interception were not
+dynamically tested because no local mock API and test account were available. The
+source-level concern that `api_client.dart` sets `Authorization` to the literal
+`******` remains unconfirmed at runtime.
