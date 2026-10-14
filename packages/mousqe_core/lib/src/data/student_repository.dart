@@ -111,10 +111,10 @@ class StudentRepository {
   Future<String> saveStudent(StudentForm form, {SiblingFamily? sibling}) async {
     final uuid = form.uuid ?? _uuid.v4();
 
-    final father = GuardianDraft(
-      fullName: form.fatherFullName,
-      occupation: form.father.occupation,
-      phone: form.father.phone,
+    // اسمُ الأب لا يُكتب في الاستمارة: هو اسمُ الأب والكنية من بيانات الطالب.
+    final father = form.father.copyWith(
+      firstName: form.fatherName,
+      familyName: form.familyName,
     );
 
     await _syncEngine.enqueue('student.save', {
@@ -413,8 +413,17 @@ class StudentRepository {
 
     final guardian = row.readTable(_db.guardians);
 
+    if (guardian.firstName == null && guardian.familyName == null) {
+      return GuardianDraft.fromFullName(
+        guardian.fullName,
+        occupation: guardian.occupation,
+        phone: guardian.phone,
+      );
+    }
+
     return GuardianDraft(
-      fullName: guardian.fullName,
+      firstName: guardian.firstName,
+      familyName: guardian.familyName,
       occupation: guardian.occupation,
       phone: guardian.phone,
     );

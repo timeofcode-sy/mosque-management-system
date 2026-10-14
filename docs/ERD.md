@@ -76,15 +76,20 @@ institutes (معهد)
 
 | حقل الاستمارة | الموقع |
 |---|---|
-| اسم الأب | `guardians.full_name` حيث `guardian_student.relation = father` |
+| اسم الأب | `guardians.first_name` + `family_name` حيث `guardian_student.relation = father` — لا يُكتب: اسم الأب والكنية من بيانات الطالب |
 | عمل الأب | `guardians.occupation` |
 | رقم هاتف الأب | `guardians.phone` (+ `alternate_phone`) |
-| اسم الأم / عملها / هاتفها | نفس الأعمدة حيث `relation = mother` |
+| اسم الأم / كنيتها | `guardians.first_name` / `guardians.family_name` حيث `relation = mother` 🔄 2026-10-14 |
+| عمل الأم / هاتفها | نفس أعمدة الأب حيث `relation = mother` |
 | عدد أفراد العائلة | `students.family_members_count` |
 
 **لماذا هذا الفصل؟** ولي الأمر يملك حساباً في تطبيق الأهل، وقد يتابع أكثر من ابن في المعهد، ويحتاج
 صلاحيات (`can_view_reports`, `can_submit_excuses`). لو كانت الحقول مكرّرة داخل `students` لتكرّرت بياناته
 مع كل ابن ولاستحال ربطه بحساب واحد. الوصول المختصر متاح عبر `$student->father()` و`$student->mother()`.
+
+🔄 **2026-10-14: اسم ولي الأمر بقسمين.** `first_name` (الاسم) و`family_name` (الكنية) هما الأصل، و`full_name`
+يبقى عموداً يُركَّب منهما عند الحفظ (`Guardian::booted`) لأن القوائم وحسابات الدخول ومطابقة الإخوة تقرؤه.
+ومن يكتب `full_name` وحده (نسخة أقدم من التطبيق) يُقسم اسمه على أول فراغ: الكلمة الأولى اسم والباقي كنية.
 
 ### 2.3 الحالة الصحية والاجتماعية → `students`
 

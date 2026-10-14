@@ -39,20 +39,72 @@ class StudentListEntry {
 }
 
 /// وليُّ أمرٍ في الاستمارة — صفٌّ في `guardians` مربوطٌ بصلة القرابة.
+///
+/// الاسمُ بقسمين: [firstName] (الاسم) و[familyName] (الكنية)، والاسمُ الكامل
+/// يُركَّب منهما كما يركّبه الخادم — فبه يُطابَق الإخوة.
 class GuardianDraft {
-  const GuardianDraft({this.fullName, this.occupation, this.phone});
+  const GuardianDraft({
+    this.firstName,
+    this.familyName,
+    this.occupation,
+    this.phone,
+  });
 
-  final String? fullName;
+  /// صفٌّ لم يحفظ قسمَي اسمه (وصل قبل أن يُقسَم الاسم): الكلمةُ الأولى اسم
+  /// والباقي كنية — القسمةُ نفسُها التي ردم بها الخادمُ سجلّاتِه القديمة.
+  factory GuardianDraft.fromFullName(
+    String fullName, {
+    String? occupation,
+    String? phone,
+  }) {
+    final normalized = _normalize(fullName);
+    final space = normalized.indexOf(' ');
+
+    return GuardianDraft(
+      firstName: space < 0 ? normalized : normalized.substring(0, space),
+      familyName: space < 0 ? null : normalized.substring(space + 1),
+      occupation: occupation,
+      phone: phone,
+    );
+  }
+
+  final String? firstName;
+  final String? familyName;
   final String? occupation;
   final String? phone;
 
-  bool get isEmpty => (fullName ?? '').trim().isEmpty;
+  String get fullName => [firstName, familyName]
+      .map((part) => _normalize(part ?? ''))
+      .where((part) => part.isNotEmpty)
+      .join(' ');
+
+  bool get isEmpty => fullName.isEmpty;
+
+  GuardianDraft copyWith({
+    Object? firstName = _keep,
+    Object? familyName = _keep,
+    Object? occupation = _keep,
+    Object? phone = _keep,
+  }) {
+    return GuardianDraft(
+      firstName: StudentForm._or(firstName, this.firstName),
+      familyName: StudentForm._or(familyName, this.familyName),
+      occupation: StudentForm._or(occupation, this.occupation),
+      phone: StudentForm._or(phone, this.phone),
+    );
+  }
 
   Map<String, dynamic> toPayload() => {
-        'full_name': fullName,
+        'first_name': firstName,
+        'family_name': familyName,
         'occupation': occupation,
         'phone': phone,
       };
+
+  static const Object _keep = StudentForm._keep;
+
+  static String _normalize(String value) =>
+      value.trim().replaceAll(RegExp(r'\s+'), ' ');
 }
 
 /// استمارةُ تسجيل الطالب كاملةً — قراءةً وكتابةً.

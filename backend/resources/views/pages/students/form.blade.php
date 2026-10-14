@@ -10,6 +10,7 @@ use App\Enums\StudentStatus;
 use App\Models\CourseCircle;
 use App\Models\Curriculum;
 use App\Models\CustomField;
+use App\Models\Guardian;
 use App\Models\PersonalTrait;
 use App\Models\Student;
 use App\Queries\StudentFormQuery;
@@ -62,12 +63,14 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
 
     public string $current_address = '';
 
-    /** العائلة — اسم الأب الكامل لا يُكتب: هو اسم الأب متبوعاً بالكنية. */
+    /** العائلة — اسم الأب الكامل لا يُكتب: هو اسم الأب متبوعاً بالكنية. واسم الأم بقسمين: الاسم والكنية. */
     public string $father_occupation = '';
 
     public string $father_phone = '';
 
-    public string $mother_full_name = '';
+    public string $mother_first_name = '';
+
+    public string $mother_family_name = '';
 
     public string $mother_occupation = '';
 
@@ -152,7 +155,8 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
 
         $this->father_occupation = (string) $father?->occupation;
         $this->father_phone = (string) $father?->phone;
-        $this->mother_full_name = (string) $mother?->full_name;
+        $this->mother_first_name = (string) $mother?->first_name;
+        $this->mother_family_name = (string) $mother?->family_name;
         $this->mother_occupation = (string) $mother?->occupation;
         $this->mother_phone = (string) $mother?->phone;
 
@@ -214,7 +218,12 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
 
     public function fatherFullName(): string
     {
-        return trim(preg_replace('/\s+/u', ' ', "{$this->father_name} {$this->family_name}"));
+        return Guardian::composeName($this->father_name, $this->family_name);
+    }
+
+    public function motherFullName(): string
+    {
+        return Guardian::composeName($this->mother_first_name, $this->mother_family_name);
     }
 
     public function confirmSibling(SaveStudentRegistration $saveStudentRegistration): void
@@ -282,7 +291,8 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
             'current_address' => ['nullable', 'string', 'max:255'],
             'father_occupation' => ['nullable', 'string', 'max:255'],
             'father_phone' => ['nullable', 'string', 'max:32'],
-            'mother_full_name' => ['nullable', 'string', 'max:255'],
+            'mother_first_name' => ['nullable', 'string', 'max:255'],
+            'mother_family_name' => ['nullable', 'string', 'max:255'],
             'mother_occupation' => ['nullable', 'string', 'max:255'],
             'mother_phone' => ['nullable', 'string', 'max:32'],
             'family_members_count' => ['nullable', 'integer', 'min:1', 'max:60'],
@@ -303,7 +313,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
         ])->map(fn ($value) => $value === '' ? null : $value)->all();
 
         $families = $this->query()->siblingFamilies(
-            $this->institute, $this->fatherFullName(), $this->mother_full_name, $this->student,
+            $this->institute, $this->fatherFullName(), $this->motherFullName(), $this->student,
         );
 
         $sibling = $families->firstWhere('key', $this->siblingFamilyKey);
@@ -329,12 +339,14 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
             student: $this->student,
             guardians: [
                 GuardianRelation::Father->value => [
-                    'full_name' => $this->fatherFullName(),
+                    'first_name' => $this->father_name,
+                    'family_name' => $this->family_name,
                     'occupation' => $this->father_occupation ?: null,
                     'phone' => $this->father_phone ?: null,
                 ],
                 GuardianRelation::Mother->value => [
-                    'full_name' => $this->mother_full_name,
+                    'first_name' => $this->mother_first_name,
+                    'family_name' => $this->mother_family_name,
                     'occupation' => $this->mother_occupation ?: null,
                     'phone' => $this->mother_phone ?: null,
                 ],
@@ -362,7 +374,8 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
         return [
             'first_name' => 'اسم الطالب',
             'father_name' => 'اسم الأب',
-            'mother_full_name' => 'اسم الأم الكامل',
+            'mother_first_name' => 'اسم الأم',
+            'mother_family_name' => 'كنية الأم',
             'family_name' => 'اسم العائلة',
             'registration_no' => 'رقم المعرف',
             'birth_date' => 'تاريخ الولادة',
@@ -438,8 +451,9 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
         <flux:fieldset class="rounded-xl border border-line bg-raised p-6">
             <flux:legend>بيانات العائلة</flux:legend>
 
-            <div class="grid gap-6 sm:grid-cols-3">
+            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 <flux:input
+                    field:class="lg:col-span-2"
                     label="اسم الأب الكامل"
                     readonly
                     icon:trailing="lock-closed"
@@ -449,7 +463,8 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
                 />
                 <flux:input wire:model="father_occupation" label="عمل الأب" />
                 <flux:input wire:model="father_phone" label="جوال الأب" />
-                <flux:input wire:model="mother_full_name" label="اسم الأم الكامل" />
+                <flux:input wire:model="mother_first_name" label="اسم الأم" />
+                <flux:input wire:model="mother_family_name" label="كنية الأم" />
                 <flux:input wire:model="mother_occupation" label="عمل الأم" />
                 <flux:input wire:model="mother_phone" label="جوال الأم" />
                 <flux:input wire:model="family_members_count" type="number" min="1" label="عدد أفراد العائلة" />
@@ -564,7 +579,7 @@ new #[Title('استمارة تسجيل طالب')] class extends Component {
 
             <flux:callout icon="information-circle" variant="secondary">
                 <flux:callout.text>
-                    اسم الأب الكامل واسم الأم الكامل يطابقان طالباً مسجَّلاً. إن كانا أخوين رُبط الطالب
+                    اسم الأب الكامل واسم الأم وكنيتها تطابق طالباً مسجَّلاً. إن كانا أخوين رُبط الطالب
                     بوليّي الأمر أنفسهما فيتابع حسابُهما الأبناءَ معاً، وإلا أُنشئ له وليّا أمر جديدان.
                 </flux:callout.text>
             </flux:callout>

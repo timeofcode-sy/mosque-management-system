@@ -223,7 +223,8 @@ class DemoInstituteSeeder extends Seeder
 
             $father = Guardian::factory()->create([
                 'institute_id' => $institute->id,
-                'full_name' => "{$student->father_name} {$student->family_name}",
+                'first_name' => $student->father_name,
+                'family_name' => $student->family_name,
             ]);
 
             $mother = Guardian::factory()->mother()->create(['institute_id' => $institute->id]);

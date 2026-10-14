@@ -299,7 +299,10 @@ void main() {
 
       expect(field.controller!.text, 'حسان الأحمد');
       expect(field.readOnly, isTrue);
-      expect(find.text('اسم الأم الكامل'), findsOneWidget);
+      // اسمُ الأم بقسمين يُكتبان، لا حقلٌ واحدٌ للاسم الكامل.
+      expect(find.text('اسم الأم'), findsOneWidget);
+      expect(find.text('كنية الأم'), findsOneWidget);
+      expect(find.text('اسم الأم الكامل'), findsNothing);
 
       await settle(tester);
     });
@@ -314,7 +317,8 @@ void main() {
       await type(tester, 'اسم الطالب *', 'عمر');
       await type(tester, 'اسم الأب *', 'حسن');
       await type(tester, 'اسم العائلة *', 'الشامي');
-      await type(tester, 'اسم الأم الكامل', 'مريم العلي');
+      await type(tester, 'اسم الأم', 'مريم');
+      await type(tester, 'كنية الأم', 'العلي');
 
       await tester.tap(find.text('حفظ'));
       // مؤشّرُ الحفظ يدور ما دام السؤال مفتوحاً، فلا يستقرّ الإطار.
@@ -351,7 +355,8 @@ void main() {
       await type(tester, 'اسم الطالب *', 'عمر');
       await type(tester, 'اسم الأب *', 'حسن');
       await type(tester, 'اسم العائلة *', 'الشامي');
-      await type(tester, 'اسم الأم الكامل', 'مريم العلي');
+      await type(tester, 'اسم الأم', 'مريم');
+      await type(tester, 'كنية الأم', 'العلي');
 
       await tester.tap(find.text('حفظ'));
       // مؤشّرُ الحفظ يدور ما دام السؤال مفتوحاً، فلا يستقرّ الإطار.
@@ -365,10 +370,12 @@ void main() {
       final payload = jsonDecode(operation.payload) as Map<String, dynamic>;
 
       expect(payload.containsKey('sibling_guardian_uuids'), isFalse);
-      expect(
-        (payload['guardians'] as Map)['father']['full_name'],
-        'حسن الشامي',
-      );
+      final guardians = payload['guardians'] as Map;
+
+      expect(guardians['father']['first_name'], 'حسن');
+      expect(guardians['father']['family_name'], 'الشامي');
+      expect(guardians['mother']['first_name'], 'مريم');
+      expect(guardians['mother']['family_name'], 'العلي');
 
       await settle(tester);
     });

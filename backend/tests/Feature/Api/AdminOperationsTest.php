@@ -67,7 +67,9 @@ class AdminOperationsTest extends TestCase
                         'registration_no' => '1042',
                     ],
                     'guardians' => [
+                        // نسخةٌ أقدم من التطبيق ترسل الاسم كاملاً، فيُقسم على أول فراغ.
                         'father' => ['full_name' => 'خالد المصري', 'phone' => '0900000000'],
+                        'mother' => ['full_name' => 'هنادي الشيخ حسن'],
                     ],
                 ],
                 [
@@ -87,6 +89,7 @@ class AdminOperationsTest extends TestCase
         $this->assertSame($this->institute->id, $student->institute_id);
         $this->assertSame('محمد', $student->first_name);
         $this->assertSame('خالد المصري', $student->father()?->full_name);
+        $this->assertSame(['هنادي', 'الشيخ حسن'], [$student->mother()?->first_name, $student->mother()?->family_name]);
 
         $this->assertDatabaseHas('enrollments', [
             'student_id' => $student->id,
@@ -108,8 +111,8 @@ class AdminOperationsTest extends TestCase
                 'family_name' => 'الأحمد', 'gender' => 'male', 'status' => 'active',
             ],
             'guardians' => [
-                'father' => ['full_name' => 'حسان الأحمد', 'phone' => null],
-                'mother' => ['full_name' => 'عائشة العلي'],
+                'father' => ['first_name' => 'حسان', 'family_name' => 'الأحمد', 'phone' => null],
+                'mother' => ['first_name' => 'عائشة', 'family_name' => 'العلي'],
             ],
             ...$extra,
         ];

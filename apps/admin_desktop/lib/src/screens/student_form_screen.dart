@@ -291,11 +291,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   'عمل الأب',
                   _form.father.occupation,
                   onChanged: (value) => _form = _form.copyWith(
-                    father: GuardianDraft(
-                      fullName: _form.father.fullName,
-                      occupation: value,
-                      phone: _form.father.phone,
-                    ),
+                    father: _form.father.copyWith(occupation: value),
                   ),
                 ),
                 _text(
@@ -303,23 +299,23 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   'جوّال الأب',
                   _form.father.phone,
                   onChanged: (value) => _form = _form.copyWith(
-                    father: GuardianDraft(
-                      fullName: _form.father.fullName,
-                      occupation: _form.father.occupation,
-                      phone: value,
-                    ),
+                    father: _form.father.copyWith(phone: value),
                   ),
                 ),
                 _text(
-                  'mother_full_name',
-                  'اسم الأم الكامل',
-                  _form.mother.fullName,
+                  'mother_first_name',
+                  'اسم الأم',
+                  _form.mother.firstName,
                   onChanged: (value) => _form = _form.copyWith(
-                    mother: GuardianDraft(
-                      fullName: value,
-                      occupation: _form.mother.occupation,
-                      phone: _form.mother.phone,
-                    ),
+                    mother: _form.mother.copyWith(firstName: value),
+                  ),
+                ),
+                _text(
+                  'mother_family_name',
+                  'كنية الأم',
+                  _form.mother.familyName,
+                  onChanged: (value) => _form = _form.copyWith(
+                    mother: _form.mother.copyWith(familyName: value),
                   ),
                 ),
                 _text(
@@ -327,11 +323,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   'عمل الأم',
                   _form.mother.occupation,
                   onChanged: (value) => _form = _form.copyWith(
-                    mother: GuardianDraft(
-                      fullName: _form.mother.fullName,
-                      occupation: value,
-                      phone: _form.mother.phone,
-                    ),
+                    mother: _form.mother.copyWith(occupation: value),
                   ),
                 ),
                 _text(
@@ -339,11 +331,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   'جوّال الأم',
                   _form.mother.phone,
                   onChanged: (value) => _form = _form.copyWith(
-                    mother: GuardianDraft(
-                      fullName: _form.mother.fullName,
-                      occupation: _form.mother.occupation,
-                      phone: value,
-                    ),
+                    mother: _form.mother.copyWith(phone: value),
                   ),
                 ),
                 _text(
@@ -673,7 +661,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
   Future<_SiblingAnswer?> _askAboutSiblings(StudentRepository students) async {
     final families = await students.findSiblingFamilies(
       fatherFullName: _form.fatherFullName,
-      motherFullName: _form.mother.fullName ?? '',
+      motherFullName: _form.mother.fullName,
       exceptStudentUuid: _form.uuid,
     );
 
@@ -699,7 +687,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 Text(
-                  'اسم الأب الكامل واسم الأم الكامل يطابقان طالباً مسجَّلاً. '
+                  'اسم الأب الكامل واسم الأم وكنيتها تطابق طالباً مسجَّلاً. '
                   'إن كانا أخوين رُبط الطالب بوليّي الأمر أنفسهما فيتابع '
                   'حسابُهما الأبناءَ معاً، وإلا أُنشئ له وليّا أمر جديدان.',
                   style: Theme.of(context).textTheme.bodySmall,

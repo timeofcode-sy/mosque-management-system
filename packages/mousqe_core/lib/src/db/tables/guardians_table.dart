@@ -12,6 +12,11 @@ class Guardians extends Table {
   TextColumn get uuid => text().unique()();
   IntColumn get instituteId => integer()();
   TextColumn get fullName => text()();
+
+  /// قسما الاسم (الاسم والكنية) — ✅ v7. `fullName` يُركَّب منهما على الخادم،
+  /// وصفٌّ وصل قبل القسمة يبقيهما `null` فتقسمه الاستمارةُ عند فتحها.
+  TextColumn get firstName => text().nullable()();
+  TextColumn get familyName => text().nullable()();
   TextColumn get phone => text().nullable()();
   TextColumn get alternatePhone => text().nullable()();
   TextColumn get occupation => text().nullable()();
