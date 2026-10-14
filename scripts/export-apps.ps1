@@ -252,6 +252,17 @@ $notes | ForEach-Object { Write-Host "  - $_" }
 
 if ($DryRun) { Write-Host "`nDry run: nothing built, docs/VERSION.md untouched."; exit 0 }
 
+# An APK signed with any other key cannot update the installed app: no release key, no Android export.
+# The key lives outside the repository (docs/APP-UPDATES.md, signing key).
+if (@($apps | Where-Object { $_.Kind -eq 'apk' -and (Test-Path (Join-Path (Join-Path $root $_.Dir) 'pubspec.yaml')) }).Count) {
+    $signing = $env:NUZULN_SIGNING_PROPERTIES
+    if (-not $signing) { $signing = Join-Path $env:USERPROFILE '.nuzuln-signing\key.properties' }
+    if (-not (Test-Path $signing)) {
+        throw "No Android release key at $signing. Restore the backup of .nuzuln-signing (or set NUZULN_SIGNING_PROPERTIES) before exporting APKs."
+    }
+    Write-Host "Android signing          : $signing"
+}
+
 if (-not (Get-Command flutter -ErrorAction SilentlyContinue)) {
     throw 'flutter was not found on PATH. Install Flutter or open a terminal where it works.'
 }
@@ -303,7 +314,9 @@ foreach ($app in $apps) {
             }
 
             if ($app.Kind -eq 'apk') {
-                Invoke-Native "$name apk build" { flutter build apk @buildArgs }
+                # ARM only (64 and 32 bit): x86_64 serves emulators, and its libraries were a third
+                # of the APK (docs/suggestions/SUGGESTIONS.md, 1.2 #2).
+                Invoke-Native "$name apk build" { flutter build apk @buildArgs --target-platform android-arm,android-arm64 }
                 $built = Join-Path $dir 'build/app/outputs/flutter-apk/app-release.apk'
                 $target = Join-Path $OutDir "$stem.apk"
                 Copy-Item -Force $built $target
