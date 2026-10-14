@@ -13,6 +13,7 @@ use App\Models\Guardian;
 use App\Models\Student;
 use App\Queries\AnnouncementQuery;
 use App\Queries\GuardianChildrenQuery;
+use App\Queries\StudentBehaviorQuery;
 use App\Queries\StudentProfileQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -92,6 +93,18 @@ class GuardianController extends Controller
         return response()->json([
             'data' => $this->groupedProgress($profile, $child),
         ]);
+    }
+
+    /**
+     * الجانب السلوكي لابنٍ بعينه: ملاحظات أساتذته في التفقّد وصفاتُه ونقاطُ سلوكه.
+     */
+    public function childBehavior(
+        Request $request,
+        string $student,
+        GuardianChildrenQuery $children,
+        StudentBehaviorQuery $behavior,
+    ): JsonResponse {
+        return response()->json($behavior->for($children->child($this->guardian($request), $student)));
     }
 
     /**

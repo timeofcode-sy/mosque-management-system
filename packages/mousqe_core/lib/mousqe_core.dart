@@ -19,6 +19,7 @@ export 'src/models/institute.dart';
 export 'src/models/institute_theme.dart';
 export 'src/models/recitation.dart';
 export 'src/models/student.dart';
+export 'src/models/student_behavior.dart';
 export 'src/models/points_settings.dart';
 export 'src/models/student_point.dart';
 export 'src/models/student_points_summary.dart';

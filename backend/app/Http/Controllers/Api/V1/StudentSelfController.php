@@ -9,6 +9,7 @@ use App\Http\Resources\V1\ProgressResource;
 use App\Http\Resources\V1\StandingResource;
 use App\Models\Student;
 use App\Queries\AnnouncementQuery;
+use App\Queries\StudentBehaviorQuery;
 use App\Queries\StudentPointsQuery;
 use App\Queries\StudentProfileQuery;
 use App\Queries\StudentStandingQuery;
@@ -63,6 +64,14 @@ class StudentSelfController extends Controller
      * الطالب صفوفَ حضورِ كلِّ زملائه ليستخرج منها رقماً واحداً
      * ([PHASE-8-STAGES.MD §1.1](../../../../../docs/PHASE-8-STAGES.MD)).
      */
+    /**
+     * الجانب السلوكي للطالب نفسه — ما كتبه أساتذته عنه، بالشكل الذي يقرؤه وليُّ أمره.
+     */
+    public function behavior(Request $request, StudentBehaviorQuery $query): JsonResponse
+    {
+        return response()->json($query->for($this->student($request)));
+    }
+
     public function standing(Request $request, StudentStandingQuery $query): JsonResponse
     {
         return response()->json([

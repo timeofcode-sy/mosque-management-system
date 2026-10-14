@@ -6,6 +6,7 @@ import '../models/child_attendance.dart';
 import '../models/curriculum_progress_entry.dart';
 import '../models/guardian_child.dart';
 import '../models/guardian_excuse.dart';
+import '../models/student_behavior.dart';
 import 'snapshot_store.dart';
 
 /// ما يقرؤه وليُّ الأمر عن أبنائه — **ومصدرُه REST وحده**.
@@ -80,6 +81,16 @@ class GuardianRepository {
             ? (json['data'] as Map).cast<String, dynamic>()
             : const <String, dynamic>{},
       ),
+    );
+  }
+
+  /// الجانبُ السلوكي لابنٍ بعينه — ويبقى آخرُ ما وصل مقروءاً والشبكةُ مقطوعة.
+  Future<Snapshot<StudentBehavior>> behaviorOf(String childUuid) {
+    return _snapshots.read(
+      key: 'guardian.child.$childUuid.behavior',
+      fetch: () async =>
+          (await _apiClient.guardianChildBehavior(childUuid)).data,
+      decode: StudentBehavior.fromJson,
     );
   }
 

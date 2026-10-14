@@ -6,9 +6,10 @@ import '../../../config.dart';
 import '../di/app_scope.dart';
 import 'announcements_screen.dart';
 import 'attendance_screen.dart';
+import 'behavior_screen.dart';
 import 'progress_screen.dart';
 
-/// الرئيسية: نسبتي · رتبتي · نقاطي — وأبوابُ الثلاثة الباقية.
+/// الرئيسية: نسبتي · رتبتي · نقاطي — وأبوابُ الحضور والحفظ والسلوك والإعلانات.
 ///
 /// غرضُ التطبيق كلِّه في هذه الشاشة: **أن يرى الطالبُ أثرَ انضباطه رقماً أمامه**
 /// ([APPS-FEATURES.md §6.1](../../../../../../../docs/APPS-FEATURES.md)).
@@ -43,7 +44,10 @@ class HomeScreen extends StatelessWidget {
             if (snapshot?.institute.name case final String name)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Text(name, style: Theme.of(context).textTheme.titleMedium),
+                child: Text(
+                  name,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ),
             _StandingCard(standing: standing),
             const _Doors(),
@@ -113,8 +117,8 @@ class _StandingCard extends StatelessWidget {
                       standing.isRanked
                           ? 'ترتيبي في الحلقة: ${standing.rank} من ${standing.peers}'
                           : standing.peers > 0
-                              ? 'لم يُقَس ترتيبي بعد — بين ${standing.peers} طالباً'
-                              : 'لست مسجَّلاً في حلقةٍ جارية.',
+                          ? 'لم يُقَس ترتيبي بعد — بين ${standing.peers} طالباً'
+                          : 'لست مسجَّلاً في حلقةٍ جارية.',
                       style: theme.textTheme.titleSmall,
                     ),
                   ),
@@ -134,9 +138,18 @@ class _Doors extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final doors = <({String icon, String label, Widget screen})>[
-      (icon: NzIcons.attendance, label: 'حضوري', screen: const AttendanceScreen()),
+      (
+        icon: NzIcons.attendance,
+        label: 'حضوري',
+        screen: const AttendanceScreen(),
+      ),
       (icon: NzIcons.mushaf, label: 'حفظي', screen: const ProgressScreen()),
-      (icon: NzIcons.megaphone, label: 'الإعلانات', screen: const AnnouncementsScreen()),
+      (icon: NzIcons.star, label: 'سلوكي', screen: const BehaviorScreen()),
+      (
+        icon: NzIcons.megaphone,
+        label: 'الإعلانات',
+        screen: const AnnouncementsScreen(),
+      ),
     ];
 
     return Column(
@@ -149,9 +162,8 @@ class _Doors extends StatelessWidget {
               leading: NzIcon(door.icon),
               title: Text(door.label),
               trailing: const NzIcon(NzIcons.chevronLeft),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => door.screen),
-              ),
+              onTap: () => Navigator.of(context)
+                  .push(MaterialPageRoute<void>(builder: (_) => door.screen)),
             ),
           ),
       ],

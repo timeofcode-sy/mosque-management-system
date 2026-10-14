@@ -74,11 +74,13 @@
 | `GET` | `/guardian/children` | أبناء ولي الأمر | `role:guardian` |
 | `GET` | `/guardian/children/{student_uuid}/attendance` | 🔄 م.7.1 — ملخّصُ ابنٍ ومنحناه وآخر 30 سجلاً | `role:guardian` |
 | `GET` | `/guardian/children/{student_uuid}/progress` ✅ م.7.1 | محفوظاتُ ابنٍ مجمّعةً بالمنهج | `role:guardian` |
+| `GET` | `/guardian/children/{student_uuid}/behavior` ✅ 2026-10 | الجانب السلوكي لابن: `summary{positive,negative,neutral,behavior_points}` · `notes[{date,polarity,note,circle}]` (ملاحظات التفقّد، الأحدث أولاً) · `traits[{name,polarity,note}]` · `points[{date,points,note}]` (سبب «سلوك») | `role:guardian` |
 | `GET` | `/guardian/excuses` ✅ م.7.1 | أعذارُ أبنائه وحالتُها وجوابُ الطاقم | `role:guardian` |
 | `POST` | `/guardian/excuses` | تقديم إذن غياب مسبق | `role:guardian` |
 | `GET` | `/student/me/attendance` | ملخّص الطالب ومنحناه وآخر 20 سجلاً | `role:student` |
 | `GET` | `/student/me/progress` | محفوظات الطالب مجمّعة بالمنهج | `role:student` |
 | `GET` | `/student/me/standing` ✅ م.8.1 | رتبتُه في حلقته — **رقمٌ لا كشف** | `role:student` |
+| `GET` | `/student/me/behavior` ✅ 2026-10 | جانبُه السلوكي — بشكل نقطة ولي الأمر نفسه | `role:student` |
 | `GET` | `/student/me/points` ✅ م.8.1 | نقاطُه بمصادرها في الدورة الجارية | `role:student` |
 | `GET` | `/student/me/announcements` ✅ م.8.1 | إعلاناتُ معهده وحلقته | `role:student` |
 | `GET` | `/guardian/announcements` ✅ م.10 | إعلاناتُ المعهد وحلقاتِ أبنائه الموجَّهة إلى أولياء الأمور | `role:guardian` |

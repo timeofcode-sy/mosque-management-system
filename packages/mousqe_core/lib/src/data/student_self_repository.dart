@@ -4,6 +4,7 @@ import '../models/announcement.dart';
 import '../models/child_attendance.dart';
 import '../models/curriculum_progress_entry.dart';
 import '../models/student_points_summary.dart';
+import '../models/student_behavior.dart';
 import '../models/student_standing.dart';
 import 'snapshot_store.dart';
 
@@ -76,6 +77,15 @@ class StudentSelfRepository {
       decode: (json) => StudentStanding.fromJson(
         (json['data'] as Map).cast<String, dynamic>(),
       ),
+    );
+  }
+
+  /// جانبُه السلوكي: ما كتبه أساتذتُه عنه، وصفاتُه، ونقاطُ سلوكه.
+  Future<Snapshot<StudentBehavior>> behavior() {
+    return _snapshots.read(
+      key: 'student.me.behavior',
+      fetch: () async => (await _apiClient.studentBehavior()).data,
+      decode: StudentBehavior.fromJson,
     );
   }
 

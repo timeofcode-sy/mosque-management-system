@@ -301,6 +301,10 @@ abstract class ApiClient {
   @GET('/guardian/children/{uuid}/progress')
   Future<HttpResponse<dynamic>> guardianChildProgress(@Path('uuid') String uuid);
 
+  /// الجانبُ السلوكي لابنٍ بعينه — ملاحظاتُ التفقّد والصفاتُ ونقاطُ السلوك.
+  @GET('/guardian/children/{uuid}/behavior')
+  Future<HttpResponse<dynamic>> guardianChildBehavior(@Path('uuid') String uuid);
+
   @GET('/guardian/excuses')
   Future<HttpResponse<dynamic>> guardianExcuses();
 
@@ -324,6 +328,9 @@ abstract class ApiClient {
 
   @GET('/student/me/standing')
   Future<HttpResponse<dynamic>> studentStanding();
+
+  @GET('/student/me/behavior')
+  Future<HttpResponse<dynamic>> studentBehavior();
 
   @GET('/student/me/points')
   Future<HttpResponse<dynamic>> studentPoints();

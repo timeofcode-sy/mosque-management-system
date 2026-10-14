@@ -1,4 +1,5 @@
 import '../models/enums.dart';
+import '../models/student_behavior.dart';
 import '../db/database.dart';
 import '../support/attendance_rate.dart';
 import '../support/quran.dart';
@@ -357,6 +358,79 @@ class SessionLogEntry {
 
 /// ملفّ الطالب كما يبنيه العميل محلياً — الإحصاءات مشتقّة تُحسب هنا لا تُنقل
 /// عبر الشبكة ([SYNC-PROTOCOL.md §7](../../../../../docs/SYNC-PROTOCOL.md)).
+/// ما يعرفه الأستاذ عن طالبه سوى حضوره وتسميعه — من صفّ الطالب ووليّيه وواصفاته في drift.
+class StudentDetails {
+  const StudentDetails({
+    this.birthDate,
+    this.gradeLevel,
+    this.phone,
+    this.address,
+    this.studentJob,
+    this.familyMembersCount,
+    this.healthStatus,
+    this.familyHealthStatus,
+    this.notes,
+    this.registrationDate,
+    this.father,
+    this.mother,
+    this.memorizedJuz = const [],
+    this.otherMemorized = const [],
+    this.customFields = const {},
+  });
+
+  final DateTime? birthDate;
+  final String? gradeLevel;
+  final String? phone;
+  final String? address;
+  final String? studentJob;
+  final int? familyMembersCount;
+  final String? healthStatus;
+  final String? familyHealthStatus;
+  final String? notes;
+  final DateTime? registrationDate;
+  final ParentInfo? father;
+  final ParentInfo? mother;
+
+  /// أرقامُ الأجزاء المحفوظة، تنازلياً كما تُحفظ عادةً (30، 29…).
+  final List<int> memorizedJuz;
+
+  /// محفوظاتٌ من غير القرآن (الأربعون النووية، تحفة الأطفال…).
+  final List<String> otherMemorized;
+
+  /// عنوانُ الواصفة ← قيمتُها.
+  final Map<String, String> customFields;
+
+  /// عمرُه بالسنوات اليوم.
+  int? ageOn(DateTime today) {
+    final born = birthDate;
+
+    if (born == null) {
+      return null;
+    }
+
+    final birthdayPassed =
+        today.month > born.month ||
+        (today.month == born.month && today.day >= born.day);
+
+    return today.year - born.year - (birthdayPassed ? 0 : 1);
+  }
+}
+
+/// أحدُ الوالدين كما يراه الأستاذ.
+class ParentInfo {
+  const ParentInfo({
+    required this.name,
+    this.phone,
+    this.occupation,
+    this.isAlive = true,
+  });
+
+  final String name;
+  final String? phone;
+  final String? occupation;
+  final bool isAlive;
+}
+
 class StudentProfile {
   const StudentProfile({
     required this.studentId,
@@ -366,6 +440,8 @@ class StudentProfile {
     required this.attendance,
     required this.recitations,
     required this.points,
+    this.details = const StudentDetails(),
+    this.behavior = const StudentBehavior(),
   });
 
   final int studentId;
@@ -375,6 +451,12 @@ class StudentProfile {
   final List<StudentAttendanceEntry> attendance;
   final List<RecitationRow> recitations;
   final List<StudentPointRow> points;
+
+  /// من هو: عمرُه وصفُّه وأهلُه ووضعُه الصحي ومحفوظاتُه — ليعرفه أستاذه.
+  final StudentDetails details;
+
+  /// الجانبُ السلوكي بالشكل الذي يقرؤه وليُّ الأمر (`StudentBehavior`).
+  final StudentBehavior behavior;
 
   int countOf(AttendanceStatus status) =>
       attendance.where((entry) => entry.status == status).length;

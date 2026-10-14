@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
+import '../../../widgets/behavior_section.dart';
 import '../di/app_scope.dart';
 import 'submit_excuse_screen.dart';
 
-/// ملفُّ ابنٍ بعينه — لسانان: حضورُه، وتقدُّمُ حفظه.
+/// ملفُّ ابنٍ بعينه — ثلاثةُ ألسنة: حضورُه، وتقدُّمُ حفظه، وجانبُه السلوكي.
 class ChildScreen extends StatelessWidget {
   const ChildScreen({super.key, required this.child});
 
@@ -14,7 +15,7 @@ class ChildScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: Text(child.fullName),
@@ -22,12 +23,15 @@ class ChildScreen extends StatelessWidget {
             tabs: [
               Tab(text: 'الحضور', icon: NzIcon(NzIcons.attendance)),
               Tab(text: 'الحفظ', icon: NzIcon(NzIcons.mushaf)),
+              Tab(text: 'السلوك', icon: NzIcon(NzIcons.star)),
             ],
           ),
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => SubmitExcuseScreen(child: child)),
+            MaterialPageRoute<void>(
+              builder: (_) => SubmitExcuseScreen(child: child),
+            ),
           ),
           icon: const NzIcon(NzIcons.calendar),
           label: const Text('تقديم إذن'),
@@ -36,6 +40,7 @@ class ChildScreen extends StatelessWidget {
           children: [
             _AttendanceTab(childUuid: child.uuid),
             _ProgressTab(childUuid: child.uuid),
+            _BehaviorTab(childUuid: child.uuid),
           ],
         ),
       ),
@@ -92,7 +97,9 @@ class _SummaryGrid extends StatelessWidget {
               // أعذارٌ لا مقامَ له، وصفرٌ ههنا يقول إنه لم يحضر يوماً.
               Expanded(
                 child: StatCard(
-                  value: summary.rate == null ? '—' : '${summary.rate!.toStringAsFixed(1)}%',
+                  value: summary.rate == null
+                      ? '—'
+                      : '${summary.rate!.toStringAsFixed(1)}%',
                   label: 'نسبة الحضور',
                   icon: NzIcons.percent,
                 ),
@@ -108,10 +115,21 @@ class _SummaryGrid extends StatelessWidget {
           ),
           Row(
             children: [
-              Expanded(child: StatCard(value: '${summary.present}', label: 'حاضر')),
-              Expanded(child: StatCard(value: '${summary.absent}', label: 'غائب')),
-              Expanded(child: StatCard(value: '${summary.late}', label: 'متأخّر')),
-              Expanded(child: StatCard(value: '${summary.excused}', label: 'غائب بعذر')),
+              Expanded(
+                child: StatCard(value: '${summary.present}', label: 'حاضر'),
+              ),
+              Expanded(
+                child: StatCard(value: '${summary.absent}', label: 'غائب'),
+              ),
+              Expanded(
+                child: StatCard(value: '${summary.late}', label: 'متأخّر'),
+              ),
+              Expanded(
+                child: StatCard(
+                  value: '${summary.excused}',
+                  label: 'غائب بعذر',
+                ),
+              ),
             ],
           ),
         ],
@@ -141,9 +159,29 @@ class _AttendanceRow extends StatelessWidget {
               padding: const EdgeInsetsDirectional.only(end: 8),
               child: Text('${row.lateMinutes} د'),
             ),
-          AttendanceStatusBadge(status: BadgeStatus.fromValue(row.status.value)),
+          AttendanceStatusBadge(
+            status: BadgeStatus.fromValue(row.status.value),
+          ),
         ],
       ),
+    );
+  }
+}
+
+/// الجانبُ السلوكي: ما كتبه أساتذتُه عنه في التفقّد، وصفاتُه، ونقاطُ سلوكه.
+class _BehaviorTab extends StatelessWidget {
+  const _BehaviorTab({required this.childUuid});
+
+  final String childUuid;
+
+  @override
+  Widget build(BuildContext context) {
+    final repository = AppScope.of(context).repository;
+
+    return SnapshotView<StudentBehavior>(
+      load: () async => (await repository.behaviorOf(childUuid)).ui,
+      errorMessageBuilder: messageFor,
+      builder: (context, behavior) => BehaviorSection(behavior: behavior),
     );
   }
 }

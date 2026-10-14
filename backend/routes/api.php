@@ -116,6 +116,8 @@ Route::prefix('v1')->group(function (): void {
             // (القرار 0.1 في PHASE-7-STAGES.MD)، فما كان يصله في التيّار — حالةُ
             // إذنه وتقدُّمُ حفظِ ابنه — صار له نقطتُه.
             Route::get('/children/{student}/progress', [GuardianController::class, 'childProgress']);
+            // الجانب السلوكي: ملاحظات التفقّد والصفات ونقاط السلوك.
+            Route::get('/children/{student}/behavior', [GuardianController::class, 'childBehavior']);
             Route::get('/excuses', [GuardianController::class, 'excuses']);
             Route::get('/announcements', [GuardianController::class, 'announcements']);
             Route::post('/excuses', [GuardianController::class, 'submitExcuse']);
@@ -128,6 +130,7 @@ Route::prefix('v1')->group(function (): void {
             // (§1.1 في PHASE-8-STAGES.MD)، **والرتبةُ تُحسب في الخادم** فلا يصل
             // جهازَه صفُّ زميلٍ واحد.
             Route::get('/me/standing', [StudentSelfController::class, 'standing']);
+            Route::get('/me/behavior', [StudentSelfController::class, 'behavior']);
             Route::get('/me/points', [StudentSelfController::class, 'points']);
             Route::get('/me/announcements', [StudentSelfController::class, 'announcements']);
         });
