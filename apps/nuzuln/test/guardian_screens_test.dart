@@ -306,8 +306,8 @@ void main() {
             {
               'uuid': 'log-1',
               'date': '2026-10-12',
-              'type': 'memorization',
-              'type_label': 'حفظ جديد',
+              'type': 'hifz',
+              'type_label': 'حفظ',
               'grade': 'excellent',
               'grade_label': 'ممتاز',
               'from_surah_name': 'الملك',

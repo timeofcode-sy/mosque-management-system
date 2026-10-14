@@ -42,11 +42,11 @@ class RecitationLogEntry {
   final String uuid;
   final DateTime? date;
 
-  /// `memorization` \| `review` … كما في `RecitationType`، و[typeLabel] عنوانُه العربي.
+  /// `hifz` \| `murajaa` \| `tilawah` كما في `MemorizationType`، و[typeLabel] عنوانُه العربي.
   final String? type;
   final String? typeLabel;
 
-  /// `excellent` \| `very_good` … كما في `RecitationGrade`، و[gradeLabel] عنوانُه العربي.
+  /// `excellent` \| `very_good` \| `good` كما في `RecitationGrade`، و[gradeLabel] عنوانُه العربي.
   final String? grade;
   final String? gradeLabel;
 

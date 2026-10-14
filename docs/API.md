@@ -77,10 +77,12 @@
 | `GET` | `/guardian/children/{student_uuid}/attendance` | 🔄 م.7.1 — ملخّصُ ابنٍ ومنحناه وآخر 30 سجلاً | `role:guardian` |
 | `GET` | `/guardian/children/{student_uuid}/progress` ✅ م.7.1 | محفوظاتُ ابنٍ مجمّعةً بالمنهج | `role:guardian` |
 | `GET` | `/guardian/children/{student_uuid}/behavior` ✅ 2026-10 | الجانب السلوكي لابن: `summary{positive,negative,neutral,behavior_points}` · `notes[{date,polarity,note,circle}]` (ملاحظات التفقّد، الأحدث أولاً) · `traits[{name,polarity,note}]` · `points[{date,points,note}]` (سبب «سلوك») | `role:guardian` |
+| `GET` | `/guardian/children/{student_uuid}/recitations` ✅ beta.7 | سجلُّ تسميع ابنٍ — آخرُ 50، الأحدثُ أولاً (§3.11) | `role:guardian` |
 | `GET` | `/guardian/excuses` ✅ م.7.1 | أعذارُ أبنائه وحالتُها وجوابُ الطاقم | `role:guardian` |
 | `POST` | `/guardian/excuses` | تقديم إذن غياب مسبق | `role:guardian` |
 | `GET` | `/student/me/attendance` | ملخّص الطالب ومنحناه وآخر 20 سجلاً | `role:student` |
 | `GET` | `/student/me/progress` | محفوظات الطالب مجمّعة بالمنهج | `role:student` |
+| `GET` | `/student/me/recitations` ✅ beta.7 | سجلُّ تسميعه — بشكل نقطة ولي الأمر نفسه (§3.11) | `role:student` |
 | `GET` | `/student/me/standing` ✅ م.8.1 | رتبتُه في حلقته — **رقمٌ لا كشف** | `role:student` |
 | `GET` | `/student/me/behavior` ✅ 2026-10 | جانبُه السلوكي — بشكل نقطة ولي الأمر نفسه | `role:student` |
 | `GET` | `/student/me/points` ✅ م.8.1 | نقاطُه بمصادرها في الدورة الجارية | `role:student` |
@@ -104,6 +106,13 @@
 | `POST` · `PUT` | `/admin/shifts` · `/admin/shifts/{uuid}` | دوامٌ وأيامُه الأسبوعية | `permission:shifts.manage` |
 | `POST` · `PUT` | `/admin/circles` · `/admin/circles/{uuid}` | حلقةٌ — هويّتُها الثابتة عبر الدورات | `permission:circles.manage` |
 | `POST` | `/admin/circles/{uuid}/run` | تشغيلُ الحلقة في دورةٍ ودوام | `permission:circles.manage` |
+| **ما كان في اللوحة وحدها ✅ beta.7** — §3.10.6 | | | |
+| `POST` · `PUT` · `DELETE` | `/admin/teachers` · `/admin/teachers/{uuid}` | أستاذٌ — بأفعال اللوحة نفسِها (`SaveTeacher`) | `permission:teachers.manage` |
+| `POST` | `/admin/teachers/{uuid}/account` | حسابُ دخولٍ لأستاذٍ بلا حساب ⇐ الكلمةُ مرّةً واحدة | `permission:teachers.manage` |
+| `GET` · `POST` · `PUT` | `/admin/announcements` · `/admin/announcements/{uuid}` | الإعلاناتُ منشورةً ومسودّة، ونشرُها وتحريرُها | `permission:announcements.manage` |
+| `POST` | `/admin/announcements/{uuid}/unpublish` | سحبُ النشر — إخفاءٌ لا حذف | `permission:announcements.manage` |
+| `POST` · `PUT` · `DELETE` | `/admin/custom-fields` · `/admin/custom-fields/{uuid}` | الواصفاتُ الإضافية (`SaveCustomField`) | `permission:settings.manage` |
+| `POST` · `PUT` · `DELETE` | `/admin/traits` · `/admin/traits/{uuid}` | الصفاتُ الشخصية (`SavePersonalTrait`) — المُسندةُ لا تُحذف 422 | `permission:settings.manage` |
 | **المناهج ✅ م.6.5** — §3.10.5 | | | |
 | `POST` | `/admin/curricula` | إنشاءُ منهج | `permission:curricula.manage` |
 | `PUT` | `/admin/curricula/{uuid}` | تحريرُ منهج — والعامُّ يُرفض 422 | `permission:curricula.manage` |
@@ -167,7 +176,14 @@ spatie غير مضبوط. صار `AuthController::identity()` يحسم النط�
   "app": "teacher",           // مطلوب · ≤24 — نفس القيمة تُرسل لاحقاً في sync/pull
   "platform": "android",      // اختياري ≤32
   "app_version": "1.0.0",     // اختياري ≤32
-  "fcm_token": "…"            // اختياري ≤512 — يُكتب في devices ⬜ لا مُرسِل بعد (م.7)
+  "fcm_token": "…",           // اختياري ≤512 — يُكتب في devices
+  // ✅ beta.7 — وصفُ الجهاز لإحصاءات المطوّر («الأجهزة المزامِنة»)، كلُّه اختياري:
+  "app_build": 7,             // رقمُ البناء
+  "device_type": "phone",     // phone | tablet | desktop
+  "manufacturer": "samsung", "brand": "samsung", "model": "SM-A155F",
+  "os_version": "Android 14", "sdk_int": 34,
+  "screen": "384x854",        // نقاطٌ منطقية، أصغرُ الضلعين أولاً
+  "locale": "ar-SY", "memory_mb": 8192, "is_physical": true
 }
 ```
 
@@ -177,7 +193,9 @@ spatie غير مضبوط. صار `AuthController::identity()` يحسم النط�
 ```
 
 استدعاؤه ثانيةً بنفس `device_uuid` **تحديثٌ لا إنشاء** (`updateOrCreate`) ولا يُصفّر
-`last_pulled_seq` — فإعادة التسجيل عند كل إقلاع آمنة.
+`last_pulled_seq` — فإعادة التسجيل عند كل إقلاع آمنة. والتطبيقاتُ منذ beta.7 تعيده **مرّةً بعد كل
+تحديث** (نسختُها محفوظةٌ في `app_state`)، فتبقى نسخةُ الجهاز في اللوحة صحيحة. ولا شيءَ في الوصف
+يعرّف صاحبَه: لا اسمُ الحاسوب ولا اسمُ المستخدم ولا معرّفُ العتاد.
 
 ### 3.4 `GET /bootstrap` — أول استدعاء بعد الدخول
 
@@ -615,6 +633,38 @@ Dart، فيفترق السطحان عند أوّل تعديل — وهو الق�
 | بندٌ جديدٌ أو محذوفٌ في منهج القرآن | «أجزاء القرآن ثابتة ولا تُضاف ولا تُحذف.» — وتحريرُ اسم جزءٍ قائمٍ **مسموح**: الثابتُ عددُها لا أسماؤها |
 | بندٌ عليه سجلُّ محفوظات | «لا يمكن حذف بند مرتبط بسجل محفوظات.» |
 | 🔴 تحريرُ **منهجٍ عامّ** من داخل معهد | «المناهج العامة لا تُحرَّر من داخل معهد…» — عطبٌ كشفته م.6.5، تفصيلُه في [CHECKPOINT-PHASE-6.5.MD §3](checkpoints/CHECKPOINT-PHASE-6.5.MD) |
+
+---
+
+#### 3.10.6 الأساتذةُ والإعلاناتُ والواصفاتُ والصفات ✅ beta.7
+
+ما كان في اللوحة وحدها، **بأفعال اللوحة نفسِها** لا بقواعد ثانية: `SaveTeacher` و`SaveCustomField` و
+`SavePersonalTrait` و`PublishAnnouncement`. الأساتذةُ والواصفاتُ والصفاتُ جداولُ تُزامَن، فلا `GET`
+لها ويعود أثرُ الكتابة في `sync/pull`؛ والإعلاناتُ لا تصل الإدارةَ في التيّار، فلها قراءتُها.
+
+| النقطة | الجسم |
+|---|---|
+| `POST · PUT /admin/teachers[/{uuid}]` | `{display_name, status, phone?, national_id?, birth_date?, specialization?, qualification?, address?, hired_on?, notes?}` — **الحقولُ الغائبة لا تُمسح** |
+| `POST · PUT /admin/announcements[/{uuid}]` | `{title, body, scope: all\|circle, scope_ids?: [course_circle_id], audience: [students\|guardians\|teachers], publish?: bool}` — `publish: false` مسودّة، والتحريرُ يُبقي تاريخَ النشر الأول |
+| `POST · PUT /admin/custom-fields[/{uuid}]` | `{entity: student\|teacher\|circle, label, type, key?, options?: [..], group?, is_required?, is_active?, sort_order?}` — **المفتاحُ لا يتغيّر بتغيّر العنوان**: القيمُ المحفوظة معلَّقةٌ عليه |
+| `POST · PUT /admin/traits[/{uuid}]` | `{name, polarity: positive\|neutral\|negative, color?, sort_order?, is_active?}` — العامّةُ (بلا معهد) لا تُحرَّر من معهد |
+
+### 3.11 سجلُّ التسميع ✅ beta.7
+
+`GET /student/me/recitations` و`GET /guardian/children/{uuid}/recitations` (`RecitationLogQuery`):
+آخرُ 50 تسميعاً، الأحدثُ أولاً، تحت شريط الأجزاء في «حفظي» ولسان «الحفظ» بدل نسبةٍ لكل جزء.
+
+```jsonc
+{ "data": [ {
+  "uuid": "…", "date": "2026-10-12",
+  "type": "hifz", "type_label": "حفظ",
+  "grade": "excellent", "grade_label": "ممتاز",
+  "from_surah_name": "الملك", "from_ayah": 1, "to_surah_name": "الملك", "to_ayah": 15,
+  "lines": 12, "points": 5, "notes": null
+} ] }
+```
+
+وابنٌ لا يتبع وليَّ الأمر ⇐ 404 كسائر نقاطه.
 
 ---
 
