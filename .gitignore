@@ -52,3 +52,6 @@ dist/
 # Brand identity source delivered by the designer (videos, mock-ups, reference images: 24MB).
 # Generated outputs are committed; scripts/build-*.mjs|py read from it.
 /brand-v3/
+
+# بيانات المعاهد الحقيقية (أسماء وأرقام) — لا تدخل المستودع
+temp data/

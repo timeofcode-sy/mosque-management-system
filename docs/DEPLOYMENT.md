@@ -160,7 +160,9 @@ NUZULN_EMAIL=
 ```bash
 php artisan key:generate --force
 php artisan migrate --force
-php artisan db:seed --class=RolesAndPermissionsSeeder --force   # الأدوار والصلاحيات فقط
+php artisan db:seed --class=RolesAndPermissionsSeeder --force   # الأدوار والصلاحيات
+php artisan db:seed --class=CurriculumSeeder --force            # المناهج العامة: الأجزاء والحديث والمتون
+php artisan db:seed --class=PersonalTraitSeeder --force         # الصفات الشخصية العامة
 php artisan storage:link
 php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
@@ -178,7 +180,8 @@ $u->email_verified_at = now(); $u->save();
 $u->assignGlobalRole('super_admin');
 ```
 
-ثم من اللوحة أنشئ المعهد (**المعاهد ← إضافة**) والدورة والحلقات والحسابات.
+ثم من اللوحة أنشئ المعهد (**المعاهد ← إضافة**) والدورة والحلقات والحسابات — أو **استورده كاملاً** ببياناته القديمة
+(`php artisan institute:import`) كما في [IMPORT.md](IMPORT.md).
 
 ### ب.7 المهام المجدولة والطابور (إلزامية)
 

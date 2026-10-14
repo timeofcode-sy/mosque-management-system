@@ -60,6 +60,6 @@ vendor/bin/pint --dirty --format agent
 
 ## التشغيل والنشر
 
-محلياً على شبكة مشتركة أو على Hostinger Cloud، وتصدير التطبيقات: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). وهوية الواجهات ونظام التصميم: [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md).
+محلياً على شبكة مشتركة أو على Hostinger Cloud، وتصدير التطبيقات: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). وضمُّ معهدٍ ببياناته القديمة: [docs/IMPORT.md](docs/IMPORT.md). وهوية الواجهات ونظام التصميم: [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md).
 
 انظر `docs/PLAN.md` للخطة وحالتها، و`docs/ERD.md` لنموذج البيانات، وآخر نقطة تفتيش لتفاصيل ما نُفِّذ.
