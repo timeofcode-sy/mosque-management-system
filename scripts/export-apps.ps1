@@ -309,8 +309,17 @@ foreach ($app in $apps) {
                 Copy-Item -Force $built $target
             }
             else {
-                Invoke-Native "$name windows build" { flutter build windows @buildArgs }
                 $built = Join-Path $dir 'build/windows/x64/runner/Release'
+                # A plugin dropped since the last build leaves its DLL behind: start from an empty folder.
+                if (Test-Path $built) { Remove-Item -Recurse -Force $built }
+                Invoke-Native "$name windows build" { flutter build windows @buildArgs }
+                # The Visual C++ runtime travels with the app, so a PC without the redistributable
+                # still starts it (Flutter's Windows deployment guidance).
+                foreach ($dll in 'msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll') {
+                    $source = Join-Path $env:SystemRoot "System32\$dll"
+                    if (Test-Path $source) { Copy-Item -Force $source $built }
+                    else { Write-Host "WARNING: $dll not found - the zip needs the VC++ redistributable." -ForegroundColor Yellow }
+                }
                 $target = Join-Path $OutDir "$stem-windows.zip"
                 if (Test-Path $target) { Remove-Item -Force $target }
                 Compress-Archive -Path (Join-Path $built '*') -DestinationPath $target
@@ -339,6 +348,9 @@ if ($failed.Count -gt 0) {
 }
 
 if ($built.Count -gt 0) {
+    # What each program needs to run travels with the files.
+    Copy-Item -Force (Join-Path $root 'docs/REQUIREMENTS.md') (Join-Path $OutDir 'REQUIREMENTS.md')
+
     $entry = @(
         "### $($next.Label) - build $($next.Build) - $(Get-Date -Format 'yyyy-MM-dd')",
         '',
