@@ -174,14 +174,14 @@ class _SplashHadithState extends State<_SplashHadith>
 /// أن يمرّ بها بالخطأ فيبدّل خادمَه.
 ///
 /// الحدُّ الأدنى لأن استعادة الجلسة من المخزن المحلي تتمّ في جزءٍ من الثانية،
-/// فبدونه تومض الشاشةُ ولا تُرى.
+/// فبدونه تومض الشاشةُ ولا تُرى. وهو ثانيتان لا ثانية: الحديثُ تحت العلامة يحتاج وقتاً ليُقرأ.
 class SplashGate extends StatefulWidget {
   const SplashGate({
     super.key,
     required this.ready,
     required this.child,
     this.caption,
-    this.minimum = const Duration(seconds: 1),
+    this.minimum = const Duration(seconds: 2),
     this.onServerChoice,
   });
 

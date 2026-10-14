@@ -27,7 +27,7 @@ void main() {
       expect(find.byType(BrandSplash), findsOneWidget);
       expect(find.text('تطبيق الأستاذ'), findsOneWidget);
 
-      await tester.pump(const Duration(milliseconds: 900));
+      await tester.pump(const Duration(milliseconds: 1900));
       expect(find.text('الشاشة الأولى'), findsNothing);
 
       await tester.pump(const Duration(milliseconds: 200));
@@ -134,9 +134,11 @@ void main() {
     testWidgets('holds the splash even when the session is ready', (tester) async {
       await pumpSplash(tester, choice: choice());
 
-      // تجاوزُ الحدّ الأدنى بنقرةٍ بدأت قبله: ثلاثُ نقراتٍ تستغرق أكثر من ثانية.
-      await tapLogo(tester, 2);
-      await tester.pump(const Duration(milliseconds: 900));
+      // تجاوزُ الحدّ الأدنى (ثانيتان) بنقراتٍ بدأت قبله، كلٌّ منها داخل نافذة سابقتها.
+      await tapLogo(tester, 1);
+      await tester.pump(const Duration(milliseconds: 1200));
+      await tapLogo(tester, 1);
+      await tester.pump(const Duration(milliseconds: 1200));
       expect(find.byType(BrandSplash), findsOneWidget);
 
       await tapLogo(tester, 1);
@@ -152,6 +154,8 @@ void main() {
       await settle(tester);
       await tester.tap(find.text('إلغاء'));
       await tester.pump();
+      // ما بقي من الحدّ الأدنى (ثانيتان)، ثم التلاشي.
+      await tester.pump(const Duration(seconds: 2));
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byType(AlertDialog), findsNothing);
