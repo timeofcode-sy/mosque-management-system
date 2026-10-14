@@ -70,9 +70,12 @@ class AdminRepository {
   Future<void> revokeRole({required int userId, required String role}) =>
       _api.revokeUserRole(userId, {'role': role});
 
-  /// توليدُ كلمةِ مرورٍ جديدة — تعود مرّةً واحدة كما في [inviteUser].
-  Future<IssuedCredentials> resetPassword(int userId) async {
-    final response = await _api.resetUserPassword(userId, const {});
+  /// كلمةُ مرورٍ جديدة — يكتبها المشرف في [password]، أو يولّد الخادمُ ثمانيةَ أرقام إن غابت.
+  /// وتعود مرّةً واحدة كما في [inviteUser].
+  Future<IssuedCredentials> resetPassword(int userId, {String? password}) async {
+    final response = await _api.resetUserPassword(userId, {
+      if (password != null && password.isNotEmpty) 'password': password,
+    });
 
     final body = response.data;
 

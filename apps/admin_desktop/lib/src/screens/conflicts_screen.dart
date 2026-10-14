@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
+import '../config.dart';
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
 import '../widgets/sync_bar.dart';
@@ -49,6 +50,13 @@ class _ConflictsScreenState extends State<ConflictsScreen> {
 
   void _reload() => setState(() => _conflicts = _load());
 
+  /// سحبُ القائمة إلى الأسفل يعيد قراءتها — على الهاتف بدل زرّ التحديث.
+  Future<void> _pull() {
+    _reload();
+
+    return _conflicts!.then((_) {}, onError: (_) {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final compact = context.isCompact;
@@ -76,7 +84,7 @@ class _ConflictsScreenState extends State<ConflictsScreen> {
         title: const Text('التعارضات'),
         // على الهاتف المرشّحُ تحت العنوان بعرض الشاشة.
         actions: compact
-            ? [const PhoneSyncAction(), refresh]
+            ? [const PhoneSyncAction(), if (!AppConfig.isPhone) refresh]
             : [
                 Padding(
                   padding: const EdgeInsetsDirectional.only(end: 16),
@@ -93,51 +101,55 @@ class _ConflictsScreenState extends State<ConflictsScreen> {
               )
             : null,
       ),
-      body: FutureBuilder<List<SyncConflict>>(
-        future: _conflicts,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: RefreshIndicator(
+        onRefresh: _pull,
+        child: FutureBuilder<List<SyncConflict>>(
+          future: _conflicts,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (snapshot.hasError) {
-            final error = snapshot.error!;
+            if (snapshot.hasError) {
+              final error = snapshot.error!;
 
-            return ErrorState(
-              message: isOffline(error)
-                  ? 'التعارضاتُ تُقرأ من الخادم — لا من مخزن الجهاز — لأنها '
-                        'أثرُ الدفعة لا بيانُ المعهد. أعِد المحاولة حين تعود الشبكة.'
-                  : messageFor(error),
-              onRetry: _reload,
-            );
-          }
+              return ErrorState(
+                message: isOffline(error)
+                    ? 'التعارضاتُ تُقرأ من الخادم — لا من مخزن الجهاز — لأنها '
+                          'أثرُ الدفعة لا بيانُ المعهد. أعِد المحاولة حين تعود الشبكة.'
+                    : messageFor(error),
+                onRetry: _reload,
+              );
+            }
 
-          final conflicts = snapshot.data ?? const <SyncConflict>[];
+            final conflicts = snapshot.data ?? const <SyncConflict>[];
 
-          if (conflicts.isEmpty) {
-            return EmptyState(
-              message: _status == 'pending'
-                  ? 'لا تعارضَ ينتظر المراجعة — وهذا هو الحال المعتاد.'
-                  : 'لا تعارضَ في هذا المعهد.',
-              icon: NzIcons.attendance,
-              onRetry: _reload,
-            );
-          }
+            if (conflicts.isEmpty) {
+              return EmptyState(
+                message: _status == 'pending'
+                    ? 'لا تعارضَ ينتظر المراجعة — وهذا هو الحال المعتاد.'
+                    : 'لا تعارضَ في هذا المعهد.',
+                icon: NzIcons.attendance,
+                onRetry: _reload,
+              );
+            }
 
-          return PagedView<SyncConflict>(
-            items: conflicts,
-            builder: (context, page) => ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: page.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, index) => _ConflictCard(
-                conflict: page[index],
-                canReview: AppScope.of(context).session.can('conflicts.review'),
-                onResolved: _reload,
+            return PagedView<SyncConflict>(
+              items: conflicts,
+              builder: (context, page) => ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: page.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) => _ConflictCard(
+                  conflict: page[index],
+                  canReview: AppScope.of(context).session
+                      .can('conflicts.review'),
+                  onResolved: _reload,
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
 import '../widgets/sync_bar.dart';
 import 'attendance_screen.dart';
+import 'sessions_log_screen.dart';
 
 /// بابُ «التفقّد» — **يومُ المعهد كلُّه في شاشة**.
 ///
@@ -21,6 +22,10 @@ class AttendanceHubScreen extends StatefulWidget {
 
 class _AttendanceHubScreenState extends State<AttendanceHubScreen> {
   late DateTime _date = _today();
+
+  /// الحلقاتُ التي ليس لها دوامٌ في اليوم تُخفى خلف زرّ «التفقّد الاستدراكي» — وتعود
+  /// مخفيّةً كلما تبدّل اليوم.
+  bool _showMakeup = false;
 
   static DateTime _today() {
     final now = DateTime.now();
@@ -38,8 +43,7 @@ class _AttendanceHubScreenState extends State<AttendanceHubScreen> {
       IconButton(
         tooltip: 'اليوم السابق',
         icon: const NzIcon(NzIcons.back),
-        onPressed: () =>
-            setState(() => _date = _date.subtract(const Duration(days: 1))),
+        onPressed: () => _setDate(_date.subtract(const Duration(days: 1))),
       ),
       TextButton.icon(
         onPressed: _pickDate,
@@ -52,17 +56,26 @@ class _AttendanceHubScreenState extends State<AttendanceHubScreen> {
         // اختلف البابان إلى نفس التاريخ.
         icon: const NzIcon(NzIcons.chevronLeft),
         onPressed: _date.isBefore(_today())
-            ? () => setState(() => _date = _date.add(const Duration(days: 1)))
+            ? () => _setDate(_date.add(const Duration(days: 1)))
             : null,
       ),
     ];
+
+    // سجلُّ الجلسات هنا لا في «الحلقات»: هو سجلُّ ما تُفقِّد.
+    final sessionsLog = IconButton(
+      tooltip: 'سجل الجلسات',
+      icon: const NzIcon(NzIcons.clock),
+      onPressed: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const SessionsLogScreen()),
+      ),
+    );
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('التفقّد'),
         actions: context.isCompact
-            ? const [PhoneSyncAction()]
-            : [...dateNav, const SizedBox(width: 8)],
+            ? [const PhoneSyncAction(), sessionsLog]
+            : [...dateNav, sessionsLog, const SizedBox(width: 8)],
         bottom: context.isCompact
             ? PreferredSize(
                 preferredSize: const Size.fromHeight(48),
@@ -95,34 +108,96 @@ class _AttendanceHubScreenState extends State<AttendanceHubScreen> {
             );
           }
 
-          return StreamBuilder<Map<int, String>>(
-            stream: deps.circles.watchDayStatuses(_date),
-            initialData: const {},
-            builder: (context, statuses) {
-              final byStatus = statuses.data ?? const <int, String>{};
-              final sorted = [...circles]
-                ..sort((a, b) {
-                  final rank = _rank(byStatus[a.id]) - _rank(byStatus[b.id]);
+          return StreamBuilder<Set<int>>(
+            stream: deps.circles.watchScheduledCircleIds(_date),
+            builder: (context, scheduledSnapshot) =>
+                StreamBuilder<Map<int, String>>(
+                  stream: deps.circles.watchDayStatuses(_date),
+                  initialData: const {},
+                  builder: (context, statuses) {
+                    if (!scheduledSnapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                  return rank != 0 ? rank : a.shiftName.compareTo(b.shiftName);
-                });
+                    final byStatus = statuses.data ?? const <int, String>{};
+                    final scheduled = scheduledSnapshot.data!;
+                    int order(CircleView a, CircleView b) {
+                      final rank =
+                          _rank(byStatus[a.id]) - _rank(byStatus[b.id]);
 
-              return ListView.separated(
-                padding: const EdgeInsets.all(16),
-                itemCount: sorted.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 8),
-                itemBuilder: (context, index) => _CircleTile(
-                  circle: sorted[index],
-                  status: byStatus[sorted[index].id],
-                  onOpen: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) =>
-                          AttendanceScreen(circle: sorted[index], date: _date),
-                    ),
-                  ),
+                      return rank != 0
+                          ? rank
+                          : a.shiftName.compareTo(b.shiftName);
+                    }
+
+                    // حلقاتُ اليوم: ما له دوامٌ فيه، وما فُتحت له جلسةٌ فيه ولو استدراكاً.
+                    final today = [
+                      for (final circle in circles)
+                        if (scheduled.contains(circle.id) ||
+                            byStatus.containsKey(circle.id))
+                          circle,
+                    ]..sort(order);
+                    final others = [
+                      for (final circle in circles)
+                        if (!today.contains(circle)) circle,
+                    ]..sort((a, b) => a.circleName.compareTo(b.circleName));
+
+                    Widget tile(CircleView circle) => _CircleTile(
+                      circle: circle,
+                      status: byStatus[circle.id],
+                      onOpen: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              AttendanceScreen(circle: circle, date: _date),
+                        ),
+                      ),
+                    );
+
+                    return ListView(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        if (today.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 24),
+                            child: Text(
+                              'لا حلقةَ لها دوامٌ ${formatLongDate(_date)}.',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ),
+                        for (final circle in today) ...[
+                          tile(circle),
+                          const SizedBox(height: 8),
+                        ],
+                        if (others.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          if (!_showMakeup)
+                            OutlinedButton.icon(
+                              onPressed: () =>
+                                  setState(() => _showMakeup = true),
+                              icon: const NzIcon(NzIcons.plus, size: 18),
+                              label: Text(
+                                'التفقّد الاستدراكي — ${others.length} حلقة بلا دوامٍ اليوم',
+                              ),
+                            )
+                          else ...[
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+                              child: Text(
+                                'تفقّدٌ استدراكي — حلقاتٌ ليس لها دوامٌ أساسيٌّ في هذا اليوم',
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                            ),
+                            for (final circle in others) ...[
+                              tile(circle),
+                              const SizedBox(height: 8),
+                            ],
+                          ],
+                        ],
+                      ],
+                    );
+                  },
                 ),
-              );
-            },
           );
         },
       ),
@@ -147,9 +222,15 @@ class _AttendanceHubScreenState extends State<AttendanceHubScreen> {
     );
 
     if (picked != null) {
-      setState(() => _date = DateTime(picked.year, picked.month, picked.day));
+      _setDate(DateTime(picked.year, picked.month, picked.day));
     }
   }
+
+  /// يومٌ آخر يطوي الاستدراكيَّ ثانيةً: حلقاتُ اليوم الجديد غيرُ حلقات السابق.
+  void _setDate(DateTime date) => setState(() {
+    _date = date;
+    _showMakeup = false;
+  });
 }
 
 class _CircleTile extends StatelessWidget {

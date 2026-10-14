@@ -186,6 +186,29 @@ class CircleRepository {
   Stream<Map<int, String>> watchDayStatuses(DateTime date) =>
       _watch(() => loadDayStatuses(date));
 
+  /// الحلقاتُ التي يقع [date] في أيام دوامها — كشفُ التفقّد اليوميّ. وما عداها تفقّدٌ
+  /// استدراكي يُفتح عند الحاجة.
+  ///
+  /// أيامُ الدوام 0 (الأحد) إلى 6 (السبت) كما في `App\Enums\Weekday`، و`DateTime.weekday`
+  /// من 1 (الاثنين) إلى 7 (الأحد): فباقي القسمة على 7 هو اليومُ نفسُه.
+  Future<Set<int>> loadScheduledCircleIds(DateTime date) async {
+    final weekday = date.weekday % 7;
+
+    final query = _db.select(_db.courseCircles).join([
+      innerJoin(
+        _db.shiftDays,
+        _db.shiftDays.shiftId.equalsExp(_db.courseCircles.shiftId),
+      ),
+    ])..where(_db.shiftDays.weekday.equals(weekday));
+
+    return {
+      for (final row in await query.get()) row.readTable(_db.courseCircles).id,
+    };
+  }
+
+  Stream<Set<int>> watchScheduledCircleIds(DateTime date) =>
+      _watch(() => loadScheduledCircleIds(date));
+
   Future<int> _activeEnrollmentCount(int courseCircleId) async {
     final total = _db.enrollments.id.count();
     final row =

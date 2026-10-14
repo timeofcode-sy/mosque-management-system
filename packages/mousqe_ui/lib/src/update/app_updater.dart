@@ -217,6 +217,9 @@ class AppUpdater extends ChangeNotifier {
         _ when _file != null => UpdateStage.ready,
         _ => UpdateStage.available,
       };
+      // السؤالُ الذي أُجيب وحده يُحسب: تطبيقٌ فُتح بلا شبكة يسأل ثانيةً حين يعود إلى الواجهة،
+      // لا بعد ستّ ساعات.
+      _lastCheck = DateTime.now();
     } catch (_) {
       _info = previous;
       _stage = previous != null
@@ -226,7 +229,6 @@ class AppUpdater extends ChangeNotifier {
         _error = 'تعذّر الوصول إلى الخادم للتحقق من التحديثات. تأكّد من الاتصال ثم أعد المحاولة.';
       }
     } finally {
-      _lastCheck = DateTime.now();
       notifyListeners();
     }
   }

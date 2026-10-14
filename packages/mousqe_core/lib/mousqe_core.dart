@@ -36,6 +36,7 @@ export 'src/data/circle_repository.dart';
 export 'src/data/circle_views.dart';
 export 'src/data/conflict_repository.dart';
 export 'src/data/guardian_repository.dart';
+export 'src/data/institute_content_repository.dart';
 export 'src/data/labels.dart';
 export 'src/data/stats_repository.dart';
 export 'src/data/stats_views.dart';

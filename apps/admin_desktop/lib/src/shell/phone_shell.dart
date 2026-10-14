@@ -12,14 +12,14 @@ import 'destinations.dart';
 ///
 /// الشريطُ لا يسع خمسةَ عشرَ باباً، ولا يصحّ أن يقصّها أوّلُ القائمة أعمى: فهنا
 /// ترتيبٌ بما يفتحه المشرفُ من هاتفه في المسجد — يومُ المعهد، ثم التفقّد، ثم
-/// الطلاب، ثم الحلقات. وما لا يملكه صاحبُ الحساب يسقط فيتقدّم ما بعده، فلكلّ دورٍ
+/// الطلاب، ثم أعذار الغياب — والحلقاتُ في «المزيد»: التفقّدُ يفتحها كلَّ يوم، وسجلُّ جلساتها فيه. وما لا يملكه صاحبُ الحساب يسقط فيتقدّم ما بعده، فلكلّ دورٍ
 /// أبوابُه الأربعة الأقرب. والبقيّةُ في «المزيد» بعناوين القائمة الجانبية نفسها.
 const List<String> phonePriority = [
   'dashboard',
   'attendance',
   'students',
-  'circles',
   'excuses',
+  'circles',
   'enrollments',
   'reports',
 ];
@@ -326,7 +326,10 @@ class MoreScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('المزيد'), actions: const [PhoneSyncAction()]),
+      appBar: AppBar(
+        title: const Text('المزيد'),
+        actions: const [PhoneSyncAction()],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           NzSpace.s4,

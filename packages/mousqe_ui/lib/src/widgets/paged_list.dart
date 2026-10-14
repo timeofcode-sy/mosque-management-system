@@ -91,53 +91,81 @@ class PaginationBar extends StatelessWidget {
                 onTap: () => onPage(page - 1),
                 // السهمُ للخلف يشير إلى اليمين في الواجهة العربية.
                 child: const NzIcon(NzIcons.back, size: 16),
-                narrow: narrow,
+                narrow: false,
               ),
-              if (narrow)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: NzSpace.s3),
-                  child: Text(
-                    'صفحة ${page + 1} من $pageCount',
-                    style: NzType.body.copyWith(color: c.inkMuted),
-                  ),
-                )
-              else
-                for (final p in window)
-                  p == null
-                      ? SizedBox(
-                          width: 32,
-                          child: Center(
-                            child: Text(
-                              '…',
-                              style: NzType.body.copyWith(color: c.inkMuted),
-                            ),
-                          ),
-                        )
-                      : _PageButton(
-                          tooltip: 'الصفحة ${p + 1}',
-                          current: p == page,
-                          onTap: () => onPage(p),
-                          narrow: false,
+              for (final p in window)
+                p == null
+                    ? SizedBox(
+                        width: 32,
+                        child: Center(
                           child: Text(
-                            '${p + 1}',
-                            style: NzType.label.copyWith(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: p == page ? c.onPrimary : c.ink,
-                            ),
+                            '…',
+                            style: NzType.body.copyWith(color: c.inkMuted),
                           ),
                         ),
+                      )
+                    : _PageButton(
+                        tooltip: 'الصفحة ${p + 1}',
+                        current: p == page,
+                        onTap: () => onPage(p),
+                        narrow: false,
+                        child: Text(
+                          '${p + 1}',
+                          style: NzType.label.copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: p == page ? c.onPrimary : c.ink,
+                          ),
+                        ),
+                      ),
               _PageButton(
                 tooltip: 'التالي',
                 enabled: page < pageCount - 1,
                 onTap: () => onPage(page + 1),
                 child: const NzIcon(NzIcons.chevronLeft, size: 16),
-                narrow: narrow,
+                narrow: false,
               ),
             ],
           );
 
+    // على الهاتف سطرٌ واحد بعرض الشاشة: السابق · «عرض 1–24 من 418» · التالي — لا سطران
+    // وأزرارٌ كبيرة تأكل ربعَ الشاشة.
+    if (narrow) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(
+          horizontal: NzSpace.s3,
+          vertical: NzSpace.s1,
+        ),
+        decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: c.line)),
+        ),
+        child: Row(
+          children: [
+            if (pageCount > 1)
+              _PageButton(
+                tooltip: 'السابق',
+                enabled: page > 0,
+                onTap: () => onPage(page - 1),
+                narrow: true,
+                child: const NzIcon(NzIcons.back, size: 16),
+              ),
+            Expanded(child: Center(child: summary)),
+            if (pageCount > 1)
+              _PageButton(
+                tooltip: 'التالي',
+                enabled: page < pageCount - 1,
+                onTap: () => onPage(page + 1),
+                narrow: true,
+                child: const NzIcon(NzIcons.chevronLeft, size: 16),
+              ),
+          ],
+        ),
+      );
+    }
+
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.symmetric(
         horizontal: NzSpace.s4,
         vertical: NzSpace.s3,
@@ -145,19 +173,10 @@ class PaginationBar extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(top: BorderSide(color: c.line)),
       ),
-      child: narrow
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                summary,
-                const SizedBox(height: NzSpace.s2),
-                controls,
-              ],
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [summary, controls],
-            ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [summary, controls],
+      ),
     );
   }
 }

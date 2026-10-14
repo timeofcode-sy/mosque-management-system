@@ -6,7 +6,6 @@ import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
 import '../widgets/sync_bar.dart';
 import 'attendance_screen.dart';
-import 'sessions_log_screen.dart';
 
 /// كشفُ حلقات المعهد — **كلُّها لا حلقاتُ صاحب الجهاز**.
 ///
@@ -44,18 +43,8 @@ class _CirclesScreenState extends State<CirclesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('حلقات المعهد'),
-        actions: [
-          const PhoneSyncAction(),
-          IconButton(
-            tooltip: 'سجل الجلسات',
-            icon: const NzIcon(NzIcons.clock),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const SessionsLogScreen(),
-              ),
-            ),
-          ),
-        ],
+        // سجلُّ الجلسات انتقل إلى باب «التفقّد»: هو سجلُّ ما تُفقِّد.
+        actions: const [PhoneSyncAction()],
       ),
       body: StreamBuilder<List<CircleView>>(
         stream: deps.circles.watchCircles(),
@@ -176,7 +165,7 @@ class _Filters extends StatelessWidget {
         border: OutlineInputBorder(),
       ),
       items: [
-        const DropdownMenuItem(value: null, child: Text('كل الدوامات')),
+        const DropdownMenuItem(value: null, child: Text('كل أوقات الدوام')),
         for (final name in shifts)
           DropdownMenuItem(value: name, child: Text(name)),
       ],

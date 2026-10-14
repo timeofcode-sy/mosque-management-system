@@ -19,6 +19,7 @@ void main() {
     // ([APPS-FEATURES.md §4.3]).
     expect(ids, isNot(contains('institutes')));
     expect(ids, containsAll(['users', 'settings', 'credentials', 'catalog']));
+    expect(ids, containsAll(['teachers', 'announcements', 'fields']));
   });
 
   test('the supervisor gets the daily doors, not the institute ones', () {

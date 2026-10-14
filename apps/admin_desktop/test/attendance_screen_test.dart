@@ -91,6 +91,7 @@ void main() {
       students: StudentRepository(db: db, syncEngine: engine),
       catalog: CatalogRepository(db: db, apiClient: api),
       admin: AdminRepository(apiClient: api),
+      content: InstituteContentRepository(db: db, apiClient: api),
       stats: StatsRepository(db: db),
       conflicts: ConflictRepository(apiClient: api),
     );

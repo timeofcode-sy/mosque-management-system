@@ -345,4 +345,70 @@ abstract class ApiClient {
   /// إعلاناتُ المعهد وحلقاتِه الموجَّهة إلى الأساتذة — والترشيحُ في الخادم.
   @GET('/teacher/announcements')
   Future<HttpResponse<dynamic>> teacherAnnouncements();
+
+  // ---------------------------------------------------------------- سجلُّ التسميع
+
+  /// تسميعاتُ الطالب الأخيرة — تحت شريط الأجزاء في «حفظي».
+  @GET('/student/me/recitations')
+  Future<HttpResponse<dynamic>> studentRecitations();
+
+  /// تسميعاتُ ابنٍ بعينه — تحت شريط الأجزاء في لسان «الحفظ».
+  @GET('/guardian/children/{uuid}/recitations')
+  Future<HttpResponse<dynamic>> guardianChildRecitations(@Path('uuid') String uuid);
+
+  // ---------------------------------------------------------------- ما كان في اللوحة وحدها
+
+  @POST('/admin/teachers')
+  Future<HttpResponse<dynamic>> storeTeacher(@Body() Map<String, dynamic> body);
+
+  @PUT('/admin/teachers/{uuid}')
+  Future<HttpResponse<dynamic>> updateTeacher(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @DELETE('/admin/teachers/{uuid}')
+  Future<HttpResponse<dynamic>> deleteTeacher(@Path('uuid') String uuid);
+
+  @POST('/admin/teachers/{uuid}/account')
+  Future<HttpResponse<dynamic>> teacherAccount(@Path('uuid') String uuid);
+
+  @GET('/admin/announcements')
+  Future<HttpResponse<dynamic>> adminAnnouncements();
+
+  @POST('/admin/announcements')
+  Future<HttpResponse<dynamic>> storeAnnouncement(@Body() Map<String, dynamic> body);
+
+  @PUT('/admin/announcements/{uuid}')
+  Future<HttpResponse<dynamic>> updateAnnouncement(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST('/admin/announcements/{uuid}/unpublish')
+  Future<HttpResponse<dynamic>> unpublishAnnouncement(@Path('uuid') String uuid);
+
+  @POST('/admin/custom-fields')
+  Future<HttpResponse<dynamic>> storeCustomField(@Body() Map<String, dynamic> body);
+
+  @PUT('/admin/custom-fields/{uuid}')
+  Future<HttpResponse<dynamic>> updateCustomField(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @DELETE('/admin/custom-fields/{uuid}')
+  Future<HttpResponse<dynamic>> deleteCustomField(@Path('uuid') String uuid);
+
+  @POST('/admin/traits')
+  Future<HttpResponse<dynamic>> storeTrait(@Body() Map<String, dynamic> body);
+
+  @PUT('/admin/traits/{uuid}')
+  Future<HttpResponse<dynamic>> updateTrait(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @DELETE('/admin/traits/{uuid}')
+  Future<HttpResponse<dynamic>> deleteTrait(@Path('uuid') String uuid);
 }

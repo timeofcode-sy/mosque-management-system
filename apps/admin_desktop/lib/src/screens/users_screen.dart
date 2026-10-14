@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
+import '../config.dart';
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
 import '../widgets/connected_action.dart';
@@ -58,6 +59,13 @@ class _UsersScreenState extends State<UsersScreen> {
     });
   }
 
+  /// سحبُ القائمة إلى الأسفل يعيد قراءتها — على الهاتف بدل زرّ التحديث.
+  Future<void> _pull() {
+    _reload();
+
+    return _future!.then((_) {}, onError: (_) {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final deps = AppScope.of(context);
@@ -67,11 +75,13 @@ class _UsersScreenState extends State<UsersScreen> {
         title: const Text('المستخدمون والأدوار'),
         actions: [
           const PhoneSyncAction(),
-          IconButton(
-            tooltip: 'تحديث',
-            icon: const NzIcon(NzIcons.review),
-            onPressed: _reload,
-          ),
+          // على الهاتف تُسحب القائمةُ إلى الأسفل بدل الزرّ.
+          if (!AppConfig.isPhone)
+            IconButton(
+              tooltip: 'تحديث',
+              icon: const NzIcon(NzIcons.review),
+              onPressed: _reload,
+            ),
           if (deps.session.can('users.invite'))
             AdaptiveAction(
               icon: NzIcons.userPlus,
@@ -110,37 +120,40 @@ class _UsersScreenState extends State<UsersScreen> {
           ),
           const Divider(height: 1),
           Expanded(
-            child: FutureBuilder<(List<AdminUser>, List<RoleOption>)>(
-              future: _future,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return _NetworkError(
-                    error: snapshot.error!,
-                    onRetry: _reload,
+            child: RefreshIndicator(
+              onRefresh: _pull,
+              child: FutureBuilder<(List<AdminUser>, List<RoleOption>)>(
+                future: _future,
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return _NetworkError(
+                      error: snapshot.error!,
+                      onRetry: _reload,
+                    );
+                  }
+
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final (users, roles) = snapshot.data!;
+
+                  if (users.isEmpty) {
+                    return const EmptyState(
+                      message: 'لا مستخدمين مطابقين.',
+                      icon: NzIcons.badge,
+                    );
+                  }
+
+                  return PagedList<AdminUser>(
+                    items: users,
+                    resetKey: _query,
+                    rowPadding: const EdgeInsets.symmetric(horizontal: 4),
+                    itemBuilder: (context, user) =>
+                        _UserRow(user: user, roles: roles, onChanged: _reload),
                   );
-                }
-
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final (users, roles) = snapshot.data!;
-
-                if (users.isEmpty) {
-                  return const EmptyState(
-                    message: 'لا مستخدمين مطابقين.',
-                    icon: NzIcons.badge,
-                  );
-                }
-
-                return PagedList<AdminUser>(
-                  items: users,
-                  resetKey: _query,
-                  rowPadding: const EdgeInsets.symmetric(horizontal: 4),
-                  itemBuilder: (context, user) =>
-                      _UserRow(user: user, roles: roles, onChanged: _reload),
-                );
-              },
+                },
+              ),
             ),
           ),
         ],
