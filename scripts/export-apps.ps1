@@ -53,7 +53,8 @@
     Default API address compiled into the apps. Default: https://nuzuln.com/api/v1
 
 .PARAMETER OutDir
-    Where the artifacts go. Default: <repo>/dist
+    Where the artifacts go. Default: <repo>/dist. Each version gets its own
+    folder inside it, by channel: dist/beta/1.0.0-beta.5/, dist/release/1.0.0/.
 
 .PARAMETER SkipPubGet
     Do not run "flutter pub get" at the workspace root, and pass --no-pub to the
@@ -227,6 +228,9 @@ if (-not (Test-Path $versionFile)) { throw "VERSION.md not found at $versionFile
 $entries = @(Read-Versions ([IO.File]::ReadAllText($versionFile, [Text.Encoding]::UTF8)))
 $next = Get-NextVersion $entries $Channel $Bump
 $notes = @(Get-ReleaseNotes $Notes $entries)
+
+# One folder per version, by channel, so dist/ never piles up loose files.
+$OutDir = Join-Path (Join-Path $OutDir $Channel) $next.Label
 
 # A version names a commit: a release must be exactly one, a beta may say it is not.
 $commit = (git -C $root rev-parse --short HEAD).Trim()

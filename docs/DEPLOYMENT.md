@@ -215,7 +215,7 @@ php artisan config:cache && php artisan route:cache && php artisan view:cache
 
 ```powershell
 .\scripts\export-apps.ps1 -DryRun                       # ما الإصدار التالي؟
-.\scripts\export-apps.ps1                               # بيتا جديدة لكل التطبيقات في dist/
+.\scripts\export-apps.ps1                               # بيتا جديدة لكل التطبيقات في dist/beta/<الإصدار>/
 .\scripts\export-apps.ps1 -Channel release              # إصدار نهائي (من commit نظيف)
 .\scripts\export-apps.ps1 -BaseUrl http://192.168.1.10:8000/api/v1   # يخبز عنواناً محلياً افتراضياً
 .\scripts\export-apps.ps1 -SkipPubGet                   # حين يتعذر الوصول إلى pub.dev
@@ -224,6 +224,6 @@ php artisan config:cache && php artisan route:cache && php artisan view:cache
 > إن منع ويندوز تشغيل السكربت («running scripts is disabled») فشغّله بسياقٍ مؤقت لهذه النافذة فقط: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` ثم الأمر. ولتمرير ملاحظات عربية استعمل المتغيّر: `$notes = 'ملاحظة 1','ملاحظة 2'; .\scripts\export-apps.ps1 -Notes $notes`.
 > يمرّ التصدير باختبارات كل تطبيق قبل بنائه، ولا يكتب في `VERSION.md` إن فشل أيّ بناء. أنشئ ملفات السجلّ خارج المستودع (أو التزم قبل التصدير) وإلا عُدَّ المستودع «غير نظيف».
 
-الناتج في `dist/`: حزمةُ APK لتطبيق «نزلاً» للهاتف (`mobile` ← `apps/nuzuln`، للأستاذ وولي الأمر والطالب) وأخرى للإدارة (`admin_android`)، ومجلد ويندوز مضغوط لبرنامج المكتب. وحتى تُحذف التطبيقات القديمة الثلاثة تخرج حزمُها أيضاً، فحدِّد `-Only mobile,admin_desktop,admin_android` لتجنّبها. وبرنامجُ الإدارة مشروعٌ واحد (`apps/admin_desktop`) يخرج منه ويندوز وأندرويد، فتُشغَّل اختباراتُه مرّةً واحدة. ويُسجَّل كل تصدير ناجح في [`VERSION.md`](../VERSION.md). يلزم لبناء APK حزمة Android SDK (`flutter doctor`)، ولبناء ويندوز Visual Studio بحمل «Desktop development with C++».
+الناتج في `dist/<القناة>/<الإصدار>/` (مثل `dist/beta/1.0.0-beta.5/`) فلا تتراكم الملفاتُ في `dist/`: حزمةُ APK لتطبيق «نزلاً» للهاتف (`mobile` ← `apps/nuzuln`، للأستاذ وولي الأمر والطالب) وأخرى للإدارة (`admin_android`)، ومجلد ويندوز مضغوط لبرنامج المكتب. وحتى تُحذف التطبيقات القديمة الثلاثة تخرج حزمُها أيضاً، فحدِّد `-Only mobile,admin_desktop,admin_android` لتجنّبها. وبرنامجُ الإدارة مشروعٌ واحد (`apps/admin_desktop`) يخرج منه ويندوز وأندرويد، فتُشغَّل اختباراتُه مرّةً واحدة. ويُسجَّل كل تصدير ناجح في [`VERSION.md`](../VERSION.md). يلزم لبناء APK حزمة Android SDK (`flutter doctor`)، ولبناء ويندوز Visual Studio بحمل «Desktop development with C++».
 
 **تثبيت APK على الهاتف:** انسخ الملف وافتحه (فعّل «تثبيت من مصادر غير معروفة» لتطبيق الملفات). التوقيع حالياً بمفتاح التصحيح (debug)؛ نشر المتجر يحتاج مفتاح توقيع خاصاً.

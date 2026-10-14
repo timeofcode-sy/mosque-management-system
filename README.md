@@ -52,7 +52,7 @@ vendor/bin/pint --dirty --format agent
 
 ```powershell
 .\scripts\export-apps.ps1 -DryRun             # ما الإصدار التالي؟ بلا بناء
-.\scripts\export-apps.ps1                     # بيتا جديدة للتطبيقات (4 APK + ويندوز) في dist/
+.\scripts\export-apps.ps1                     # بيتا جديدة للتطبيقات في dist/beta/<الإصدار>/
 .\scripts\export-apps.ps1 -Channel release    # إصدارٌ نهائي (من commit نظيف)
 ```
 
