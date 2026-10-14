@@ -101,7 +101,10 @@ class _BackupScreenState extends State<BackupScreen> {
     final deps = AppScope.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('نسخٌ احتياطي'), actions: const [PhoneSyncAction()]),
+      appBar: AppBar(
+        title: const Text('نسخٌ احتياطي'),
+        actions: const [PhoneSyncAction()],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

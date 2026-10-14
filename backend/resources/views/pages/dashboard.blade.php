@@ -112,7 +112,7 @@ new #[Title('لوحة المعلومات')] class extends Component {
             </div>
 
             @if ($this->courseCircles->isEmpty())
-                <flux:text class="p-6 text-center">لا توجد حلقات مشغَّلة في هذه الدورة بعد.</flux:text>
+                <flux:text class="p-6 text-center">لا توجد حلقات مفعّلة في هذه الدورة بعد.</flux:text>
             @else
                 <flux:table>
                     <flux:table.columns>

@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * هوية الحلقة ثابتة عبر الدورات؛ تشغيلها ضمن دورة معيّنة يمثّله CourseCircle.
+ * هوية الحلقة ثابتة عبر الدورات؛ تفعيلها ضمن دورة معيّنة يمثّله CourseCircle.
  */
 #[Fillable(['institute_id', 'name', 'level', 'color', 'sort_order', 'is_active', 'notes'])]
 class Circle extends Model implements Syncable

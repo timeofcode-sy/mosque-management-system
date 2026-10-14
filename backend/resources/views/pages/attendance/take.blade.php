@@ -480,7 +480,7 @@ new #[Title('تفقّد الحلقة')] class extends Component {
                                     </flux:link>
 
                                     @if (in_array($studentId, $this->excusedToday, true))
-                                        <flux:badge size="sm" color="blue">إذن مقبول</flux:badge>
+                                        <flux:badge size="sm" color="blue">عذر مقبول</flux:badge>
                                     @endif
                                 </div>
                                 <flux:text size="sm" class="latin-numerals text-muted">

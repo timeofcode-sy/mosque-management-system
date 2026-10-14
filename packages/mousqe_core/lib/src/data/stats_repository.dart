@@ -862,7 +862,7 @@ class StatsRepository {
       DateTime(value.year, value.month, value.day);
 }
 
-/// حلقةٌ مشغَّلة بأسماءِ ما حولها — تُقرأ مرّةً وتُستعمل في الترتيب والتقرير.
+/// حلقةٌ مفعّلة بأسماءِ ما حولها — تُقرأ مرّةً وتُستعمل في الترتيب والتقرير.
 class _Circle {
   const _Circle({
     required this.id,

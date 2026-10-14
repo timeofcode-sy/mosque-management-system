@@ -37,10 +37,10 @@ class PushMessage
     public static function excuseReviewed(string $studentName, bool $approved, string $excuseUuid): self
     {
         return new self(
-            title: $approved ? 'قُبل إذن الغياب' : 'رُفض إذن الغياب',
+            title: $approved ? 'قُبل عذر الغياب' : 'رُفض عذر الغياب',
             body: $approved
-                ? "قُبل إذنُ غياب $studentName."
-                : "رُفض إذنُ غياب $studentName — افتح التطبيق لقراءة ملاحظة المعهد.",
+                ? "قُبل عذرُ غياب $studentName."
+                : "رُفض عذرُ غياب $studentName — افتح التطبيق لقراءة ملاحظة المعهد.",
             data: ['type' => 'excuse', 'excuse_uuid' => $excuseUuid, 'approved' => $approved ? '1' : '0'],
         );
     }

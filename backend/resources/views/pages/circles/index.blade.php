@@ -148,7 +148,7 @@ new #[Title('الحلقات')] class extends Component {
 }; ?>
 
 <div class="flex w-full flex-col gap-6">
-    <x-page-header heading="الحلقات" subheading="هوية الحلقة ثابتة عبر الدورات — تشغيلها ضمن دورة ودوام صفٌّ مستقل">
+    <x-page-header heading="الحلقات" subheading="هوية الحلقة ثابتة عبر الدورات — تفعيلها ضمن دورة ودوام صفٌّ مستقل">
         <x-slot name="actions">
             <flux:button wire:click="create" variant="primary" icon="plus" data-test="new-circle">حلقة جديدة</flux:button>
         </x-slot>
@@ -157,7 +157,7 @@ new #[Title('الحلقات')] class extends Component {
     @if ($this->currentCourse === null)
         <flux:callout icon="calendar-days" variant="warning">
             <flux:callout.heading>لا توجد دورة جارية</flux:callout.heading>
-            <flux:callout.text>يمكنك تعريف الحلقات الآن، لكن تشغيلها يحتاج دورة جارية ودواماً.</flux:callout.text>
+            <flux:callout.text>يمكنك تعريف الحلقات الآن، لكن تفعيلها يحتاج دورة جارية ودواماً.</flux:callout.text>
         </flux:callout>
     @endif
 
@@ -194,7 +194,7 @@ new #[Title('الحلقات')] class extends Component {
                                 @if ($running)
                                     <flux:badge color="green" size="sm">{{ $running->shift->name }}{{ $running->room ? ' · '.$running->room : '' }}</flux:badge>
                                 @else
-                                    <flux:text size="sm">غير مشغَّلة</flux:text>
+                                    <flux:text size="sm">غير مفعّلة</flux:text>
                                 @endif
                             </flux:table.cell>
                             <flux:table.cell>{{ $running?->teachers->pluck('display_name')->join('، ') ?: '—' }}</flux:table.cell>
@@ -242,7 +242,7 @@ new #[Title('الحلقات')] class extends Component {
 
     <flux:modal name="run-circle" class="w-full max-w-lg">
         <form wire:submit="run" class="space-y-6">
-            <flux:heading size="lg">تشغيل الحلقة في الدورة الجارية</flux:heading>
+            <flux:heading size="lg">تفعيل الحلقة في الدورة الجارية</flux:heading>
 
             <flux:select wire:model="shift_id" label="الدوام" placeholder="اختر الدوام">
                 @foreach ($this->shifts as $shift)
@@ -256,7 +256,7 @@ new #[Title('الحلقات')] class extends Component {
             </div>
 
             <div class="flex gap-2">
-                <flux:button type="submit" variant="primary" data-test="run-circle">تشغيل</flux:button>
+                <flux:button type="submit" variant="primary" data-test="run-circle">تفعيل</flux:button>
                 <flux:modal.close><flux:button variant="ghost">إلغاء</flux:button></flux:modal.close>
             </div>
         </form>

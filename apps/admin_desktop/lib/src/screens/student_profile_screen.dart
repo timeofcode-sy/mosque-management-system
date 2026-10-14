@@ -30,7 +30,10 @@ class StudentProfileScreen extends StatelessWidget {
         final profile = snapshot.data;
 
         return Scaffold(
-          appBar: AppBar(title: Text(profile?.fullName ?? 'ملف الطالب'), actions: const [PhoneSyncAction()]),
+          appBar: AppBar(
+            title: Text(profile?.fullName ?? 'ملف الطالب'),
+            actions: const [PhoneSyncAction()],
+          ),
           body: profile == null
               ? const Center(child: CircularProgressIndicator())
               : _Body(profile: profile),

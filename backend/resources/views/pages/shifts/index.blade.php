@@ -11,7 +11,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('الدوامات')] class extends Component {
+new #[Title('أوقات الدوام')] class extends Component {
     use InteractsWithInstitute;
 
     public ?int $editingId = null;
@@ -111,7 +111,7 @@ new #[Title('الدوامات')] class extends Component {
 }; ?>
 
 <div class="flex w-full flex-col gap-6">
-    <x-page-header heading="الدوامات" :subheading="$this->currentCourse?->name">
+    <x-page-header heading="أوقات الدوام" :subheading="$this->currentCourse?->name">
         <x-slot name="actions">
             @if ($this->currentCourse)
                 <flux:button wire:click="create" variant="primary" icon="plus" data-test="new-shift">دوام جديد</flux:button>
@@ -122,7 +122,7 @@ new #[Title('الدوامات')] class extends Component {
     @if ($this->currentCourse === null)
         <flux:callout icon="calendar-days" variant="warning">
             <flux:callout.heading>لا توجد دورة جارية</flux:callout.heading>
-            <flux:callout.text>الدوامات تُعرَّف داخل دورة — فعّل دورة أولاً.</flux:callout.text>
+            <flux:callout.text>أوقات الدوام تُعرَّف داخل دورة — فعّل دورة أولاً.</flux:callout.text>
             <x-slot name="actions">
                 <flux:button :href="route('courses.index')" wire:navigate variant="primary" size="sm">إدارة الدورات</flux:button>
             </x-slot>
@@ -159,7 +159,7 @@ new #[Title('الدوامات')] class extends Component {
                     </flux:text>
                 </div>
             @empty
-                <flux:text class="p-6">لا توجد دوامات في هذه الدورة بعد.</flux:text>
+                <flux:text class="p-6">لا توجد أوقات دوام في هذه الدورة بعد.</flux:text>
             @endforelse
         </div>
     @endif

@@ -923,7 +923,10 @@ class _StatusPicker extends StatelessWidget {
         ButtonSegment(value: AttendanceStatus.present, label: Text('حاضر')),
         ButtonSegment(value: AttendanceStatus.absent, label: Text('غائب')),
         ButtonSegment(value: AttendanceStatus.late, label: Text('متأخر')),
-        ButtonSegment(value: AttendanceStatus.excused, label: Text('غائب بعذر')),
+        ButtonSegment(
+          value: AttendanceStatus.excused,
+          label: Text('غائب بعذر'),
+        ),
       ],
       selected: {status},
       onSelectionChanged: editable ? (values) => onChanged(values.first) : null,

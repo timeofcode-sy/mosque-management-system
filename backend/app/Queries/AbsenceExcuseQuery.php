@@ -11,7 +11,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 /**
- * قراءات شاشة أذونات الغياب المسبقة.
+ * قراءات شاشة أعذار الغياب.
  */
 class AbsenceExcuseQuery
 {

@@ -231,7 +231,7 @@ new #[Title('الدورات')] class extends Component {
     <flux:modal name="clone-circles" class="w-full max-w-lg">
         <form wire:submit="cloneStructure" class="space-y-6">
             <flux:heading size="lg">استنساخ بنية دورة سابقة</flux:heading>
-            <flux:text>تُنسخ الدوامات والحلقات وأساتذتها فقط — بلا تسجيلات ولا سجل تفقّد.</flux:text>
+            <flux:text>تُنسخ أوقات الدوام والحلقات وأساتذتها فقط — بلا تسجيلات ولا سجل تفقّد.</flux:text>
 
             <flux:select wire:model="cloneSourceId" label="الدورة المصدر" placeholder="اختر الدورة">
                 @foreach ($this->courses->where('id', '!=', $cloningId) as $course)

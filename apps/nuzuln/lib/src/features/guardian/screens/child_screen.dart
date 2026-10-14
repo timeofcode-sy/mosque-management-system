@@ -34,7 +34,7 @@ class ChildScreen extends StatelessWidget {
             ),
           ),
           icon: const NzIcon(NzIcons.calendar),
-          label: const Text('تقديم إذن'),
+          label: const Text('تقديم عذر'),
         ),
         body: TabBarView(
           children: [

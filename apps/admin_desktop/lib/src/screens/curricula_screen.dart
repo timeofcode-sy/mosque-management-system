@@ -27,7 +27,10 @@ class CurriculaScreen extends StatelessWidget {
     final deps = AppScope.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('المناهج'), actions: const [PhoneSyncAction()]),
+      appBar: AppBar(
+        title: const Text('المناهج'),
+        actions: const [PhoneSyncAction()],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _editCurriculum(context),
         icon: const NzIcon(NzIcons.plus),

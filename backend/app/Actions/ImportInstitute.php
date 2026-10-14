@@ -650,10 +650,10 @@ class ImportInstitute
         }
 
         return [[
-            'الدوامات' => $shifts->count(),
+            'أوقات الدوام' => $shifts->count(),
             'الأساتذة' => $teachers->count(),
             'الحلقات' => count($plan['circles']),
-            'الحلقات العاملة في الدورة' => count($courseCircles),
+            'الحلقات المفعّلة في الدورة' => count($courseCircles),
             'الطلاب' => count($plan['students']),
             'المسجّلون في حلقات' => $enrolled,
             'أولياء الأمور' => $institute->guardians()->count(),

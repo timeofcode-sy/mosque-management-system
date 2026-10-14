@@ -29,7 +29,7 @@ import 'snapshot_store.dart';
 /// ## ولا كتابةَ إطلاقاً
 ///
 /// أفقرُ المستودعات صلاحيةً: قراءةٌ صرف. لا `SyncEngine` ولا طابور ولا حتى
-/// كتابةٌ متّصلة كتقديم إذن ولي الأمر — والطالبُ لا يملك `sync.push` في كتالوج
+/// كتابةٌ متّصلة كتقديم عذر ولي الأمر — والطالبُ لا يملك `sync.push` في كتالوج
 /// الأدوار أصلاً.
 class StudentSelfRepository {
   StudentSelfRepository({required AppDatabase db, required ApiClient apiClient})

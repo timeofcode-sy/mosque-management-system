@@ -28,7 +28,10 @@ class _SessionsLogScreenState extends State<SessionsLogScreen> {
     final deps = AppScope.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('سجل الجلسات'), actions: const [PhoneSyncAction()]),
+      appBar: AppBar(
+        title: const Text('سجل الجلسات'),
+        actions: const [PhoneSyncAction()],
+      ),
       body: StreamBuilder<List<SessionLogEntry>>(
         stream: deps.circles.watchSessionLog(),
         builder: (context, snapshot) {

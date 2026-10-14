@@ -39,7 +39,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final deps = AppScope.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('التقارير والطباعة'), actions: const [PhoneSyncAction()]),
+      appBar: AppBar(
+        title: const Text('التقارير والطباعة'),
+        actions: const [PhoneSyncAction()],
+      ),
       body: FutureBuilder<List<CircleStanding>>(
         future: deps.stats.loadReportableCircles(),
         builder: (context, snapshot) {
@@ -52,8 +55,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
           if (circles.isEmpty) {
             return EmptyState(
               message:
-                  'لا حلقةَ مشغَّلةٌ في الدورة الجارية، فلا تقريرَ يُبنى. '
-                  'تُشغَّل الحلقاتُ من باب «الدورات والدوامات».',
+                  'لا حلقةَ مفعّلةٌ في الدورة الجارية، فلا تقريرَ يُبنى. '
+                  'تُفعَّل الحلقاتُ من باب «الدورات وأوقات الدوام».',
               icon: NzIcons.printer,
               onRetry: deps.sync.syncNow,
             );

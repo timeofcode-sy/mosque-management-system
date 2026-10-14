@@ -77,8 +77,8 @@ class _ExcusesScreenState extends State<ExcusesScreen> {
           if (excuses.isEmpty) {
             return EmptyState(
               message: _filter == 'pending'
-                  ? 'لا إذنَ ينتظر المراجعة.'
-                  : 'لم يصل أيُّ إذنِ غيابٍ بعد.',
+                  ? 'لا عذرَ ينتظر المراجعة.'
+                  : 'لم يصل أيُّ عذرِ غيابٍ بعد.',
               icon: NzIcons.envelopeOpen,
               onRetry: deps.sync.syncNow,
             );
@@ -195,8 +195,8 @@ class _ExcuseCard extends StatelessWidget {
       SnackBar(
         content: Text(
           approve
-              ? 'قُبل الإذن وصُفَّ للمزامنة.'
-              : 'رُفض الإذن وصُفَّ للمزامنة.',
+              ? 'قُبل العذر وصُفَّ للمزامنة.'
+              : 'رُفض العذر وصُفَّ للمزامنة.',
         ),
       ),
     );
@@ -210,7 +210,7 @@ class _ExcuseCard extends StatelessWidget {
     return showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(approve ? 'قبول الإذن' : 'رفض الإذن'),
+        title: Text(approve ? 'قبول العذر' : 'رفض العذر'),
         content: SizedBox(
           width: 420,
           child: TextField(

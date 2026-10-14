@@ -65,8 +65,8 @@ class DashboardScreen extends StatelessWidget {
                 // معهدٌ بلا دورةٍ جارية لا كشفَ له — ولا معنى لرسم صفرٍ عنه.
                 const EmptyState(
                   message:
-                      'لا دورةَ جاريةٌ في هذا المعهد بعد. تُهيَّأ الدورةُ ودواماتُها '
-                      'وحلقاتُها من باب «الدورات والدوامات»، ثم تظهر أرقامُها هنا.',
+                      'لا دورةَ جاريةٌ في هذا المعهد بعد. تُهيَّأ الدورةُ وأوقاتُ دوامها '
+                      'وحلقاتُها من باب «الدورات وأوقات الدوام»، ثم تظهر أرقامُها هنا.',
                   icon: NzIcons.calendar,
                 )
               else ...[
@@ -129,7 +129,7 @@ class _Counters extends StatelessWidget {
         ),
         StatCard(
           value: '${counters.circles}',
-          label: 'حلقةٌ مشغَّلة',
+          label: 'حلقةٌ مفعّلة',
           icon: NzIcons.halaqa,
         ),
         StatCard(
@@ -304,7 +304,7 @@ class _StandingsCard extends StatelessWidget {
 
     if (standings.isEmpty) {
       return const EmptyState(
-        message: 'لا حلقةَ مشغَّلةٌ في الدورة الجارية بعد.',
+        message: 'لا حلقةَ مفعّلةٌ في الدورة الجارية بعد.',
         icon: NzIcons.halaqa,
       );
     }

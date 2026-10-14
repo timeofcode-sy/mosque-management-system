@@ -19,7 +19,7 @@ class ImportInstituteCommand extends Command
                             {--dry-run : يتحقّق ويعرض ما سيُكتب ثم يتراجع}
                             {--without-passwords : الحسابات بأسماء دخولها وبلا كلمات حتى تُصدَر (accounts:issue-passwords)}';
 
-    protected $description = 'ينشئ معهداً كاملاً (دورة، دوامات، أساتذة، حلقات، طلاب وأولياؤهم) من مصنّف استيراد';
+    protected $description = 'ينشئ معهداً كاملاً (دورة، أوقات دوام، أساتذة، حلقات، طلاب وأولياؤهم) من مصنّف استيراد';
 
     public function handle(ImportInstitute $import): int
     {

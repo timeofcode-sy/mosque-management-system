@@ -117,6 +117,7 @@ void main() {
       students: StudentRepository(db: db, syncEngine: engine),
       catalog: CatalogRepository(db: db, apiClient: api),
       admin: AdminRepository(apiClient: api),
+      content: InstituteContentRepository(db: db, apiClient: api),
       stats: StatsRepository(db: db),
       conflicts: ConflictRepository(apiClient: api),
     );
@@ -369,7 +370,7 @@ void main() {
       await pump(tester, const ReportsScreen());
       await tester.pump();
 
-      expect(find.textContaining('لا حلقةَ مشغَّلةٌ'), findsOneWidget);
+      expect(find.textContaining('لا حلقةَ مفعّلةٌ'), findsOneWidget);
 
       await settle(tester);
     });

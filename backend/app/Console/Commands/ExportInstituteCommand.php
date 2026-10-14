@@ -16,7 +16,7 @@ class ExportInstituteCommand extends Command
                             {institute : معرّف المعهد أو اسمه}
                             {file : مسار المصنّف الناتج (xlsx)}';
 
-    protected $description = 'يصدّر بيانات معهد (الدوامات والأساتذة والحلقات والطلاب وأولياؤهم والحسابات) في مصنّف';
+    protected $description = 'يصدّر بيانات معهد (أوقات الدوام والأساتذة والحلقات والطلاب وأولياؤهم والحسابات) في مصنّف';
 
     public function handle(InstituteWorkbookQuery $query): int
     {

@@ -499,7 +499,7 @@ void main() {
       await repository.reviewExcuse(
         excuseUuid: 'exc-1',
         approve: true,
-        note: 'إذن مقبول',
+        note: 'عذر مقبول',
       );
 
       final excuse = (await repository.loadExcuses()).single;
@@ -512,7 +512,7 @@ void main() {
 
       expect(operation['type'], 'excuse.review');
       expect(operation['decision'], 'approved');
-      expect(operation['note'], 'إذن مقبول');
+      expect(operation['note'], 'عذر مقبول');
     });
 
     test('a rejection is a decision too, never a silent no-op', () async {

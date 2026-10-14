@@ -124,8 +124,8 @@
                             <p class="text-muted">الأجزاء المحفوظة والتسميع القادم، دون سؤال المعلّم.</p>
                         </li>
                         <li class="rounded-xl border border-line bg-raised p-6">
-                            <h3 class="mb-2 text-[19px] font-semibold">إذن الغياب</h3>
-                            <p class="text-muted">قدّموا إذن الغياب من التطبيق ويراجعه المشرف.</p>
+                            <h3 class="mb-2 text-[19px] font-semibold">عذر الغياب</h3>
+                            <p class="text-muted">قدّموا عذر الغياب من التطبيق ويراجعه المشرف.</p>
                         </li>
                     </ul>
                 </div>

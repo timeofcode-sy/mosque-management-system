@@ -601,7 +601,7 @@ class CustomFieldView {
   }
 }
 
-/// إذنُ غيابٍ وارد — يبتّ فيه المشرف وهو في المسجد بلا شبكة (`excuse.review`).
+/// عذرُ غيابٍ وارد — يبتّ فيه المشرف وهو في المسجد بلا شبكة (`excuse.review`).
 class ExcuseView {
   const ExcuseView({
     required this.uuid,

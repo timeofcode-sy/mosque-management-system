@@ -45,7 +45,7 @@
 
                     @can('excuses.review')
                         <flux:sidebar.item icon="envelope-open" :href="route('excuses.index')" :current="request()->routeIs('excuses.*')" wire:navigate>
-                            أذونات الغياب
+                            أعذار الغياب
                         </flux:sidebar.item>
                     @endcan
 
@@ -66,7 +66,7 @@
                                 الدورات
                             </flux:sidebar.item>
                             <flux:sidebar.item icon="clock" :href="route('shifts.index')" :current="request()->routeIs('shifts.*')" wire:navigate>
-                                الدوامات
+                                أوقات الدوام
                             </flux:sidebar.item>
                         @endcan
 

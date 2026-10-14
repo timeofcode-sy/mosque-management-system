@@ -40,7 +40,7 @@ class _SubmitExcuseScreenState extends State<SubmitExcuseScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('تقديم إذن غياب')),
+      appBar: AppBar(title: const Text('تقديم عذر غياب')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -99,7 +99,7 @@ class _SubmitExcuseScreenState extends State<SubmitExcuseScreen> {
             const SizedBox(height: 12),
             Text(
               'يُرسَل الطلبُ إلى المعهد فوراً ويحتاج اتصالاً بالإنترنت، ثم يظهر '
-              'في «أذونات الغياب» حتى يراجعه الطاقم. والغيابُ لا يُحتسب غائباً بعذر '
+              'في «أعذار الغياب» حتى يراجعه الطاقم. والغيابُ لا يُحتسب غائباً بعذر '
               'قبل القبول.',
               style: theme.textTheme.bodySmall,
             ),

@@ -38,7 +38,7 @@ class ChildrenScreen extends StatelessWidget {
             ),
           ),
           IconButton(
-            tooltip: 'أذونات الغياب',
+            tooltip: 'أعذار الغياب',
             icon: const NzIcon(NzIcons.calendar),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const ExcusesScreen()),
