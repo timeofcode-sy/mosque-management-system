@@ -6,9 +6,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:nuzuln/src/features/guardian/di/app_scope.dart';
 import 'package:nuzuln/src/features/guardian/screens/announcements_screen.dart';
-import 'package:nuzuln/src/features/guardian/screens/child_screen.dart';
+import 'package:nuzuln/src/features/guardian/screens/child_views.dart';
 import 'package:nuzuln/src/features/guardian/screens/children_screen.dart';
 import 'package:nuzuln/src/features/guardian/screens/excuses_screen.dart';
+import 'package:nuzuln/src/features/guardian/screens/guardian_shell.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 import 'package:retrofit/retrofit.dart';
 
@@ -184,9 +185,7 @@ void main() {
 
     await tester.pumpWidget(_wrap(
       dependencies,
-      const ChildScreen(
-        child: GuardianChild(uuid: 'std-1', fullName: 'محمد بن خالد'),
-      ),
+      const Scaffold(body: ChildAttendanceView(childUuid: 'std-1')),
     ));
     await tester.pumpAndSettle();
 
@@ -202,9 +201,7 @@ void main() {
 
     await tester.pumpWidget(_wrap(
       dependencies,
-      const ChildScreen(
-        child: GuardianChild(uuid: 'std-1', fullName: 'محمد بن خالد'),
-      ),
+      const Scaffold(body: ChildAttendanceView(childUuid: 'std-1')),
     ));
     await tester.pumpAndSettle();
 
@@ -297,5 +294,73 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('لا إعلاناتٍ بعد'), findsOneWidget);
+  });
+
+  group('the bottom-bar shell', () {
+    testWidgets('a child card opens its memorization tab: the juz bar, then the recitation log', (tester) async {
+      when(api.guardianChildren).thenAnswer((_) async => _response(_children()));
+      when(() => api.guardianChildProgress('std-1')).thenAnswer((_) async => _response({'data': <String, dynamic>{}}));
+      when(() => api.guardianChildRecitations('std-1')).thenAnswer(
+        (_) async => _response({
+          'data': [
+            {
+              'uuid': 'log-1',
+              'date': '2026-10-12',
+              'type': 'memorization',
+              'type_label': 'حفظ جديد',
+              'grade': 'excellent',
+              'grade_label': 'ممتاز',
+              'from_surah_name': 'الملك',
+              'from_ayah': 1,
+              'to_surah_name': 'الملك',
+              'to_ayah': 15,
+              'lines': 12,
+              'points': 5,
+              'notes': null,
+            },
+          ],
+        }),
+      );
+
+      await tester.pumpWidget(_wrap(dependencies, const GuardianShell()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('محمد بن خالد'), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(OutlinedButton, 'الحفظ'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('سجلّ التسميع'), findsOneWidget);
+      expect(find.text('الملك 1 – 15'), findsOneWidget);
+      expect(find.text('ممتاز'), findsOneWidget);
+      // ولا نسبةَ مئوية لكل جزء تحت الشريط بعد اليوم.
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+    });
+
+    testWidgets('signing out from "more" asks first, and cancelling keeps the session', (tester) async {
+      when(api.guardianChildren).thenAnswer((_) async => _response(_children()));
+      when(api.logout).thenAnswer((_) async => _response(null));
+
+      await tester.pumpWidget(_wrap(dependencies, const GuardianShell()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('المزيد'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.text('تسجيل الخروج'), 200);
+      await tester.tap(find.text('تسجيل الخروج'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('هل تريد تسجيل الخروج'), findsOneWidget);
+
+      await tester.tap(find.text('إلغاء'));
+      await tester.pumpAndSettle();
+      verifyNever(api.logout);
+
+      await tester.tap(find.text('تسجيل الخروج'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'خروج'));
+      await tester.pumpAndSettle();
+      verify(api.logout).called(1);
+    });
   });
 }

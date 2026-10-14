@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
+import '../../../widgets/recitation_log.dart';
 import '../di/app_scope.dart';
+import 'announcements_screen.dart';
 
-/// حفظي: بنودُ المحفوظات مجمَّعةً باسم المنهج.
+/// حفظي: شريطُ الأجزاء، وتحته سجلُّ التسميع يوماً بيوم.
+///
+/// كان تحت الشريط نسبةٌ مئوية لكل جزء — تكرارٌ للشريط نفسِه بلونٍ آخر. والسجلُّ يقول ما
+/// لا يقوله الشريط: ماذا سمّعتُ، ومتى، وبأيّ تقدير.
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({super.key});
 
@@ -13,67 +18,48 @@ class ProgressScreen extends StatelessWidget {
     final repository = AppScope.of(context).repository;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('حفظي')),
-      body: SnapshotView<CurriculumProgressReport>(
-        load: () async => (await repository.progress()).ui,
+      appBar: AppBar(
+        title: const Text('حفظي'),
+        actions: const [AnnouncementsAction()],
+      ),
+      body: SnapshotView<(CurriculumProgressReport, List<RecitationLogEntry>)>(
+        load: () async {
+          final (progress, recitations) = await (repository.progress(), _recitations(repository)).wait;
+
+          return (
+            value: (progress.value, recitations.value),
+            fetchedAt: progress.fetchedAt,
+            isStale: progress.isStale || recitations.isStale,
+          );
+        },
         errorMessageBuilder: messageFor,
-        emptyMessage: 'لم يُسجَّل تقدُّمٌ في المحفوظات بعد.',
-        isEmpty: (report) => report.isEmpty,
-        builder: (context, report) => Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (JuzSummary.fromEntries(report.byCurriculum.values.expand((rows) => rows))
-                case final juz when !juz.isEmpty)
+        builder: (context, data) {
+          final (report, recitations) = data;
+          final juz = JuzSummary.fromEntries(report.byCurriculum.values.expand((rows) => rows));
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               JuzProgressCard(
                 memorized: juz.memorized,
                 current: juz.current,
                 title: 'أجزائي',
                 margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               ),
-            for (final curriculum in report.curricula) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
-                child: Text(curriculum, style: Theme.of(context).textTheme.titleMedium),
-              ),
-              for (final entry in report.byCurriculum[curriculum]!)
-                _Entry(entry: entry),
+              RecitationLog(entries: recitations),
             ],
-          ],
-        ),
+          );
+        },
       ),
     );
   }
-}
 
-class _Entry extends StatelessWidget {
-  const _Entry({required this.entry});
-
-  final CurriculumProgressEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return ListTile(
-      title: Text(entry.itemName ?? '—'),
-      subtitle: entry.percent == null
-          ? null
-          : Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: LinearProgressIndicator(
-                value: (entry.percent! / 100).clamp(0, 1).toDouble(),
-              ),
-            ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // النصُّ العربي من الخادم لا من ترجمةٍ ثانية ههنا.
-          Text(entry.statusLabel, style: theme.textTheme.labelLarge),
-          if (entry.score != null)
-            Text('الدرجة ${entry.score}', style: theme.textTheme.bodySmall),
-        ],
-      ),
-    );
+  /// السجلُّ تكملةٌ للشريط لا شرطٌ له: خادمٌ أقدمُ بلا نقطته يعرض الشريطَ وحده.
+  static Future<Snapshot<List<RecitationLogEntry>>> _recitations(StudentSelfRepository repository) async {
+    try {
+      return await repository.recitations();
+    } on Object {
+      return const Snapshot(<RecitationLogEntry>[]);
+    }
   }
 }

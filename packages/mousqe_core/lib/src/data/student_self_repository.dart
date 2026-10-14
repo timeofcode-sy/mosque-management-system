@@ -3,6 +3,7 @@ import '../db/database.dart';
 import '../models/announcement.dart';
 import '../models/child_attendance.dart';
 import '../models/curriculum_progress_entry.dart';
+import '../models/recitation_log_entry.dart';
 import '../models/student_points_summary.dart';
 import '../models/student_behavior.dart';
 import '../models/student_standing.dart';
@@ -66,6 +67,15 @@ class StudentSelfRepository {
             ? (json['data'] as Map).cast<String, dynamic>()
             : const <String, dynamic>{},
       ),
+    );
+  }
+
+  /// سجلُّ تسميعه — الأحدثُ أولاً، تحت شريط الأجزاء في «حفظي».
+  Future<Snapshot<List<RecitationLogEntry>>> recitations() {
+    return _snapshots.read(
+      key: 'student.me.recitations',
+      fetch: () async => (await _apiClient.studentRecitations()).data,
+      decode: RecitationLogEntry.listFromJson,
     );
   }
 

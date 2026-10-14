@@ -21,7 +21,7 @@ class ExcusesScreen extends StatelessWidget {
       body: SnapshotView<List<GuardianExcuse>>(
         load: () async => (await repository.excuses()).ui,
         emptyMessage: 'لم تقدّم عذراً بعد.\n'
-            'يُقدَّم العذرُ من ملفّ الابن قبل موعد الغياب.',
+            'يُقدَّم العذرُ من زرّ «تقديم عذر» في لسان الحضور قبل موعد الغياب.',
         errorMessageBuilder: messageFor,
         isEmpty: (excuses) => excuses.isEmpty,
         builder: (context, excuses) => Column(

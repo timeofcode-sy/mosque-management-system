@@ -523,15 +523,19 @@ void main() {
       clearInteractions(api);
 
       await withVersion('1.0.0-beta.6', 6).restore();
+      await pumpEventQueue();
       verifyNever(() => api.registerDevice(any()));
 
+      // لا يُنتظر في الإقلاع — فيُترك يكتمل قبل الفحص.
       await withVersion('1.0.0-beta.7', 7).restore();
+      await pumpEventQueue();
       final registration =
           verify(() => api.registerDevice(captureAny())).captured.single
               as Map<String, dynamic>;
       expect(registration['app_version'], '1.0.0-beta.7');
 
       await withVersion('1.0.0-beta.7', 7).restore();
+      await pumpEventQueue();
       verifyNever(() => api.registerDevice(any()));
     });
   });

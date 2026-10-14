@@ -28,7 +28,11 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             tooltip: 'خروج',
             icon: const NzIcon(NzIcons.logout),
-            onPressed: scope.session.signOut,
+            onPressed: () async {
+              if (await confirmSignOut(context)) {
+                await scope.session.signOut();
+              }
+            },
           ),
         ],
       ),

@@ -6,6 +6,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 import '../config.dart';
 import '../di/app_scope.dart';
 import '../widgets/institute_menu.dart';
+import '../widgets/sign_out.dart';
 import '../widgets/sync_bar.dart';
 import 'destinations.dart';
 import 'phone_shell.dart';
@@ -579,7 +580,7 @@ class _AccountFooter extends StatelessWidget {
             IconButton(
               tooltip: 'خروج — ${snapshot?.userName ?? ''}',
               icon: const NzIcon(NzIcons.logout, size: 22),
-              onPressed: session.signOut,
+              onPressed: () => confirmAndSignOut(context),
             ),
           ],
         ),
@@ -606,7 +607,7 @@ class _AccountFooter extends StatelessWidget {
           IconButton(
             tooltip: 'خروج',
             icon: const NzIcon(NzIcons.logout, size: 18),
-            onPressed: session.signOut,
+            onPressed: () => confirmAndSignOut(context),
           ),
         ],
       ),
@@ -623,8 +624,6 @@ class _NoDoors extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final session = AppScope.of(context).session;
-
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
@@ -642,7 +641,7 @@ class _NoDoors extends StatelessWidget {
               const InstituteMenu(compact: true),
               const SizedBox(height: 12),
               OutlinedButton.icon(
-                onPressed: session.signOut,
+                onPressed: () => confirmAndSignOut(context),
                 icon: const NzIcon(NzIcons.logout, size: 18),
                 label: const Text('خروج'),
               ),

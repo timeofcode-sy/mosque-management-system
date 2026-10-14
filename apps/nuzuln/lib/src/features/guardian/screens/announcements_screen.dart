@@ -38,3 +38,19 @@ class AnnouncementsScreen extends StatelessWidget {
     );
   }
 }
+
+/// زرُّ الإعلانات في شريط كل لسان — الإعلانُ يُقرأ من أيّ مكانٍ في التطبيق لا من بابٍ واحد.
+class AnnouncementsAction extends StatelessWidget {
+  const AnnouncementsAction({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'الإعلانات',
+      icon: const NzIcon(NzIcons.megaphone),
+      onPressed: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const AnnouncementsScreen()),
+      ),
+    );
+  }
+}

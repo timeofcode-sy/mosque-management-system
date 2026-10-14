@@ -5,6 +5,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../config.dart';
 import '../di/app_scope.dart';
+import '../widgets/sign_out.dart';
 import '../widgets/sync_bar.dart';
 import 'destinations.dart';
 
@@ -700,36 +701,7 @@ class _SignOutTile extends StatelessWidget {
       icon: NzIcons.logout,
       label: 'تسجيل الخروج',
       danger: true,
-      onTap: () => _confirm(context),
+      onTap: () => confirmAndSignOut(context),
     );
-  }
-
-  Future<void> _confirm(BuildContext context) async {
-    final session = AppScope.of(context).session;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('تسجيل الخروج'),
-        content: const Text(
-          'يُمسح مخزنُ هذا الجهاز عند الخروج، فما لم يُزامَن من كتاباتك يضيع. '
-          'تأكّد أن زرَّ المزامنة أعلى الشاشة لا يعرض عملياتٍ معلّقة.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('خروج'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed ?? false) {
-      await session.signOut();
-    }
   }
 }

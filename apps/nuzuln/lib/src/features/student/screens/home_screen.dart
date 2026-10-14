@@ -2,171 +2,268 @@ import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
-import '../../../config.dart';
 import '../di/app_scope.dart';
 import 'announcements_screen.dart';
-import 'attendance_screen.dart';
-import 'behavior_screen.dart';
-import 'progress_screen.dart';
 
-/// الرئيسية: نسبتي · رتبتي · نقاطي — وأبوابُ الحضور والحفظ والسلوك والإعلانات.
+/// ما تجمعه الرئيسية من ثلاث نقاط: الموقعُ، والأجزاءُ، وآخرُ إعلان.
+typedef _HomeData = ({
+  StudentStanding standing,
+  JuzSummary juz,
+  Announcement? latest,
+});
+
+/// الرئيسية: تحيّةٌ باسمه وحلقته، ثم أرقامُه الأربعة، وآخرُ إعلان، وحديثُ اليوم.
 ///
 /// غرضُ التطبيق كلِّه في هذه الشاشة: **أن يرى الطالبُ أثرَ انضباطه رقماً أمامه**
-/// ([APPS-FEATURES.md §6.1](../../../../../../../docs/APPS-FEATURES.md)).
+/// ([APPS-FEATURES.md §6.1](../../../../../../../docs/APPS-FEATURES.md)). والأبوابُ التي
+/// كانت أزراراً تحت الأرقام صارت ألسنةً في الشريط السفلي، والرقمُ نفسُه يفتح لسانَه.
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.onOpenTab});
+
+  /// يفتح لساناً من الشريط السفلي: 1 حضوري · 2 حفظي · 3 سلوكي.
+  final ValueChanged<int>? onOpenTab;
 
   @override
   Widget build(BuildContext context) {
     final scope = AppScope.of(context);
+    final repository = scope.repository;
     final snapshot = scope.session.snapshot;
 
     return Scaffold(
       appBar: AppBar(
         leadingWidth: 64,
         leading: const Center(child: BrandMark(size: 40)),
-        title: Text(snapshot?.userName ?? 'حسابي'),
-        actions: [
-          const AboutMenuButton(app: AppConfig.about),
-          IconButton(
-            tooltip: 'خروج',
-            icon: const NzIcon(NzIcons.logout),
-            onPressed: scope.session.signOut,
-          ),
-        ],
+        title: const Text('الرئيسية'),
+        actions: const [AnnouncementsAction()],
       ),
-      body: SnapshotView<StudentStanding>(
-        load: () async => (await scope.repository.standing()).ui,
+      body: SnapshotView<_HomeData>(
+        load: () async {
+          final (standing, progress, announcements) = await (
+            repository.standing(),
+            _optional(repository.progress()),
+            _optional(repository.announcements()),
+          ).wait;
+
+          return (
+            value: (
+              standing: standing.value,
+              juz: progress == null
+                  ? const JuzSummary()
+                  : JuzSummary.fromEntries(progress.value.byCurriculum.values.expand((rows) => rows)),
+              latest: announcements?.value.firstOrNull,
+            ),
+            fetchedAt: standing.fetchedAt,
+            isStale: standing.isStale,
+          );
+        },
         errorMessageBuilder: messageFor,
-        builder: (context, standing) => Column(
+        builder: (context, data) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const HomeHadith(),
-            if (snapshot?.institute.name case final String name)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: Text(
-                  name,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-            _StandingCard(standing: standing),
-            const _Doors(),
+            _Greeting(
+              name: snapshot?.userName ?? 'حسابي',
+              institute: snapshot?.institute.name,
+              circle: data.standing.circleName,
+            ),
+            _Stats(data: data, onOpenTab: onOpenTab),
+            if (data.latest case final Announcement latest) _Latest(announcement: latest),
+            const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: HomeHadith(),
+            ),
           ],
         ),
       ),
     );
   }
+
+  /// ما لا تقوم الرئيسيةُ عليه لا يُسقطها: الأرقامُ من `standing`، والباقي زينة.
+  static Future<T?> _optional<T>(Future<T> future) async {
+    try {
+      return await future;
+    } on Object {
+      return null;
+    }
+  }
 }
 
-class _StandingCard extends StatelessWidget {
-  const _StandingCard({required this.standing});
+class _Greeting extends StatelessWidget {
+  const _Greeting({required this.name, this.institute, this.circle});
 
-  final StudentStanding standing;
+  final String name;
+  final String? institute;
+  final String? circle;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final c = context.nz;
+    final scheme = Theme.of(context).colorScheme;
+    final details = [?institute, ?circle].join(' · ');
 
-    return Column(
-      children: [
-        if (standing.circleName case final String circle)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Text(circle, style: theme.textTheme.bodyMedium),
-          ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-          child: Row(
-            children: [
-              Expanded(
-                child: StatCard(
-                  // 🔑 نسبةٌ `null` تُكتب «—» لا «٠%»: طالبٌ لم يُتفقَّد بعد لم
-                  // يغب، وصفرٌ ههنا يقول إنه لم يحضر يوماً.
-                  value: standing.rate == null
-                      ? '—'
-                      : '${standing.rate!.toStringAsFixed(1)}%',
-                  label: 'نسبة حضوري',
-                  icon: NzIcons.percent,
-                ),
-              ),
-              Expanded(
-                child: StatCard(
-                  value: '${standing.points}',
-                  label: 'نقاطي',
-                  icon: NzIcons.star,
-                ),
-              ),
-            ],
-          ),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(NzRadius.md),
+        gradient: LinearGradient(
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
+          colors: [scheme.primary, Color.lerp(scheme.primary, Colors.black, 0.35)!],
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  NzIcon(NzIcons.reports, color: theme.colorScheme.primary),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      // 🔑 **رقمٌ لا كشف.** الرتبةُ تُحسب في الخادم فلا يصل
-                      // الجهازَ صفٌّ عن زميل، ولا كشفَ بأسماء الأوائل — وذاك
-                      // يعيد التسريبَ من البابِ الذي أُغلق
-                      // ([PHASE-8-STAGES.MD §1.2]).
-                      standing.isRanked
-                          ? 'ترتيبي في الحلقة: ${standing.rank} من ${standing.peers}'
-                          : standing.peers > 0
-                          ? 'لم يُقَس ترتيبي بعد — بين ${standing.peers} طالباً'
-                          : 'لست مسجَّلاً في حلقةٍ جارية.',
-                      style: theme.textTheme.titleSmall,
-                    ),
+      ),
+      child: Row(
+        spacing: 16,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 4,
+              children: [
+                Text(
+                  'السلام عليكم',
+                  style: NzType.caption.copyWith(color: scheme.onPrimary.withValues(alpha: 0.8)),
+                ),
+                Text(
+                  name,
+                  style: NzType.title.copyWith(color: scheme.onPrimary, fontWeight: FontWeight.w700),
+                ),
+                if (details.isNotEmpty)
+                  Text(
+                    details,
+                    style: NzType.caption.copyWith(color: scheme.onPrimary.withValues(alpha: 0.85)),
                   ),
-                ],
-              ),
+              ],
             ),
           ),
-        ),
-      ],
+          NzIcon(NzIcons.mushaf, size: 40, color: c.bronzeSoft),
+        ],
+      ),
     );
   }
 }
 
-class _Doors extends StatelessWidget {
-  const _Doors();
+class _Stats extends StatelessWidget {
+  const _Stats({required this.data, this.onOpenTab});
+
+  final _HomeData data;
+  final ValueChanged<int>? onOpenTab;
 
   @override
   Widget build(BuildContext context) {
-    final doors = <({String icon, String label, Widget screen})>[
-      (
-        icon: NzIcons.attendance,
-        label: 'حضوري',
-        screen: const AttendanceScreen(),
-      ),
-      (icon: NzIcons.mushaf, label: 'حفظي', screen: const ProgressScreen()),
-      (icon: NzIcons.star, label: 'سلوكي', screen: const BehaviorScreen()),
-      (
-        icon: NzIcons.megaphone,
-        label: 'الإعلانات',
-        screen: const AnnouncementsScreen(),
-      ),
-    ];
+    final standing = data.standing;
+    final juz = data.juz;
 
-    return Column(
-      children: [
-        const SizedBox(height: 8),
-        for (final door in doors)
-          Card(
-            margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: ListTile(
-              leading: NzIcon(door.icon),
-              title: Text(door.label),
-              trailing: const NzIcon(NzIcons.chevronLeft),
-              onTap: () => Navigator.of(context)
-                  .push(MaterialPageRoute<void>(builder: (_) => door.screen)),
+    Widget cell(Widget card, int tab) => Expanded(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(NzRadius.md),
+            onTap: onOpenTab == null ? null : () => onOpenTab!(tab),
+            child: card,
+          ),
+        );
+
+    // الهامشُ بين البطاقات هنا لا فيها: بطاقاتُ الثيم بلا هامش.
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Column(
+        spacing: 8,
+        children: [
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 8,
+              children: [
+                cell(
+                  StatCard(
+                    // 🔑 نسبةٌ `null` تُكتب «—» لا «0%»: طالبٌ لم يُتفقَّد بعد لم
+                    // يغب، وصفرٌ ههنا يقول إنه لم يحضر يوماً.
+                    value: standing.rate == null ? '—' : '${standing.rate!.toStringAsFixed(1)}%',
+                    label: 'نسبة حضوري',
+                    icon: NzIcons.percent,
+                  ),
+                  1,
+                ),
+                cell(
+                  StatCard(
+                    value: '${standing.points}',
+                    label: 'نقاطي',
+                    icon: NzIcons.star,
+                    hint: 'في الدورة الجارية',
+                  ),
+                  3,
+                ),
+              ],
             ),
           ),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 8,
+              children: [
+                cell(
+                  StatCard(
+                    // 🔑 **رقمٌ لا كشف.** الرتبةُ تُحسب في الخادم فلا يصل الجهازَ صفٌّ
+                    // عن زميل ([PHASE-8-STAGES.MD §1.2]).
+                    value: standing.isRanked ? '${standing.rank}' : '—',
+                    label: 'ترتيبي في الحلقة',
+                    icon: NzIcons.reports,
+                    hint: standing.isRanked
+                        ? 'من ${standing.peers} طالباً'
+                        : standing.peers > 0
+                            ? 'لم يُقَس بعد'
+                            : 'لست في حلقةٍ جارية',
+                  ),
+                  1,
+                ),
+                cell(
+                  StatCard(
+                    value: '${juz.memorized.length}',
+                    label: 'أجزائي المحفوظة',
+                    icon: NzIcons.mushaf,
+                    hint: juz.current == null ? 'من 30 جزءاً' : 'أحفظ الآن الجزء ${juz.current}',
+                  ),
+                  2,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Latest extends StatelessWidget {
+  const _Latest({required this.announcement});
+
+  final Announcement announcement;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 8, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text('آخر إعلان', style: Theme.of(context).textTheme.titleMedium),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const AnnouncementsScreen()),
+                ),
+                child: const Text('كل الإعلانات'),
+              ),
+            ],
+          ),
+        ),
+        AnnouncementCard(
+          title: announcement.title,
+          body: announcement.body,
+          publishedAt: announcement.publishedAt,
+          circleBadge: announcement.isForMyCircle ? 'لحلقتي' : null,
+        ),
       ],
     );
   }

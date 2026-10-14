@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -218,8 +219,9 @@ class SessionController extends ChangeNotifier {
     await refreshSnapshot();
 
     // حسابٌ أُقفل أثناء الغياب يُمسح في `refreshSnapshot` — فلا تسجيلَ له.
+    // ولا يُنتظر: وصفُ الجهاز قراءةُ منصّة، والإقلاعُ لا يتأخّر من أجل إحصاء.
     if (_stage == SessionStage.ready) {
-      await _refreshRegistration();
+      unawaited(_refreshRegistration());
     }
   }
 

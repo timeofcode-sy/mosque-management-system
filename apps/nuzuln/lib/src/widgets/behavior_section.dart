@@ -19,8 +19,10 @@ class BehaviorSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          // الهامشُ بين البطاقات هنا لا فيها: بطاقاتُ الثيم بلا هامش.
           child: Row(
+            spacing: 8,
             children: [
               Expanded(
                 child: _Count(

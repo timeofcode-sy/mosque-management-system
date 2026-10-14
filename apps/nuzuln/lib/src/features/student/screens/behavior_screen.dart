@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../../../widgets/behavior_section.dart';
 import '../di/app_scope.dart';
+import 'announcements_screen.dart';
 
 /// سلوكي: ما كتبه أساتذتي عنّي في التفقّد، وصفاتي، ونقاطُ سلوكي — بالشكل الذي يراه وليُّ أمري.
 class BehaviorScreen extends StatelessWidget {
@@ -14,7 +15,10 @@ class BehaviorScreen extends StatelessWidget {
     final repository = AppScope.of(context).repository;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('سلوكي')),
+      appBar: AppBar(
+        title: const Text('سلوكي'),
+        actions: const [AnnouncementsAction()],
+      ),
       body: SnapshotView<StudentBehavior>(
         load: () async => (await repository.behavior()).ui,
         errorMessageBuilder: messageFor,

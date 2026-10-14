@@ -18,6 +18,7 @@ export 'src/models/guardian_excuse.dart';
 export 'src/models/institute.dart';
 export 'src/models/institute_theme.dart';
 export 'src/models/recitation.dart';
+export 'src/models/recitation_log_entry.dart';
 export 'src/models/student.dart';
 export 'src/models/student_behavior.dart';
 export 'src/models/points_settings.dart';

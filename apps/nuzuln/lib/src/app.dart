@@ -5,9 +5,9 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 import 'config.dart';
 import 'di/app_scope.dart';
 import 'features/guardian/di/app_scope.dart' as guardian;
-import 'features/guardian/screens/children_screen.dart';
+import 'features/guardian/screens/guardian_shell.dart';
 import 'features/student/di/app_scope.dart' as student;
-import 'features/student/screens/home_screen.dart';
+import 'features/student/screens/student_shell.dart';
 import 'features/teacher/di/app_scope.dart' as teacher;
 import 'features/teacher/screens/circles_screen.dart';
 import 'screens/login_screen.dart';
@@ -121,8 +121,8 @@ class _NuzulAppState extends State<NuzulApp> {
         key: ValueKey(surface),
         child: switch (surface) {
           Surface.teacher => const CirclesScreen(),
-          Surface.guardian => const ChildrenScreen(),
-          Surface.student => const HomeScreen(),
+          Surface.guardian => const GuardianShell(),
+          Surface.student => const StudentShell(),
           // الجلسةُ لا تبلغ `ready` بلا سطح؛ فرعٌ للمحلّل لا للمستخدم.
           _ => const LoginScreen(),
         },

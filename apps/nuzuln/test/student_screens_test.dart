@@ -9,6 +9,7 @@ import 'package:nuzuln/src/features/student/screens/announcements_screen.dart';
 import 'package:nuzuln/src/features/student/screens/attendance_screen.dart';
 import 'package:nuzuln/src/features/student/screens/home_screen.dart';
 import 'package:nuzuln/src/features/student/screens/progress_screen.dart';
+import 'package:nuzuln/src/features/student/screens/student_shell.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 import 'package:retrofit/retrofit.dart';
 
@@ -80,9 +81,11 @@ void main() {
       await tester.pumpWidget(_wrap(dependencies, const HomeScreen()));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('ترتيبي في الحلقة: 5 من 20'), findsOneWidget);
+      expect(find.text('ترتيبي في الحلقة'), findsOneWidget);
+      expect(find.text('5'), findsOneWidget);
+      expect(find.text('من 20 طالباً'), findsOneWidget);
       expect(find.text('87.5%'), findsOneWidget);
-      expect(find.text('حلقة أبي بن كعب'), findsOneWidget);
+      expect(find.textContaining('حلقة أبي بن كعب'), findsOneWidget);
     });
 
     /// 🔑 قاعدةُ م.6.6 على السطح الذي يقرؤه صاحبُها.
@@ -93,8 +96,9 @@ void main() {
       await tester.pumpWidget(_wrap(dependencies, const HomeScreen()));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('لم يُقَس ترتيبي بعد'), findsOneWidget);
-      expect(find.text('—'), findsOneWidget);
+      expect(find.text('لم يُقَس بعد'), findsOneWidget);
+      // النسبةُ والرتبةُ كلتاهما «—»: لا صفرٌ ولا «الأخير».
+      expect(find.text('—'), findsNWidgets(2));
       expect(find.textContaining('0.0%'), findsNothing);
     });
 
@@ -108,7 +112,7 @@ void main() {
       await tester.pumpWidget(_wrap(dependencies, const HomeScreen()));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('لست مسجَّلاً في حلقةٍ جارية'), findsOneWidget);
+      expect(find.text('لست في حلقةٍ جارية'), findsOneWidget);
     });
 
     /// 🔑 القاعدةُ التي رُفعت إلى `mousqe_ui` في هذه المرحلة.
@@ -181,11 +185,14 @@ void main() {
     /// تسقط.
     testWidgets('an empty progress map is explained, not thrown at', (tester) async {
       when(api.studentProgress).thenAnswer((_) async => _response({'data': <dynamic>[]}));
+      when(api.studentRecitations).thenAnswer((_) async => _response({'data': <dynamic>[]}));
 
       await tester.pumpWidget(_wrap(dependencies, const ProgressScreen()));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('لم يُسجَّل تقدُّمٌ'), findsOneWidget);
+      // الشريطُ يبقى (بلا جزءٍ محفوظ)، وتحته سجلٌّ فارغٌ يقول ذلك.
+      expect(find.text('أجزائي'), findsOneWidget);
+      expect(find.textContaining('لم يُسجَّل تسميعٌ'), findsOneWidget);
     });
   });
 
@@ -228,6 +235,30 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('لا إعلاناتٍ بعد'), findsOneWidget);
+    });
+  });
+
+  group('الشريط السفلي', () {
+    testWidgets('five tabs, and a number on the home opens its own tab', (tester) async {
+      when(api.studentStanding).thenAnswer((_) async => _response(_standing()));
+      when(api.studentProgress).thenAnswer((_) async => _response({'data': <dynamic>[]}));
+      when(api.studentRecitations).thenAnswer((_) async => _response({'data': <dynamic>[]}));
+      when(api.studentAnnouncements).thenAnswer((_) async => _response({'data': <dynamic>[]}));
+
+      await tester.pumpWidget(_wrap(dependencies, const StudentShell()));
+      await tester.pumpAndSettle();
+
+      final bar = find.byType(NavigationBar);
+      for (final label in ['الرئيسية', 'حضوري', 'حفظي', 'سلوكي', 'المزيد']) {
+        expect(find.descendant(of: bar, matching: find.text(label)), findsOneWidget);
+      }
+      // الإعلاناتُ زرٌّ في الشريط العلوي لا بابٌ في الرئيسية.
+      expect(find.byTooltip('الإعلانات'), findsOneWidget);
+
+      await tester.tap(find.text('أجزائي المحفوظة'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('سجلّ التسميع'), findsOneWidget);
     });
   });
 }

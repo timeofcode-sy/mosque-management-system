@@ -3,53 +3,15 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../../../widgets/behavior_section.dart';
+import '../../../widgets/recitation_log.dart';
 import '../di/app_scope.dart';
-import 'submit_excuse_screen.dart';
 
-/// ملفُّ ابنٍ بعينه — ثلاثةُ ألسنة: حضورُه، وتقدُّمُ حفظه، وجانبُه السلوكي.
-class ChildScreen extends StatelessWidget {
-  const ChildScreen({super.key, required this.child});
-
-  final GuardianChild child;
-
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(child.fullName),
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'الحضور', icon: NzIcon(NzIcons.attendance)),
-              Tab(text: 'الحفظ', icon: NzIcon(NzIcons.mushaf)),
-              Tab(text: 'السلوك', icon: NzIcon(NzIcons.star)),
-            ],
-          ),
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => SubmitExcuseScreen(child: child),
-            ),
-          ),
-          icon: const NzIcon(NzIcons.calendar),
-          label: const Text('تقديم عذر'),
-        ),
-        body: TabBarView(
-          children: [
-            _AttendanceTab(childUuid: child.uuid),
-            _ProgressTab(childUuid: child.uuid),
-            _BehaviorTab(childUuid: child.uuid),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _AttendanceTab extends StatelessWidget {
-  const _AttendanceTab({required this.childUuid});
+/// ألسنةُ ابنٍ بعينه في الشريط السفلي — حضورُه، وحفظُه، وجانبُه السلوكي.
+///
+/// كانت ألسنةً علويّةً في صفحةٍ تُفتح من قائمة الأبناء؛ وصارت ألسنةَ الشريط السفلي نفسَه
+/// ([GuardianShell])، والابنُ يُختار من رأس الشاشة حين يكون للحساب أكثرُ من ابن.
+class ChildAttendanceView extends StatelessWidget {
+  const ChildAttendanceView({super.key, required this.childUuid});
 
   final String childUuid;
 
@@ -87,11 +49,14 @@ class _SummaryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // الهامشُ بين البطاقات هنا لا فيها: بطاقاتُ الثيم بلا هامش.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
+        spacing: 8,
         children: [
           Row(
+            spacing: 8,
             children: [
               // 🔑 نسبةٌ `null` تُكتب «لا قياس» لا «٠%»: طالبٌ كلُّ سجلّاته
               // أعذارٌ لا مقامَ له، وصفرٌ ههنا يقول إنه لم يحضر يوماً.
@@ -114,6 +79,7 @@ class _SummaryGrid extends StatelessWidget {
             ],
           ),
           Row(
+            spacing: 8,
             children: [
               Expanded(
                 child: StatCard(value: '${summary.present}', label: 'حاضر'),
@@ -169,8 +135,8 @@ class _AttendanceRow extends StatelessWidget {
 }
 
 /// الجانبُ السلوكي: ما كتبه أساتذتُه عنه في التفقّد، وصفاتُه، ونقاطُ سلوكه.
-class _BehaviorTab extends StatelessWidget {
-  const _BehaviorTab({required this.childUuid});
+class ChildBehaviorView extends StatelessWidget {
+  const ChildBehaviorView({super.key, required this.childUuid});
 
   final String childUuid;
 
@@ -186,8 +152,9 @@ class _BehaviorTab extends StatelessWidget {
   }
 }
 
-class _ProgressTab extends StatelessWidget {
-  const _ProgressTab({required this.childUuid});
+/// الحفظ: شريطُ الأجزاء، وتحته سجلُّ التسميع يوماً بيوم — لا نسبةٌ مئوية لكل جزء.
+class ChildProgressView extends StatelessWidget {
+  const ChildProgressView({super.key, required this.childUuid});
 
   final String childUuid;
 
@@ -195,62 +162,43 @@ class _ProgressTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final repository = AppScope.of(context).repository;
 
-    return SnapshotView<CurriculumProgressReport>(
-      load: () async => (await repository.progressOf(childUuid)).ui,
-      emptyMessage: 'لم يُسجَّل تقدُّمٌ في المحفوظات بعد.',
+    return SnapshotView<(CurriculumProgressReport, List<RecitationLogEntry>)>(
+      load: () async {
+        final (progress, recitations) = await (repository.progressOf(childUuid), _recitations(repository)).wait;
+
+        return (
+          value: (progress.value, recitations.value),
+          fetchedAt: progress.fetchedAt,
+          isStale: progress.isStale || recitations.isStale,
+        );
+      },
       errorMessageBuilder: messageFor,
-      isEmpty: (report) => report.isEmpty,
-      builder: (context, report) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (JuzSummary.fromEntries(report.byCurriculum.values.expand((rows) => rows))
-              case final juz when !juz.isEmpty)
+      builder: (context, data) {
+        final (report, recitations) = data;
+        final juz = JuzSummary.fromEntries(report.byCurriculum.values.expand((rows) => rows));
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             JuzProgressCard(
               memorized: juz.memorized,
               current: juz.current,
               margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             ),
-          for (final curriculum in report.curricula) ...[
-            _SectionTitle(curriculum),
-            for (final entry in report.byCurriculum[curriculum]!)
-              _ProgressRow(entry: entry),
+            RecitationLog(entries: recitations),
           ],
-        ],
-      ),
+        );
+      },
     );
   }
-}
 
-class _ProgressRow extends StatelessWidget {
-  const _ProgressRow({required this.entry});
-
-  final CurriculumProgressEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return ListTile(
-      title: Text(entry.itemName ?? '—'),
-      subtitle: entry.percent == null
-          ? null
-          : Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: LinearProgressIndicator(
-                value: (entry.percent! / 100).clamp(0, 1).toDouble(),
-              ),
-            ),
-      trailing: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          // النصُّ العربي من الخادم لا من ترجمةٍ ثانية ههنا.
-          Text(entry.statusLabel, style: theme.textTheme.labelLarge),
-          if (entry.score != null)
-            Text('الدرجة ${entry.score}', style: theme.textTheme.bodySmall),
-        ],
-      ),
-    );
+  /// السجلُّ تكملةٌ للشريط لا شرطٌ له: خادمٌ أقدمُ بلا نقطته يعرض الشريطَ وحده.
+  Future<Snapshot<List<RecitationLogEntry>>> _recitations(GuardianRepository repository) async {
+    try {
+      return await repository.recitationsOf(childUuid);
+    } on Object {
+      return const Snapshot(<RecitationLogEntry>[]);
+    }
   }
 }
 

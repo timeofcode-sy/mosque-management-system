@@ -6,6 +6,7 @@ import '../models/child_attendance.dart';
 import '../models/curriculum_progress_entry.dart';
 import '../models/guardian_child.dart';
 import '../models/guardian_excuse.dart';
+import '../models/recitation_log_entry.dart';
 import '../models/student_behavior.dart';
 import 'snapshot_store.dart';
 
@@ -81,6 +82,16 @@ class GuardianRepository {
             ? (json['data'] as Map).cast<String, dynamic>()
             : const <String, dynamic>{},
       ),
+    );
+  }
+
+  /// سجلُّ تسميع ابنٍ بعينه — الأحدثُ أولاً، تحت شريط الأجزاء في لسان «الحفظ».
+  Future<Snapshot<List<RecitationLogEntry>>> recitationsOf(String childUuid) {
+    return _snapshots.read(
+      key: 'guardian.child.$childUuid.recitations',
+      fetch: () async =>
+          (await _apiClient.guardianChildRecitations(childUuid)).data,
+      decode: RecitationLogEntry.listFromJson,
     );
   }
 
