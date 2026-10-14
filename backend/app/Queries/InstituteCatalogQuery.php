@@ -9,6 +9,7 @@ use App\Models\Institute;
 use App\Models\PersonalTrait;
 use App\Models\Shift;
 use App\Models\Teacher;
+use App\Support\ArabicSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -63,10 +64,7 @@ class InstituteCatalogQuery
 
         return Teacher::query()
             ->where('institute_id', $institute?->id)
-            ->when($search !== '', fn ($query) => $query->where(fn ($inner) => $inner
-                ->where('display_name', 'like', "%{$search}%")
-                ->orWhere('phone', 'like', "%{$search}%")
-                ->orWhere('specialization', 'like', "%{$search}%")))
+            ->tap(fn ($query) => ArabicSearch::constrain($query, $search, ['display_name', 'phone', 'specialization']))
             ->withCount(['courseCircles as current_circles_count' => fn ($query) => $query
                 ->where('course_id', $courseId)
                 ->whereNull('course_circle_teachers.left_on')])

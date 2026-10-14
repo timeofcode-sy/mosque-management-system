@@ -6,6 +6,7 @@ use App\Actions\AssignUserRole;
 use App\Enums\PanelRole;
 use App\Models\Institute;
 use App\Models\User;
+use App\Support\ArabicSearch;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -58,10 +59,8 @@ class CredentialQuery
             ->whereNotNull('username')
             ->whereExists(fn ($query) => $this->assignmentQuery($institute, $names, $query))
             ->whereNotExists(fn ($query) => $this->assignmentQuery(null, User::GLOBAL_ROLES, $query))
-            ->when($search !== '', fn ($query) => $query->where(fn ($inner) => $inner
-                ->where('first_name', 'like', "%{$search}%")
-                ->orWhere('last_name', 'like', "%{$search}%")
-                ->orWhere('username', 'like', "%{$search}%")))
+            // البحثُ عربيٌّ متسامح («احمد» يجد «أحمد»): ArabicSearch.
+            ->tap(fn ($query) => ArabicSearch::constrain($query, $search, ['first_name', 'last_name', 'father_name', 'username', 'phone']))
             ->when($courseCircleId !== null, fn ($query) => $query->whereHas(
                 'student.enrollments',
                 fn ($enrollment) => $enrollment->where('course_circle_id', $courseCircleId),

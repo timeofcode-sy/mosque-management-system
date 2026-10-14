@@ -4,6 +4,7 @@ namespace App\Queries;
 
 use App\Models\Institute;
 use App\Models\User;
+use App\Support\ArabicSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -36,10 +37,7 @@ class UserAdminQuery
 
         return User::query()
             ->with(['teacher:id,user_id,display_name', 'guardian:id,user_id,full_name', 'student:id,user_id,first_name,family_name'])
-            ->when($search !== '', fn ($query) => $query->where(fn ($inner) => $inner
-                ->where('first_name', 'like', "%{$search}%")
-                ->orWhere('last_name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%")))
+            ->tap(fn ($query) => ArabicSearch::constrain($query, $search, ['first_name', 'last_name', 'father_name', 'username', 'email']))
             ->when($role !== '', fn ($query) => $query->whereExists(
                 fn ($sub) => $matchesAssignment($sub)->where("{$rolesTable}.name", $role),
             ))
