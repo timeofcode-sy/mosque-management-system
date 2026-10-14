@@ -13,7 +13,8 @@ import '../widgets/adaptive.dart';
 /// الخادمَ كيفما بُنيت الواجهة.
 ///
 /// و`password` يعود `null` **لمن بدّل كلمته بنفسه**: النسخةُ المقروءة تُمسح
-/// حينها فلا يبقى لأحدٍ اطّلاعٌ على ما اختاره. وذلك يُقال في البطاقة صراحةً بدل
+/// حينها فلا يبقى لأحدٍ اطّلاعٌ على ما اختاره — أو لحسابٍ وُلّد بلا كلمة ولم
+/// تُصدَر له بعد. وذلك يُقال في البطاقة صراحةً بدل
 /// أن يُترك فراغاً يُقرأ عطلاً.
 class CredentialsScreen extends StatefulWidget {
   const CredentialsScreen({super.key});
@@ -215,8 +216,9 @@ class _Card extends StatelessWidget {
               style: theme.textTheme.bodyMedium,
             ),
             SelectableText(
-              // الفراغُ يُفسَّر ولا يُترك: «بدّلها بنفسه» حالةٌ سليمة لا عطب.
-              card.password ?? 'بدّل كلمتَه بنفسه — لا نسخةَ مقروءة',
+              // الفراغُ يُفسَّر ولا يُترك: كلمةٌ لم تُصدَر بعد (حسابٌ وُلّد بلا كلمة)
+              // أو بدّلها صاحبها — وكلاهما حالةٌ سليمة لا عطب.
+              card.password ?? 'لم تُصدَر بعد أو بدّلها صاحبها',
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: card.password == null
                     ? theme.colorScheme.onSurfaceVariant

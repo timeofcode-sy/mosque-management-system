@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Livewire;
 
+use App\Actions\GenerateAccount;
 use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
@@ -70,6 +71,24 @@ class CredentialsScreenTest extends TestCase
             ->assertOk()
             ->assertSee('أنس')
             ->assertSee((string) $user->username);
+    }
+
+    /**
+     * حسابٌ وُلّد بلا كلمة (ضمُّ معهد) ليس «غيّرها صاحبها»: الطالب لا يبدّل كلمته بنفسه أصلاً.
+     */
+    public function test_an_account_born_without_a_password_says_it_was_not_issued(): void
+    {
+        $this->student->delete();
+
+        GenerateAccount::withoutPasswords(fn () => Student::factory()->create([
+            'institute_id' => $this->institute->id,
+            'first_name' => 'جابر',
+        ]));
+
+        Livewire::test('pages::credentials.index')
+            ->assertSee('جابر')
+            ->assertSee('لم تُصدَر بعد')
+            ->assertDontSee('غيّرها صاحبها');
     }
 
     public function test_a_long_list_is_paged_and_filters_return_to_the_first_page(): void

@@ -11,8 +11,10 @@ use App\Models\Student;
 use App\Models\Teacher;
 use App\Models\User;
 use App\Support\Credentials;
+use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -27,10 +29,30 @@ use Spatie\Permission\Models\Role;
  */
 class GenerateAccount
 {
+    /** حساباتٌ بلا كلمة مرور — انظر withoutPasswords(). */
+    private static bool $withoutPasswords = false;
+
     public function __construct(private readonly AssignUserRole $assignRole) {}
 
     /**
-     * @return array{user: User, password: string}|null null إن كان السجلّ مرتبطاً أصلاً
+     * يولّد الحسابات داخل $callback بأسماء دخولها وبلا كلمات مرور: كلمةٌ عشوائية لا يعرفها
+     * أحد ولا نسخةَ مقروءةً لها، فلا يدخل صاحبها حتى تُصدَر له كلمة (شاشة بيانات الدخول أو
+     * accounts:issue-passwords). يستعمله ضمُّ معهدٍ قبل أن يقرّر صاحبه توزيع البطاقات.
+     */
+    public static function withoutPasswords(Closure $callback): mixed
+    {
+        $previous = self::$withoutPasswords;
+        self::$withoutPasswords = true;
+
+        try {
+            return $callback();
+        } finally {
+            self::$withoutPasswords = $previous;
+        }
+    }
+
+    /**
+     * @return array{user: User, password: ?string}|null null إن كان السجلّ مرتبطاً أصلاً
      */
     public function handle(Model $record): ?array
     {
@@ -47,18 +69,20 @@ class GenerateAccount
         }
 
         return DB::transaction(function () use ($record, $role, $institute): array {
-            $password = Credentials::password();
+            $password = self::$withoutPasswords ? null : Credentials::password();
 
             $user = User::create([
                 ...$this->nameOf($record),
                 'username' => Credentials::username($role),
-                'phone' => $record->phone,
-                'password' => $password,
+                'phone' => $this->freePhone($record->phone),
+                'password' => $password ?? Str::random(64),
                 'is_active' => $this->isActive($record),
             ]);
 
             /** النسخة المقروءة خارج الإسناد الجَماعي عمداً: سرٌّ لا يُملأ من طلب */
-            $user->forceFill(['generated_password' => $password])->save();
+            if ($password !== null) {
+                $user->forceFill(['generated_password' => $password])->save();
+            }
 
             $this->assignRole->system($user, $role, $institute);
             $record->forceFill(['user_id' => $user->id])->save();
@@ -114,6 +138,20 @@ class GenerateAccount
             'first_name' => $parts[0] !== '' ? $parts[0] : '—',
             'last_name' => $parts[1] ?? '',
         ];
+    }
+
+    /**
+     * رقم السجلّ إن لم يحمله حسابٌ آخر. users.phone فريد، والرقم المشترك شائع: توأمان بجوالٍ
+     * واحد، وطالبٌ رقمُه رقمُ أبيه، وأستاذٌ هو وليُّ أمرِ أحد الطلاب. الرقمُ ليس معرّف دخول
+     * (اسم المستخدم هو المعرّف)، فالحسابُ الثاني يُولَّد بلا رقم ويبقى الرقم في سجلّه.
+     */
+    private function freePhone(?string $phone): ?string
+    {
+        if (blank($phone) || User::query()->where('phone', $phone)->exists()) {
+            return null;
+        }
+
+        return $phone;
     }
 
     private function isActive(Model $record): bool

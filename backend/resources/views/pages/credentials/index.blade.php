@@ -241,7 +241,9 @@ new #[Title('بيانات الدخول')] class extends Component {
                             <flux:table.cell>{{ $row['role'] }}</flux:table.cell>
                             <flux:table.cell class="latin-numerals">{{ $row['username'] }}</flux:table.cell>
                             <flux:table.cell class="latin-numerals">
-                                @if ($row['password'] === null)
+                                @if ($row['pending'])
+                                    <flux:text size="sm" class="text-muted">لم تُصدَر بعد</flux:text>
+                                @elseif ($row['password'] === null)
                                     <flux:text size="sm" class="text-muted">غيّرها صاحبها</flux:text>
                                 @elseif ($revealed)
                                     {{ $row['password'] }}

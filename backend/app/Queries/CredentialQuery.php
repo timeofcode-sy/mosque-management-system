@@ -75,7 +75,12 @@ class CredentialQuery
             'name' => $this->displayName($user),
             'role' => PanelRole::labelOf((string) $user->panel_role),
             'username' => $user->username,
-            'password' => $this->readablePassword($user),
+            'password' => $password = $this->readablePassword($user),
+            // الأستاذ وولي الأمر والطالب لا يبدّلون كلماتهم بأنفسهم، فغياب النسخة المقروءة
+            // عندهم يعني أن كلمةً لم تُصدَر بعد (حسابٌ وُلّد بلا كلمة) لا أن صاحبها غيّرها.
+            'pending' => $password === null && in_array($user->panel_role, [
+                PanelRole::Teacher->value, PanelRole::Guardian->value, PanelRole::Student->value,
+            ], true),
             'is_active' => (bool) $user->is_active,
             'detail' => $this->detail($user),
         ])->values();
