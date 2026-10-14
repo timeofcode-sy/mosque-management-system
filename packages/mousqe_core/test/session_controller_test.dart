@@ -477,4 +477,62 @@ void main() {
       expect(tokens.token, isNull);
     });
   });
+
+  /// وصفُ الجهاز لإحصاءات المطوّر — ويُعاد التسجيلُ مرّةً بعد كل تحديثٍ للتطبيق.
+  group('device details', () {
+    SessionController withVersion(String version, int build) => SessionController(
+          db: db,
+          apiClient: api,
+          tokenStore: tokens,
+          deviceUuid: 'device-1',
+          app: 'guardian',
+          appLabel: 'تطبيق ولي الأمر',
+          activeInstitute: activeInstitute,
+          deviceDetails: () async => {
+            'platform': 'android',
+            'device_type': 'phone',
+            'manufacturer': 'samsung',
+            'model': 'SM-A155F',
+            'os_version': 'Android 14',
+            'sdk_int': 34,
+            'app_version': version,
+            'app_build': build,
+          },
+        );
+
+    test('the sign-in sends the real version and the hardware description', () async {
+      session = withVersion('1.0.0-beta.7', 7);
+      _stubSignIn(api);
+
+      await session.signIn(username: 'guardian55', password: 'secret-pass');
+
+      final registration =
+          verify(() => api.registerDevice(captureAny())).captured.single
+              as Map<String, dynamic>;
+      expect(registration['app_version'], '1.0.0-beta.7');
+      expect(registration['app_build'], 7);
+      expect(registration['manufacturer'], 'samsung');
+      expect(registration['sdk_int'], 34);
+      expect(registration['device_uuid'], 'device-1');
+    });
+
+    test('a restart re-registers once after an update, not on every launch', () async {
+      session = withVersion('1.0.0-beta.6', 6);
+      _stubSignIn(api);
+      await session.signIn(username: 'guardian55', password: 'secret-pass');
+      clearInteractions(api);
+
+      await withVersion('1.0.0-beta.6', 6).restore();
+      verifyNever(() => api.registerDevice(any()));
+
+      await withVersion('1.0.0-beta.7', 7).restore();
+      final registration =
+          verify(() => api.registerDevice(captureAny())).captured.single
+              as Map<String, dynamic>;
+      expect(registration['app_version'], '1.0.0-beta.7');
+
+      await withVersion('1.0.0-beta.7', 7).restore();
+      verifyNever(() => api.registerDevice(any()));
+    });
+  });
 }

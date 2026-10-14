@@ -17,6 +17,7 @@ class DeviceController extends Controller
             'platform' => ['nullable', 'string', 'max:32'],
             'app_version' => ['nullable', 'string', 'max:32'],
             'fcm_token' => ['nullable', 'string', 'max:512'],
+            ...RegisterDevice::detailRules(),
         ]);
 
         $syncDevice = $register->handle($request->user(), $validated);

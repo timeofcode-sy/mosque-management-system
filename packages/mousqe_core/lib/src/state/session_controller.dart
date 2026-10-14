@@ -11,6 +11,7 @@ import '../api/token_store.dart';
 import '../db/database.dart';
 import '../models/bootstrap_snapshot.dart';
 import '../models/institute_option.dart';
+import 'device_details.dart';
 
 enum SessionStage {
   /// قبل قراءة التوكن من المخزن الآمن.
@@ -41,6 +42,9 @@ class ActiveInstitute {
 /// وتعيد `null` حين يرفض المستخدمُ إذنَ الإشعارات أو حين لا تصل الشبكة إلى FCM —
 /// **وذاك ليس خطأً يُوقف الدخول**: من رفض الإشعارات يدخل التطبيقَ ويستعمله.
 typedef PushTokenReader = Future<String?> Function();
+
+/// يقرأ وصفَ الجهاز المرسَل مع تسجيله — [DeviceDetails.collect] افتراضاً، وبديلٌ ثابتٌ في الاختبارات.
+typedef DeviceDetailsReader = Future<Map<String, Object?>> Function();
 
 /// يختار سطحاً واحداً حين يحمل الحسابُ أكثرَ من دورٍ يخدمه التطبيقُ الموحَّد،
 /// أو `null` إن عدل صاحبُه عن الدخول.
@@ -110,6 +114,7 @@ class SessionController extends ChangeNotifier {
     required String appLabel,
     ActiveInstitute? activeInstitute,
     PushTokenReader? pushToken,
+    DeviceDetailsReader? deviceDetails,
   })  : assert(
           (app != null) != surfaces.isNotEmpty,
           'إمّا app ثابتٌ وإمّا surfaces تُحسم عند الدخول — لا الاثنان.',
@@ -122,7 +127,8 @@ class SessionController extends ChangeNotifier {
         _surfaces = surfaces,
         _appLabel = appLabel,
         _activeInstitute = activeInstitute ?? ActiveInstitute(),
-        _pushTokenReader = pushToken;
+        _pushTokenReader = pushToken,
+        _deviceDetails = deviceDetails ?? DeviceDetails.collect;
 
   /// مفتاحُ المعهد العامل في `app_state` — يُقرأ عند الإقلاع فيفتح الجهازُ على
   /// المعهد الذي أُغلق عليه، لا على معهد الحساب الأصلي.
@@ -130,6 +136,9 @@ class SessionController extends ChangeNotifier {
 
   /// مفتاحُ السطح المختار في `app_state` — للتطبيق الموحَّد وحده.
   static const String surfaceKey = 'surface';
+
+  /// نسخةُ التطبيق التي سُجّل بها الجهازُ آخرَ مرّة — فيُعاد التسجيلُ مرّةً بعد كل تحديث.
+  static const String registeredVersionKey = 'device_registered_version';
 
   final AppDatabase _db;
   final ApiClient _apiClient;
@@ -140,6 +149,7 @@ class SessionController extends ChangeNotifier {
   final String _appLabel;
   final ActiveInstitute _activeInstitute;
   final PushTokenReader? _pushTokenReader;
+  final DeviceDetailsReader _deviceDetails;
 
   SessionStage _stage = SessionStage.starting;
   BootstrapSnapshot? _snapshot;
@@ -206,6 +216,11 @@ class SessionController extends ChangeNotifier {
 
     // تحديثُ اللقطة محاولةٌ لا شرط: جهازٌ بلا شبكة يبقى عاملاً بما حفظه.
     await refreshSnapshot();
+
+    // حسابٌ أُقفل أثناء الغياب يُمسح في `refreshSnapshot` — فلا تسجيلَ له.
+    if (_stage == SessionStage.ready) {
+      await _refreshRegistration();
+    }
   }
 
   /// [chooseSurface] يُسأل في التطبيق الموحَّد وحده، وحين يحمل الحسابُ أكثرَ من
@@ -234,17 +249,7 @@ class SessionController extends ChangeNotifier {
 
     // خطوةٌ منفصلة عن الدخول عمداً: الدخول يُثبت هوية المستخدم، والتسجيل يفتح
     // مؤشّر مزامنة للجهاز ([API.md §1](../../../../../docs/API.md)).
-    await _apiClient.registerDevice({
-      'device_uuid': _deviceUuid,
-      'app': _app,
-      'platform': Platform.operatingSystem,
-      'app_version': '1.0.0',
-      // ✅ م.7.4: توكنُ الإشعارات يمرّ من **هذه النقطة** لا من نقطةٍ ثانية —
-      // `POST /devices/register` يقبل `fcm_token` منذ م.4 ويكتبه في `devices`،
-      // وهو يُستدعى هنا عند كل دخول: أي في اللحظة التي يصير فيها للجهاز صاحبٌ
-      // معروف. ونقطةٌ مستقلّة للتوكن كانت ستضاعف ما هو مبنيّ.
-      if (await _pushToken() case final String token) 'fcm_token': token,
-    });
+    await _registerDevice();
 
     await refreshSnapshot(rethrowErrors: true);
     _notice = null;
@@ -430,6 +435,50 @@ class SessionController extends ChangeNotifier {
   ///
   /// من رفض إذنَ الإشعارات، ومن دخل وFCM غيرُ قابلٍ للوصول، يدخلان التطبيقَ
   /// ويستعملانه كاملاً. الإشعارُ ميزةٌ فوق الوظيفة لا شرطٌ لها.
+  /// يفتح للجهاز مؤشّرَ مزامنة ويصفه: نوعُه وصانعُه وطرازُه ونظامُه ونسخةُ التطبيق.
+  ///
+  /// ✅ م.7.4: توكنُ الإشعارات يمرّ من **هذه النقطة** لا من نقطةٍ ثانية —
+  /// `POST /devices/register` يقبل `fcm_token` منذ م.4 ويكتبه في `devices`.
+  Future<void> _registerDevice() async {
+    final details = await _readDeviceDetails();
+
+    await _apiClient.registerDevice({
+      ...details,
+      'device_uuid': _deviceUuid,
+      'app': _app,
+      if (await _pushToken() case final String token) 'fcm_token': token,
+    });
+
+    await _db.writeAppState(registeredVersionKey, _versionOf(details));
+  }
+
+  /// بعد تحديث التطبيق تتغيّر نسختُه في «الأجهزة المزامِنة» — والتسجيلُ عند الدخول
+  /// وحده كان يُبقيها على نسخة أوّل دخول. محاولةٌ صامتة: جهازٌ بلا شبكة يعيدها غداً.
+  Future<void> _refreshRegistration() async {
+    try {
+      final details = await _readDeviceDetails();
+
+      if (await _db.readAppState(registeredVersionKey) == _versionOf(details)) {
+        return;
+      }
+
+      await _registerDevice();
+    } on Object catch (error) {
+      debugPrint('تعذّر تحديث تسجيل الجهاز: $error');
+    }
+  }
+
+  Future<Map<String, Object?>> _readDeviceDetails() async {
+    try {
+      return await _deviceDetails();
+    } on Object {
+      return {'platform': Platform.operatingSystem};
+    }
+  }
+
+  static String _versionOf(Map<String, Object?> details) =>
+      '${details['app_version'] ?? '?'}+${details['app_build'] ?? '?'}';
+
   Future<String?> _pushToken() async {
     if (_pushTokenReader == null) {
       return null;

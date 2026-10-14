@@ -23,6 +23,8 @@ dependencies:
   retrofit: ^4.4.1
   flutter_secure_storage: ^11.2.0
   uuid: ^4.5.1
+  device_info_plus: ^13.3.0
+  package_info_plus: ^10.2.2
 
 dev_dependencies:
   flutter_test:

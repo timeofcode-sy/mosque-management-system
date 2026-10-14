@@ -5,6 +5,7 @@ namespace Tests\Feature\Livewire;
 use App\Enums\CourseStatus;
 use App\Models\Institute;
 use App\Models\SyncConflict;
+use App\Models\SyncDevice;
 use App\Models\Teacher;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -49,6 +50,31 @@ class SuperAdminPanelTest extends TestCase
         ] as $url) {
             $this->get($url)->assertOk();
         }
+    }
+
+    public function test_the_devices_page_counts_active_devices_by_their_description(): void
+    {
+        $user = User::factory()->create();
+
+        foreach ([['samsung', 'Android 14'], ['samsung', 'Android 13'], ['xiaomi', 'Android 14']] as [$maker, $os]) {
+            SyncDevice::create([
+                'device_uuid' => (string) Str::uuid7(),
+                'user_id' => $user->id,
+                'app' => 'guardian',
+                'platform' => 'android',
+                'device_type' => 'phone',
+                'manufacturer' => $maker,
+                'os_version' => $os,
+                'last_pulled_at' => now(),
+            ]);
+        }
+
+        $this->get(route('system.devices'))
+            ->assertOk()
+            ->assertSeeText('الشركة المصنّعة')
+            ->assertSeeText('Samsung')
+            ->assertSeeText('Android 14')
+            ->assertSee('2 · 67%');
     }
 
     /**
