@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
+import '../widgets/sync_bar.dart';
+
 /// بابٌ قائمٌ في الهيكل ولم تُبنَ شاشتُه بعد.
 ///
 /// م.6.3 تبني **الهيكل**: النافذةَ والدخولَ والتنقّلَ ومبدّلَ المعاهد وشريطَ
@@ -30,7 +32,7 @@ class PlaceholderScreen extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(title: Text(title), actions: const [PhoneSyncAction()]),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),

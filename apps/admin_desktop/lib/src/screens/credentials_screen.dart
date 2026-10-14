@@ -5,6 +5,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/sync_bar.dart';
 
 /// بطاقاتُ الدخول — ✅ م.6.5، فوق `GET /admin/credentials`.
 ///
@@ -58,6 +59,7 @@ class _CredentialsScreenState extends State<CredentialsScreen> {
       appBar: AppBar(
         title: const Text('بيانات الدخول'),
         actions: [
+          const PhoneSyncAction(),
           IconButton(
             tooltip: 'تحديث',
             icon: const NzIcon(NzIcons.review),

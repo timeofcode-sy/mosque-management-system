@@ -33,27 +33,59 @@ void openAboutDeveloper(BuildContext context) {
   );
 }
 
+/// بندٌ يضيفه التطبيقُ إلى قائمة [AboutMenuButton] — «سجل الجلسات»، «تسجيل الخروج».
+class AboutMenuEntry {
+  const AboutMenuEntry({
+    required this.label,
+    required this.onSelected,
+    this.icon,
+    this.danger = false,
+  });
+
+  final String label;
+  final String? icon;
+  final VoidCallback? onSelected;
+
+  /// بلون الخطر — الخروج.
+  final bool danger;
+}
+
 /// زرُّ «حول» في شريط التطبيق: المظهرُ (الوضع وحجم الخط)، ثم «حول التطبيق» و«حول المطوِّر»،
 /// و«التحقق من التحديثات» حيث يحمل التطبيقُ محدِّثاً ([AppUpdateScope]).
+///
+/// وبنودُ التطبيق ([leading] أعلاها و[trailing] أسفلها) تجعله قائمةَ «المزيد» (⋮): شريطُ
+/// هاتفٍ بعرض 360 لا يتّسع لكل فعلٍ أيقونةً.
 class AboutMenuButton extends StatelessWidget {
-  const AboutMenuButton({super.key, required this.app});
+  const AboutMenuButton({
+    super.key,
+    required this.app,
+    this.leading = const [],
+    this.trailing = const [],
+  });
 
   final AboutAppInfo app;
+  final List<AboutMenuEntry> leading;
+  final List<AboutMenuEntry> trailing;
 
   @override
   Widget build(BuildContext context) {
     final updates = AppUpdateScope.read(context) != null;
+    final more = leading.isNotEmpty || trailing.isNotEmpty;
 
-    return PopupMenuButton<_AboutPage>(
-      tooltip: 'حول',
-      icon: const NzIcon(NzIcons.informationCircle),
-      onSelected: (page) => switch (page) {
+    return PopupMenuButton<Object>(
+      tooltip: more ? 'المزيد' : 'حول',
+      icon: NzIcon(more ? NzIcons.moreVertical : NzIcons.informationCircle),
+      onSelected: (selected) => switch (selected) {
         _AboutPage.appearance => showAppearanceSheet(context),
         _AboutPage.updates => openUpdateScreen(context),
         _AboutPage.app => openAboutApp(context, app),
         _AboutPage.developer => openAboutDeveloper(context),
+        AboutMenuEntry(:final onSelected) => onSelected?.call(),
+        _ => null,
       },
       itemBuilder: (context) => [
+        for (final entry in leading) _entry(context, entry),
+        if (leading.isNotEmpty) const PopupMenuDivider(),
         const PopupMenuItem(value: _AboutPage.appearance, child: Text('المظهر')),
         if (updates)
           const PopupMenuItem(
@@ -63,7 +95,28 @@ class AboutMenuButton extends StatelessWidget {
         const PopupMenuDivider(),
         const PopupMenuItem(value: _AboutPage.app, child: Text('حول التطبيق')),
         const PopupMenuItem(value: _AboutPage.developer, child: Text('حول المطوِّر')),
+        if (trailing.isNotEmpty) const PopupMenuDivider(),
+        for (final entry in trailing) _entry(context, entry),
       ],
+    );
+  }
+
+  PopupMenuItem<Object> _entry(BuildContext context, AboutMenuEntry entry) {
+    final c = context.nz;
+    final color = entry.danger ? c.danger : c.ink;
+
+    return PopupMenuItem<Object>(
+      value: entry,
+      enabled: entry.onSelected != null,
+      child: Row(
+        children: [
+          if (entry.icon != null) ...[
+            NzIcon(entry.icon!, size: 20, color: color),
+            const SizedBox(width: NzSpace.s3),
+          ],
+          Text(entry.label, style: TextStyle(color: color)),
+        ],
+      ),
     );
   }
 }

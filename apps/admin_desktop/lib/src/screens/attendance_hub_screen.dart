@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/sync_bar.dart';
 import 'attendance_screen.dart';
 
 /// بابُ «التفقّد» — **يومُ المعهد كلُّه في شاشة**.
@@ -60,7 +61,7 @@ class _AttendanceHubScreenState extends State<AttendanceHubScreen> {
       appBar: AppBar(
         title: const Text('التفقّد'),
         actions: context.isCompact
-            ? null
+            ? const [PhoneSyncAction()]
             : [...dateNav, const SizedBox(width: 8)],
         bottom: context.isCompact
             ? PreferredSize(

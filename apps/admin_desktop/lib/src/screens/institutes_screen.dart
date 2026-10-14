@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/connected_action.dart';
+import '../widgets/sync_bar.dart';
 
 /// إدارةُ المعاهد — ✅ م.6.5، خلف `institutes.manage`.
 ///
@@ -48,6 +49,7 @@ class _InstitutesScreenState extends State<InstitutesScreen> {
       appBar: AppBar(
         title: const Text('المعاهد'),
         actions: [
+          const PhoneSyncAction(),
           IconButton(
             tooltip: 'تحديث',
             icon: const NzIcon(NzIcons.review),

@@ -6,6 +6,7 @@ import '../widgets/adaptive.dart';
 import '../widgets/color_field.dart';
 import '../widgets/connected_action.dart';
 import '../widgets/form_section.dart';
+import '../widgets/sync_bar.dart';
 
 /// بياناتُ المعهد وألوانُه الثلاثة — ✅ م.6.5، فوق `PUT /admin/institute`.
 ///
@@ -80,6 +81,7 @@ class _InstituteSettingsScreenState extends State<InstituteSettingsScreen> {
       appBar: AppBar(
         title: const Text('بيانات المعهد'),
         actions: [
+          const PhoneSyncAction(),
           AdaptiveAction(
             icon: NzIcons.save,
             label: 'حفظ',

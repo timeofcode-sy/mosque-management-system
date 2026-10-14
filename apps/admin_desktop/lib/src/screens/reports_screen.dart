@@ -7,6 +7,7 @@ import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
 import '../reports/report_documents.dart';
 import '../reports/report_fonts.dart';
+import '../widgets/sync_bar.dart';
 
 /// التقاريرُ والطباعة — ✅ م.6.6، **من الجهاز لا من الخادم**.
 ///
@@ -38,7 +39,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final deps = AppScope.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('التقارير والطباعة')),
+      appBar: AppBar(title: const Text('التقارير والطباعة'), actions: const [PhoneSyncAction()]),
       body: FutureBuilder<List<CircleStanding>>(
         future: deps.stats.loadReportableCircles(),
         builder: (context, snapshot) {

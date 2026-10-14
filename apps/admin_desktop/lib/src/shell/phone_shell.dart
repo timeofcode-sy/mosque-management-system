@@ -5,6 +5,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../config.dart';
 import '../di/app_scope.dart';
+import '../widgets/sync_bar.dart';
 import 'destinations.dart';
 
 /// أبوابُ الشريط السفلي على الهاتف — **أربعةٌ وبابُ «المزيد»**.
@@ -325,7 +326,7 @@ class MoreScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('المزيد')),
+      appBar: AppBar(title: const Text('المزيد'), actions: const [PhoneSyncAction()]),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           NzSpace.s4,
@@ -709,7 +710,7 @@ class _SignOutTile extends StatelessWidget {
         title: const Text('تسجيل الخروج'),
         content: const Text(
           'يُمسح مخزنُ هذا الجهاز عند الخروج، فما لم يُزامَن من كتاباتك يضيع. '
-          'تأكّد أن شريطَ المزامنة لا يعرض عملياتٍ معلّقة.',
+          'تأكّد أن زرَّ المزامنة أعلى الشاشة لا يعرض عملياتٍ معلّقة.',
         ),
         actions: [
           TextButton(

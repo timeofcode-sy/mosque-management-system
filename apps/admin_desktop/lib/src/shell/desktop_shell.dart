@@ -206,7 +206,7 @@ class _DesktopShellState extends State<DesktopShell> {
                     ],
                   ),
                 ),
-                const AppSyncBar(),
+                // لا شريطَ مزامنةٍ على الهاتف: زرٌّ في شريط كل شاشةٍ العلوي (PhoneSyncAction).
               ],
             ),
             bottomNavigationBar: PhoneNavBar(

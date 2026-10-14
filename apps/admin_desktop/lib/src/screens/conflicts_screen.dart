@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/sync_bar.dart';
 
 /// التعارضات — **رؤيةً وحكماً**، ✅ م.6.6 فوق نقطتَي م.6.1.
 ///
@@ -75,7 +76,7 @@ class _ConflictsScreenState extends State<ConflictsScreen> {
         title: const Text('التعارضات'),
         // على الهاتف المرشّحُ تحت العنوان بعرض الشاشة.
         actions: compact
-            ? [refresh]
+            ? [const PhoneSyncAction(), refresh]
             : [
                 Padding(
                   padding: const EdgeInsetsDirectional.only(end: 16),

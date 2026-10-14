@@ -4,7 +4,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
-import '../widgets/sync_bar.dart';
+import '../widgets/sync_button.dart';
 
 /// سجل الجلسات — مقروءاً من drift، ومرشَّحاً **بحلقات الأستاذ**.
 ///
@@ -19,11 +19,12 @@ class SessionsLogScreen extends StatelessWidget {
     final teacherUuid = deps.session.teacherUuid;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('سجل الجلسات')),
+      appBar: AppBar(
+        title: const Text('سجل الجلسات'),
+        actions: const [AppSyncButton()],
+      ),
       body: Column(
         children: [
-          const AppSyncBar(),
-          const Divider(height: 1),
           Expanded(
             child: teacherUuid == null
                 ? const EmptyState(

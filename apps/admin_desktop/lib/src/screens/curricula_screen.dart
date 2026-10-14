@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/connected_action.dart';
+import '../widgets/sync_bar.dart';
 
 /// المناهجُ وبنودُها — ✅ م.6.5.
 ///
@@ -26,7 +27,7 @@ class CurriculaScreen extends StatelessWidget {
     final deps = AppScope.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('المناهج')),
+      appBar: AppBar(title: const Text('المناهج'), actions: const [PhoneSyncAction()]),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _editCurriculum(context),
         icon: const NzIcon(NzIcons.plus),

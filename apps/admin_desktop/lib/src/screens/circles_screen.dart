@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/sync_bar.dart';
 import 'attendance_screen.dart';
 import 'sessions_log_screen.dart';
 
@@ -44,6 +45,7 @@ class _CirclesScreenState extends State<CirclesScreen> {
       appBar: AppBar(
         title: const Text('حلقات المعهد'),
         actions: [
+          const PhoneSyncAction(),
           IconButton(
             tooltip: 'سجل الجلسات',
             icon: const NzIcon(NzIcons.clock),

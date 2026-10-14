@@ -5,6 +5,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/sync_bar.dart';
 
 /// سجلُّ جلسات المعهد — **كلُّها لا جلساتُ حلقاتِ صاحب الجهاز**.
 ///
@@ -27,7 +28,7 @@ class _SessionsLogScreenState extends State<SessionsLogScreen> {
     final deps = AppScope.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('سجل الجلسات')),
+      appBar: AppBar(title: const Text('سجل الجلسات'), actions: const [PhoneSyncAction()]),
       body: StreamBuilder<List<SessionLogEntry>>(
         stream: deps.circles.watchSessionLog(),
         builder: (context, snapshot) {

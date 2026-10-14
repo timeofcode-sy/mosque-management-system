@@ -5,6 +5,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
 import '../widgets/form_section.dart';
+import '../widgets/sync_bar.dart';
 
 /// استمارةُ تسجيل الطالب كاملةً — ✅ م.6.5.
 ///
@@ -102,6 +103,7 @@ class _StudentFormScreenState extends State<StudentFormScreen> {
           widget.uuid == null ? 'تسجيل طالب جديد' : 'تحرير الاستمارة',
         ),
         actions: [
+          const PhoneSyncAction(),
           Padding(
             padding: const EdgeInsetsDirectional.only(end: 12),
             // الهاتف: «حفظ» وحدها بلا أيقونة، فيبقى العنوانُ مقروءاً بجانبها.

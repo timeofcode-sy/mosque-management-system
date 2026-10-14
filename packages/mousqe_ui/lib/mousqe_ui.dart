@@ -18,6 +18,8 @@ export 'src/widgets/status_badge.dart';
 export 'src/widgets/announcement_card.dart';
 export 'src/widgets/attendance_status_badge.dart';
 export 'src/widgets/sync_bar.dart';
+export 'src/widgets/sync_button.dart';
+export 'src/widgets/home_hadith.dart';
 export 'src/widgets/sync_status_indicator.dart';
 export 'src/widgets/empty_state.dart';
 export 'src/widgets/snapshot_view.dart';

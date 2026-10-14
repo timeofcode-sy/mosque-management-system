@@ -70,6 +70,12 @@ new #[Title('لوحة المعلومات')] class extends Component {
         </x-slot>
     </x-page-header>
 
+    {{-- الحديثُ الذي سُمّي منه النظام، كما في الموقع وفي رئيسيّة كل تطبيق. --}}
+    <figure class="nz nz-quote mx-auto w-full max-w-[860px]" aria-label="حديث" data-test="home-hadith">
+        <blockquote class="nz-quote__text">مَن غدا إلى المسجدِ أو راحَ، أعدَّ اللهُ له نُزُلَهُ من الجنّةِ كلّما غدا أو راحَ</blockquote>
+        <figcaption class="nz-quote__src">متفق عليه</figcaption>
+    </figure>
+
     @if ($this->institute === null)
         <x-no-institute />
     @else

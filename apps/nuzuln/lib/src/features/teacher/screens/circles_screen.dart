@@ -4,7 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../../../config.dart';
 import '../di/app_scope.dart';
-import '../widgets/sync_bar.dart';
+import '../widgets/sync_button.dart';
 import 'announcements_screen.dart';
 import 'attendance_screen.dart';
 import 'sessions_log_screen.dart';
@@ -28,8 +28,10 @@ class CirclesScreen extends StatelessWidget {
         leadingWidth: 64,
         leading: const Center(child: BrandMark(size: 40)),
         title: Text(snapshot?.institute.name ?? 'حلقاتي'),
+        // المزامنةُ زرٌّ يتبدّل شكلُه بالحال لا شريطٌ يأكل من الشاشة، وما لا يتّسع له شريطُ
+        // هاتفٍ بعرض 360 في قائمة «المزيد».
         actions: [
-          const AboutMenuButton(app: AppConfig.about),
+          const AppSyncButton(),
           IconButton(
             tooltip: 'الإعلانات',
             icon: const NzIcon(NzIcons.megaphone),
@@ -39,31 +41,33 @@ class CirclesScreen extends StatelessWidget {
               ),
             ),
           ),
-          IconButton(
-            tooltip: 'سجل الجلسات',
-            icon: const NzIcon(NzIcons.clock),
-            onPressed: teacherUuid == null
-                ? null
-                : () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const SessionsLogScreen(),
-                    ),
-                  ),
-          ),
-          IconButton(
-            tooltip: 'تسجيل الخروج',
-            icon: const NzIcon(NzIcons.logout),
-            onPressed: () => _confirmSignOut(context),
+          AboutMenuButton(
+            app: AppConfig.about,
+            leading: [
+              AboutMenuEntry(
+                label: 'سجل الجلسات',
+                icon: NzIcons.clock,
+                onSelected: teacherUuid == null
+                    ? null
+                    : () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const SessionsLogScreen(),
+                        ),
+                      ),
+              ),
+            ],
+            trailing: [
+              AboutMenuEntry(
+                label: 'تسجيل الخروج',
+                icon: NzIcons.logout,
+                danger: true,
+                onSelected: () => _confirmSignOut(context),
+              ),
+            ],
           ),
         ],
       ),
-      body: Column(
-        children: [
-          const AppSyncBar(),
-          const Divider(height: 1),
-          Expanded(child: _body(context, teacherUuid, snapshot?.courseName)),
-        ],
-      ),
+      body: _body(context, teacherUuid, snapshot?.courseName),
     );
   }
 
@@ -98,11 +102,14 @@ class CirclesScreen extends StatelessWidget {
           );
         }
 
+        // الحديثُ الذي سُمّي منه النظامُ في رأس الرئيسيّة، ثم الحلقات.
         return ListView.separated(
           padding: const EdgeInsets.all(12),
-          itemCount: circles.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 8),
-          itemBuilder: (context, index) => _CircleCard(circle: circles[index]),
+          itemCount: circles.length + 1,
+          separatorBuilder: (_, index) => SizedBox(height: index == 0 ? 16 : 8),
+          itemBuilder: (context, index) => index == 0
+              ? const HomeHadith(padding: EdgeInsets.zero)
+              : _CircleCard(circle: circles[index - 1]),
         );
       },
     );

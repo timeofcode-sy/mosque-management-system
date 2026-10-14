@@ -41,6 +41,7 @@ class HomeScreen extends StatelessWidget {
         builder: (context, standing) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const HomeHadith(),
             if (snapshot?.institute.name case final String name)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),

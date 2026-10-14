@@ -2,19 +2,29 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:nuzul_ui/nuzul_ui.dart';
 
+import '../widgets/home_hadith.dart';
 import 'brand.dart';
 
 /// شاشةُ البدء: العلامةُ وسطَ الأرضية الخضراء، بنفس لونِ شاشة أندرويد الأصلية
 /// ومقاسِها (128dp) — فتنتقل هذه من تلك دون أن يلحظ المستخدمُ أنهما شاشتان.
 class BrandSplash extends StatelessWidget {
-  const BrandSplash({super.key, this.caption, this.onLogoTap});
+  const BrandSplash({
+    super.key,
+    this.caption,
+    this.onLogoTap,
+    this.showHadith = true,
+  });
 
   /// اسمُ التطبيق أسفلَ الشاشة — «تطبيق الأستاذ»، «إدارة المعهد».
   final String? caption;
 
   /// نقرةٌ على الشعار — لا يعرف هذا الودجت لماذا؛ [SplashGate] يعدّها.
   final VoidCallback? onLogoTap;
+
+  /// الحديثُ الذي سُمّي منه النظام تحت العلامة.
+  final bool showHadith;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +47,13 @@ class BrandSplash extends StatelessWidget {
                   child: const BrandGlyph(height: 128),
                 ),
               ),
+              // العلامةُ تبقى في مكان شاشة أندرويد الأصلية تماماً، والحديثُ يظهر تحتها بعد
+              // لحظة — فالانتقالُ من تلك إلى هذه لا يُرى، ثم يُقرأ الحديث.
+              if (showHadith)
+                const Align(
+                  alignment: Alignment(0, 0.42),
+                  child: _SplashHadith(),
+                ),
               Positioned(
                 left: 0,
                 right: 0,
@@ -66,6 +83,82 @@ class BrandSplash extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// الحديثُ على شاشة البدء: يظهر متأخّراً قليلاً ويصعد صعوداً خفيفاً — بلا إطار، فالأرضيةُ
+/// أرضيتُه.
+class _SplashHadith extends StatefulWidget {
+  const _SplashHadith();
+
+  @override
+  State<_SplashHadith> createState() => _SplashHadithState();
+}
+
+class _SplashHadithState extends State<_SplashHadith>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _reveal = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 700),
+  );
+
+  Timer? _delay;
+
+  @override
+  void initState() {
+    super.initState();
+    _delay = Timer(const Duration(milliseconds: 250), () {
+      if (mounted) {
+        _reveal.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _delay?.cancel();
+    _reveal.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final curve = CurvedAnimation(parent: _reveal, curve: Curves.easeOutCubic);
+
+    return FadeTransition(
+      opacity: curve,
+      child: SlideTransition(
+        position: Tween(
+          begin: const Offset(0, 0.15),
+          end: Offset.zero,
+        ).animate(curve),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: NzSpace.s6),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  BrandHadith.text,
+                  textAlign: TextAlign.center,
+                  style: NzType.hadith.copyWith(
+                    color: NzBrand.star,
+                    fontSize: 20,
+                    height: 1.8,
+                  ),
+                ),
+                const SizedBox(height: NzSpace.s2),
+                Text(
+                  BrandHadith.source,
+                  style: NzType.label.copyWith(color: Brand.ribbon),
+                ),
+              ],
+            ),
           ),
         ),
       ),

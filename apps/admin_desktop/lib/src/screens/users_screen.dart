@@ -6,6 +6,7 @@ import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
 import '../widgets/connected_action.dart';
 import '../widgets/credentials_dialog.dart';
+import '../widgets/sync_bar.dart';
 
 /// المستخدمون والأدوار — ✅ م.6.5، فوق `GET /admin/users` و`/admin/roles`.
 ///
@@ -65,6 +66,7 @@ class _UsersScreenState extends State<UsersScreen> {
       appBar: AppBar(
         title: const Text('المستخدمون والأدوار'),
         actions: [
+          const PhoneSyncAction(),
           IconButton(
             tooltip: 'تحديث',
             icon: const NzIcon(NzIcons.review),

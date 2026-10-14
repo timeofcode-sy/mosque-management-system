@@ -4,7 +4,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
-import '../widgets/sync_bar.dart';
+import '../widgets/sync_button.dart';
 import 'points_screen.dart';
 import 'recitation_screen.dart';
 import 'student_profile_screen.dart';
@@ -47,6 +47,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.circle.circleName),
+        actions: const [AppSyncButton()],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(40),
           child: _DateBar(date: _date, onPick: _pickDate),
@@ -54,8 +55,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       ),
       body: Column(
         children: [
-          const AppSyncBar(),
-          const Divider(height: 1),
           Expanded(
             child: StreamBuilder<SessionView>(
               stream: deps.repository.watchSession(

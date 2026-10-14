@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
+import '../config.dart';
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/sync_bar.dart';
 import 'student_profile_screen.dart' show badgeOf;
 
 /// داشبورد المعهد — ✅ م.6.6، **محسوبٌ على الجهاز** من الصفوف المتزامنة.
@@ -26,11 +28,14 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('الداشبورد'),
         actions: [
-          AdaptiveAction(
-            icon: NzIcons.review,
-            label: 'مزامنة الآن',
-            onPressed: deps.sync.syncNow,
-          ),
+          const PhoneSyncAction(),
+          // على الهاتف «زامن الآن» في ورقة زرّ المزامنة، فلا يتكرّر الفعلُ أيقونتين متجاورتين.
+          if (!AppConfig.isPhone)
+            AdaptiveAction(
+              icon: NzIcons.review,
+              label: 'مزامنة الآن',
+              onPressed: deps.sync.syncNow,
+            ),
         ],
       ),
       body: StreamBuilder<InstituteOverview>(
@@ -46,6 +51,14 @@ class DashboardScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // الحديثُ الذي سُمّي منه النظامُ في رأس الرئيسيّة.
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 860),
+                  child: const HomeHadith(padding: EdgeInsets.zero),
+                ),
+              ),
+              const SizedBox(height: 16),
               _Counters(counters: overview.counters),
               const SizedBox(height: 16),
               if (!overview.hasCurrentCourse)

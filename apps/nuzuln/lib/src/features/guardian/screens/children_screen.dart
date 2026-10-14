@@ -61,6 +61,7 @@ class ChildrenScreen extends StatelessWidget {
         builder: (context, children) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const HomeHadith(),
             if (institute != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),

@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/sync_bar.dart';
 
 /// مراجعةُ أعذار الغياب — ✅ م.6.5، نوعُ `excuse.review`.
 ///
@@ -45,7 +46,7 @@ class _ExcusesScreenState extends State<ExcusesScreen> {
         title: const Text('أعذار الغياب'),
         // على الهاتف المرشّحُ تحت العنوان بعرض الشاشة.
         actions: context.isCompact
-            ? null
+            ? const [PhoneSyncAction()]
             : [
                 Padding(
                   padding: const EdgeInsetsDirectional.only(end: 16),

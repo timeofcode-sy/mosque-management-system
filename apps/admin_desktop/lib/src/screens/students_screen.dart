@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/sync_bar.dart';
 import 'student_form_screen.dart';
 import 'student_profile_screen.dart';
 import 'transfer_dialog.dart';
@@ -75,6 +76,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
       appBar: AppBar(
         title: const Text('طلاب المعهد'),
         actions: [
+          const PhoneSyncAction(),
           // ما لا يملكه المستخدم لا يظهر أصلاً — لا زرَّ معطَّلاً ولا رسالةَ رفض
           // عند الضغط (نفسُ قاعدة القائمة الجانبية في م.6.3).
           if (canManage && !compact)

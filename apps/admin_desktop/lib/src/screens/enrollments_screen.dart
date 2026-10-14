@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/sync_bar.dart';
 import 'transfer_dialog.dart';
 
 /// التسجيلُ والنقل — ✅ م.6.5.
@@ -128,7 +129,7 @@ class _EnrollmentsBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) =>
-      AppBar(title: const Text('التسجيل والنقل'));
+      AppBar(title: const Text('التسجيل والنقل'), actions: const [PhoneSyncAction()]);
 }
 
 class _CircleList extends StatelessWidget {

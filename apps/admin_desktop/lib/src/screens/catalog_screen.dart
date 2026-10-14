@@ -5,6 +5,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
 import '../widgets/connected_action.dart';
+import '../widgets/sync_bar.dart';
 
 /// بنيةُ الدورة: الدوراتُ والدواماتُ والحلقات — ✅ م.6.5.
 ///
@@ -45,6 +46,7 @@ class CatalogScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('الدورات والدوامات والحلقات'),
+          actions: const [PhoneSyncAction()],
           bottom: TabBar(tabs: [for (final tab in tabs) Tab(text: tab.$1)]),
         ),
         body: TabBarView(children: [for (final tab in tabs) tab.$2]),

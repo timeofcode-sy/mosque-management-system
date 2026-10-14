@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/sync_bar.dart';
 import 'points_dialog.dart';
 import 'recitation_dialog.dart';
 import 'student_profile_screen.dart';
@@ -57,6 +58,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
+        actions: const [PhoneSyncAction()],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(44),
           child: _DateBar(date: _date, onPick: _pickDate),
