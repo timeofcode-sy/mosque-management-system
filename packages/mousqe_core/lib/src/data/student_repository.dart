@@ -19,8 +19,8 @@ import 'admin_views.dart';
 /// `sync/pull`، فالكشفُ يُفتح والشبكةُ مقطوعة.
 class StudentRepository {
   StudentRepository({required AppDatabase db, required SyncEngine syncEngine})
-      : _db = db,
-        _syncEngine = syncEngine;
+    : _db = db,
+      _syncEngine = syncEngine;
 
   final AppDatabase _db;
 
@@ -32,15 +32,18 @@ class StudentRepository {
 
   /// كشفُ طلاب المعهد، ومعه اسمُ حلقة كلٍّ في الدورة الجارية.
   Future<List<StudentListEntry>> loadStudents() async {
-    final students = await (_db.select(_db.students)
-          ..orderBy([
-            (t) => OrderingTerm(expression: t.firstName),
-            (t) => OrderingTerm(expression: t.familyName),
-          ]))
-        .get();
+    final students =
+        await (_db.select(_db.students)..orderBy([
+              (t) => OrderingTerm(expression: t.firstName),
+              (t) => OrderingTerm(expression: t.familyName),
+            ]))
+            .get();
 
     final circles = await _currentCircleNames();
     final pending = await _pendingStudentUuids();
+    final parents = await _parentsByStudent();
+    final fields = await _customFieldsByStudent();
+    final juz = await _memorizedJuzByStudent();
 
     return [
       for (final student in students)
@@ -53,17 +56,124 @@ class StudentRepository {
           phone: student.phone,
           circleName: circles[student.id],
           pending: pending.contains(student.uuid),
+          gender: student.gender,
+          gradeLevel: student.gradeLevel,
+          birthDate: student.birthDate,
+          address: student.currentAddress ?? student.permanentAddress,
+          fatherName: parents[student.id]?['father']?.fullName,
+          fatherPhone: parents[student.id]?['father']?.phone,
+          fatherAlive: parents[student.id]?['father']?.isAlive,
+          motherName: parents[student.id]?['mother']?.fullName,
+          motherPhone: parents[student.id]?['mother']?.phone,
+          customFields: fields[student.id] ?? const {},
+          memorizedJuz: juz[student.id] ?? 0,
         ),
     ];
+  }
+
+  /// أبُ كلِّ طالبٍ وأمُّه — صفوفُ `guardians` بصلة القرابة.
+  Future<Map<int, Map<String, GuardianRow>>> _parentsByStudent() async {
+    final rows =
+        await (_db.select(_db.guardianStudentTable).join([
+              innerJoin(
+                _db.guardians,
+                _db.guardians.id.equalsExp(_db.guardianStudentTable.guardianId),
+              ),
+            ])..where(
+              _db.guardianStudentTable.relation.isIn(['father', 'mother']),
+            ))
+            .get();
+
+    final parents = <int, Map<String, GuardianRow>>{};
+
+    for (final row in rows) {
+      final link = row.readTable(_db.guardianStudentTable);
+      parents.putIfAbsent(link.studentId, () => {})[link.relation] = row
+          .readTable(_db.guardians);
+    }
+
+    return parents;
+  }
+
+  /// قيمُ واصفات كل طالبٍ بمعرّف الواصفة — والاختيارُ المتعدّد قائمة.
+  Future<Map<int, Map<String, List<String>>>> _customFieldsByStudent() async {
+    final rows = await (_db.select(_db.customFieldValues).join([
+      innerJoin(
+        _db.customFields,
+        _db.customFields.id.equalsExp(_db.customFieldValues.customFieldId),
+      ),
+    ])..where(_db.customFieldValues.entityType.like('%Student'))).get();
+
+    final values = <int, Map<String, List<String>>>{};
+
+    for (final row in rows) {
+      final value = row.readTable(_db.customFieldValues);
+      values.putIfAbsent(value.entityId, () => {})[row
+          .readTable(_db.customFields)
+          .uuid] = _listValue(
+        value.value,
+      );
+    }
+
+    return values;
+  }
+
+  /// عددُ الأجزاء المحفوظة لكل طالب — بنودُ `juz-N` المحفوظة أو المتقَنة.
+  Future<Map<int, int>> _memorizedJuzByStudent() async {
+    final rows =
+        await (_db.select(_db.studentCurriculumProgressTable).join([
+              innerJoin(
+                _db.curriculumItems,
+                _db.curriculumItems.id.equalsExp(
+                  _db.studentCurriculumProgressTable.curriculumItemId,
+                ),
+              ),
+            ])..where(
+              _db.studentCurriculumProgressTable.status.isIn([
+                    'memorized',
+                    'mastered',
+                  ]) &
+                  _db.curriculumItems.code.like('juz-%'),
+            ))
+            .get();
+
+    final counts = <int, int>{};
+
+    for (final row in rows) {
+      final studentId = row
+          .readTable(_db.studentCurriculumProgressTable)
+          .studentId;
+      counts[studentId] = (counts[studentId] ?? 0) + 1;
+    }
+
+    return counts;
+  }
+
+  static List<String> _listValue(String? raw) {
+    if (raw == null || raw.isEmpty) {
+      return const [];
+    }
+
+    try {
+      final decoded = jsonDecode(raw);
+
+      if (decoded is List) {
+        return [for (final item in decoded) item.toString()];
+      }
+
+      return decoded == null ? const [] : [decoded.toString()];
+    } on FormatException {
+      return [raw];
+    }
   }
 
   Stream<List<StudentListEntry>> watchStudents() => _watch(loadStudents);
 
   /// استمارةُ طالبٍ قائم، مجموعةً من ستة جداول — أو `null` لمعرّفٍ لا صفَّ له.
   Future<StudentForm?> loadStudentForm(String uuid) async {
-    final student = await (_db.select(_db.students)
-          ..where((t) => t.uuid.equals(uuid)))
-        .getSingleOrNull();
+    final student = await (_db.select(
+      _db.students,
+    )..where((t) => t.uuid.equals(uuid))).getSingleOrNull();
 
     if (student == null) {
       return null;
@@ -165,9 +275,9 @@ class StudentRepository {
 
     final except = exceptStudentUuid == null
         ? null
-        : await (_db.select(_db.students)
-              ..where((t) => t.uuid.equals(exceptStudentUuid)))
-            .getSingleOrNull();
+        : await (_db.select(
+            _db.students,
+          )..where((t) => t.uuid.equals(exceptStudentUuid))).getSingleOrNull();
 
     final ownFather = except == null ? null : fathers[except.id];
     final ownMother = except == null ? null : mothers[except.id];
@@ -180,10 +290,11 @@ class StudentRepository {
       return const [];
     }
 
-    final students = await (_db.select(_db.students)
-          ..where((t) => t.id.isIn(studentIds))
-          ..orderBy([(t) => OrderingTerm(expression: t.firstName)]))
-        .get();
+    final students =
+        await (_db.select(_db.students)
+              ..where((t) => t.id.isIn(studentIds))
+              ..orderBy([(t) => OrderingTerm(expression: t.firstName)]))
+            .get();
 
     final families = <String, SiblingFamily>{};
 
@@ -197,11 +308,8 @@ class StudentRepository {
 
       final family = families.putIfAbsent(
         '$father|$mother',
-        () => SiblingFamily(
-          fatherUuid: father,
-          motherUuid: mother,
-          students: [],
-        ),
+        () =>
+            SiblingFamily(fatherUuid: father, motherUuid: mother, students: []),
       );
 
       family.students.add(
@@ -217,22 +325,23 @@ class StudentRepository {
     String fullName,
     String relation,
   ) async {
-    final rows = await (_db.select(_db.guardianStudentTable).join([
-      innerJoin(
-        _db.guardians,
-        _db.guardians.id.equalsExp(_db.guardianStudentTable.guardianId),
-      ),
-    ])
-          ..where(
-            _db.guardianStudentTable.relation.equals(relation) &
-                _db.guardians.fullName.equals(fullName),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.guardianStudentTable).join([
+              innerJoin(
+                _db.guardians,
+                _db.guardians.id.equalsExp(_db.guardianStudentTable.guardianId),
+              ),
+            ])..where(
+              _db.guardianStudentTable.relation.equals(relation) &
+                  _db.guardians.fullName.equals(fullName),
+            ))
+            .get();
 
     return {
       for (final row in rows)
-        row.readTable(_db.guardianStudentTable).studentId:
-            row.readTable(_db.guardians).uuid,
+        row.readTable(_db.guardianStudentTable).studentId: row
+            .readTable(_db.guardians)
+            .uuid,
     };
   }
 
@@ -273,19 +382,19 @@ class StudentRepository {
 
   /// أعذارُ الغياب الواردة، الأحدثُ أوّلاً.
   Future<List<ExcuseView>> loadExcuses() async {
-    final rows = await (_db.select(_db.absenceExcusesTable).join([
-      innerJoin(
-        _db.students,
-        _db.students.id.equalsExp(_db.absenceExcusesTable.studentId),
-      ),
-    ])
-          ..orderBy([
-            OrderingTerm(
-              expression: _db.absenceExcusesTable.fromDate,
-              mode: OrderingMode.desc,
-            ),
-          ]))
-        .get();
+    final rows =
+        await (_db.select(_db.absenceExcusesTable).join([
+              innerJoin(
+                _db.students,
+                _db.students.id.equalsExp(_db.absenceExcusesTable.studentId),
+              ),
+            ])..orderBy([
+              OrderingTerm(
+                expression: _db.absenceExcusesTable.fromDate,
+                mode: OrderingMode.desc,
+              ),
+            ]))
+            .get();
 
     final pending = await _pendingExcuseDecisions();
 
@@ -333,10 +442,11 @@ class StudentRepository {
 
   /// الصفاتُ الشخصية — العامّةُ ومعهدُ صاحب الجهاز معاً.
   Future<List<TraitOption>> loadTraits() async {
-    final rows = await (_db.select(_db.personalTraits)
-          ..where((t) => t.isActive.equals(true))
-          ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
-        .get();
+    final rows =
+        await (_db.select(_db.personalTraits)
+              ..where((t) => t.isActive.equals(true))
+              ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
+            .get();
 
     return [
       for (final row in rows)
@@ -346,10 +456,13 @@ class StudentRepository {
 
   /// واصفاتُ الطالب المخصّصة — تُقرأ صفوفاً وتُرسَم حقولاً.
   Future<List<CustomFieldView>> loadStudentCustomFields() async {
-    final rows = await (_db.select(_db.customFields)
-          ..where((t) => t.entity.equals('student') & t.isActive.equals(true))
-          ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
-        .get();
+    final rows =
+        await (_db.select(_db.customFields)
+              ..where(
+                (t) => t.entity.equals('student') & t.isActive.equals(true),
+              )
+              ..orderBy([(t) => OrderingTerm(expression: t.sortOrder)]))
+            .get();
 
     return [
       for (final row in rows)
@@ -395,17 +508,17 @@ class StudentRepository {
   }
 
   Future<GuardianDraft> _guardian(int studentId, String relation) async {
-    final row = await (_db.select(_db.guardianStudentTable).join([
-      innerJoin(
-        _db.guardians,
-        _db.guardians.id.equalsExp(_db.guardianStudentTable.guardianId),
-      ),
-    ])
-          ..where(
-            _db.guardianStudentTable.studentId.equals(studentId) &
-                _db.guardianStudentTable.relation.equals(relation),
-          ))
-        .getSingleOrNull();
+    final row =
+        await (_db.select(_db.guardianStudentTable).join([
+              innerJoin(
+                _db.guardians,
+                _db.guardians.id.equalsExp(_db.guardianStudentTable.guardianId),
+              ),
+            ])..where(
+              _db.guardianStudentTable.studentId.equals(studentId) &
+                  _db.guardianStudentTable.relation.equals(relation),
+            ))
+            .getSingleOrNull();
 
     if (row == null) {
       return const GuardianDraft();
@@ -435,9 +548,7 @@ class StudentRepository {
         _db.personalTraits,
         _db.personalTraits.id.equalsExp(_db.studentTraitTable.traitId),
       ),
-    ])
-          ..where(_db.studentTraitTable.studentId.equals(studentId)))
-        .get();
+    ])..where(_db.studentTraitTable.studentId.equals(studentId))).get();
 
     return {for (final row in rows) row.readTable(_db.personalTraits).uuid};
   }
@@ -445,40 +556,46 @@ class StudentRepository {
   /// «محفوظاتُ الطالب» = صفُّ تقدّمٍ حالتُه `memorized` أو `mastered`. وما عداهما
   /// صفٌّ باقٍ بحالة `not_started` — لا غيابُ صفّ.
   Future<Set<String>> _memorizedItemUuidsOf(int studentId) async {
-    final rows = await (_db.select(_db.studentCurriculumProgressTable).join([
-      innerJoin(
-        _db.curriculumItems,
-        _db.curriculumItems.id
-            .equalsExp(_db.studentCurriculumProgressTable.curriculumItemId),
-      ),
-    ])
-          ..where(
-            _db.studentCurriculumProgressTable.studentId.equals(studentId) &
-                _db.studentCurriculumProgressTable.status
-                    .isIn(['memorized', 'mastered']),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.studentCurriculumProgressTable).join([
+              innerJoin(
+                _db.curriculumItems,
+                _db.curriculumItems.id.equalsExp(
+                  _db.studentCurriculumProgressTable.curriculumItemId,
+                ),
+              ),
+            ])..where(
+              _db.studentCurriculumProgressTable.studentId.equals(studentId) &
+                  _db.studentCurriculumProgressTable.status.isIn([
+                    'memorized',
+                    'mastered',
+                  ]),
+            ))
+            .get();
 
     return {for (final row in rows) row.readTable(_db.curriculumItems).uuid};
   }
 
   Future<Map<String, String>> _customFieldValuesOf(int studentId) async {
-    final rows = await (_db.select(_db.customFieldValues).join([
-      innerJoin(
-        _db.customFields,
-        _db.customFields.id.equalsExp(_db.customFieldValues.customFieldId),
-      ),
-    ])
-          ..where(
-            _db.customFieldValues.entityId.equals(studentId) &
-                _db.customFieldValues.entityType.like('%Student'),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.customFieldValues).join([
+              innerJoin(
+                _db.customFields,
+                _db.customFields.id.equalsExp(
+                  _db.customFieldValues.customFieldId,
+                ),
+              ),
+            ])..where(
+              _db.customFieldValues.entityId.equals(studentId) &
+                  _db.customFieldValues.entityType.like('%Student'),
+            ))
+            .get();
 
     return {
       for (final row in rows)
-        row.readTable(_db.customFields).uuid:
-            _plainValue(row.readTable(_db.customFieldValues).value),
+        row.readTable(_db.customFields).uuid: _plainValue(
+          row.readTable(_db.customFieldValues).value,
+        ),
     };
   }
 
@@ -500,50 +617,51 @@ class StudentRepository {
 
   /// اسمُ حلقة كل طالبٍ في الدورة الجارية — تسجيلٌ واحد فعّال لكل طالب.
   Future<Map<int, String>> _currentCircleNames() async {
-    final rows = await (_db.select(_db.enrollments).join([
-      innerJoin(
-        _db.courseCircles,
-        _db.courseCircles.id.equalsExp(_db.enrollments.courseCircleId),
-      ),
-      innerJoin(
-        _db.circles,
-        _db.circles.id.equalsExp(_db.courseCircles.circleId),
-      ),
-      innerJoin(
-        _db.courses,
-        _db.courses.id.equalsExp(_db.courseCircles.courseId),
-      ),
-    ])
-          ..where(
-            _db.enrollments.status.equals('active') &
-                _db.courses.isCurrent.equals(true),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.enrollments).join([
+              innerJoin(
+                _db.courseCircles,
+                _db.courseCircles.id.equalsExp(_db.enrollments.courseCircleId),
+              ),
+              innerJoin(
+                _db.circles,
+                _db.circles.id.equalsExp(_db.courseCircles.circleId),
+              ),
+              innerJoin(
+                _db.courses,
+                _db.courses.id.equalsExp(_db.courseCircles.courseId),
+              ),
+            ])..where(
+              _db.enrollments.status.equals('active') &
+                  _db.courses.isCurrent.equals(true),
+            ))
+            .get();
 
     return {
       for (final row in rows)
-        row.readTable(_db.enrollments).studentId:
-            row.readTable(_db.circles).name,
+        row.readTable(_db.enrollments).studentId: row
+            .readTable(_db.circles)
+            .name,
     };
   }
 
   Future<String?> _currentCircleUuid(int studentId) async {
-    final row = await (_db.select(_db.enrollments).join([
-      innerJoin(
-        _db.courseCircles,
-        _db.courseCircles.id.equalsExp(_db.enrollments.courseCircleId),
-      ),
-      innerJoin(
-        _db.courses,
-        _db.courses.id.equalsExp(_db.courseCircles.courseId),
-      ),
-    ])
-          ..where(
-            _db.enrollments.studentId.equals(studentId) &
-                _db.enrollments.status.equals('active') &
-                _db.courses.isCurrent.equals(true),
-          ))
-        .getSingleOrNull();
+    final row =
+        await (_db.select(_db.enrollments).join([
+              innerJoin(
+                _db.courseCircles,
+                _db.courseCircles.id.equalsExp(_db.enrollments.courseCircleId),
+              ),
+              innerJoin(
+                _db.courses,
+                _db.courses.id.equalsExp(_db.courseCircles.courseId),
+              ),
+            ])..where(
+              _db.enrollments.studentId.equals(studentId) &
+                  _db.enrollments.status.equals('active') &
+                  _db.courses.isCurrent.equals(true),
+            ))
+            .getSingleOrNull();
 
     return row?.readTable(_db.courseCircles).uuid;
   }
@@ -555,9 +673,9 @@ class StudentRepository {
   /// تُعاد قراءتُها في الشاشة قبل أن تصل؛ فجدولُ مسوّدةٍ كامل لصفٍّ ذي عشرين
   /// عموداً وستّة جداولَ فرعية كان يضاعف المخطط ليخدم دقائقَ الانتظار.
   Future<Set<String>> _pendingStudentUuids() async {
-    final rows = await (_db.select(_db.pendingOperations)
-          ..where((t) => t.type.equals('student.save')))
-        .get();
+    final rows = await (_db.select(
+      _db.pendingOperations,
+    )..where((t) => t.type.equals('student.save'))).get();
 
     return {
       for (final row in rows)
@@ -567,10 +685,11 @@ class StudentRepository {
 
   /// قراراتُ الأعذار المصفوفة — مفتاحُها `uuid` الإذن وقيمتُها القرار.
   Future<Map<String, String>> _pendingExcuseDecisions() async {
-    final rows = await (_db.select(_db.pendingOperations)
-          ..where((t) => t.type.equals('excuse.review'))
-          ..orderBy([(t) => OrderingTerm(expression: t.sequence)]))
-        .get();
+    final rows =
+        await (_db.select(_db.pendingOperations)
+              ..where((t) => t.type.equals('excuse.review'))
+              ..orderBy([(t) => OrderingTerm(expression: t.sequence)]))
+            .get();
 
     return {
       for (final row in rows)
@@ -601,10 +720,11 @@ class StudentRepository {
     }
   }
 
-  static String _fullName(StudentRow student) =>
-      [student.firstName, student.fatherName, student.familyName]
-          .where((part) => part.trim().isNotEmpty)
-          .join(' ');
+  static String _fullName(StudentRow student) => [
+    student.firstName,
+    student.fatherName,
+    student.familyName,
+  ].where((part) => part.trim().isNotEmpty).join(' ');
 
   static String _isoDate(DateTime value) =>
       '${value.year.toString().padLeft(4, '0')}-'

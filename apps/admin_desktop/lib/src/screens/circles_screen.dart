@@ -124,12 +124,13 @@ class _CirclesScreenState extends State<CirclesScreen> {
       return true;
     }
 
-    return [
+    // بحثٌ عربيٌّ متسامح: «عثمان بن عفان» تجدها «عثمان»، و«احمد» تجد أستاذها «أحمد».
+    return ArabicSearch.match(_query, [
       circle.circleName,
       circle.shiftName,
-      circle.room ?? '',
+      circle.room,
       circle.teachersLabel,
-    ].any((field) => field.contains(_query));
+    ]).complete;
   }
 }
 

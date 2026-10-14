@@ -215,6 +215,48 @@ void main() {
       await settle(tester);
     });
 
+    testWidgets('search folds hamza and the circle filter finds the unplaced',
+        (tester) async {
+      await boot(SeededRoles.supervisor);
+      await seed();
+      // طالبٌ ثانٍ بلا حلقة، وأبوه متوفى.
+      await db.into(db.students).insert(
+            StudentsCompanion.insert(
+              id: const Value(2),
+              uuid: 'stu-2',
+              instituteId: 1,
+              firstName: 'أحمد',
+              fatherName: 'محمود',
+              familyName: 'سكر',
+            ),
+          );
+      await pump(tester, const StudentsScreen());
+      await tester.pump();
+
+      // «احمد» بلا همزة تجد «أحمد».
+      await tester.enterText(find.byType(TextField).first, 'احمد سكر');
+      await tester.pump();
+      expect(find.text('أحمد محمود سكر'), findsOneWidget);
+      expect(find.text('علي حسن الشامي'), findsNothing);
+
+      await tester.enterText(find.byType(TextField).first, '');
+      await tester.pump();
+
+      await tester.tap(find.text('كل الحلقات'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('بلا حلقة').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('أحمد محمود سكر'), findsOneWidget);
+      expect(find.text('علي حسن الشامي'), findsNothing);
+      // وشارةُ التصفية تُزال فيعود الكشف كاملاً.
+      await tester.tap(find.byIcon(Icons.clear).first);
+      await tester.pumpAndSettle();
+      expect(find.text('علي حسن الشامي'), findsOneWidget);
+
+      await settle(tester);
+    });
+
     testWidgets('an account that only reads gets no register button',
         (tester) async {
       // الأستاذُ يملك `students.view` ولا يملك `students.manage`.

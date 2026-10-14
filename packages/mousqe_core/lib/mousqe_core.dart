@@ -55,6 +55,7 @@ export 'src/state/sync_controller.dart';
 export 'src/sync/sync_engine.dart';
 export 'src/sync/sync_payload_applier.dart';
 
+export 'src/support/arabic_search.dart';
 export 'src/support/attendance_rate.dart';
 export 'src/support/late_minutes.dart';
 export 'src/support/quran.dart';
