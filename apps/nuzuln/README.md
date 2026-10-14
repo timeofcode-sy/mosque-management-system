@@ -12,7 +12,7 @@
 
 ## البنية
 
-```
+```text
 lib/src/
   app.dart              NuzulApp — يوجّه حسب السطح، ويشغّل مزامنة الأستاذ وحده
   di/app_scope.dart     NuzulDependencies — مخزنٌ وعميلٌ وجلسةٌ مشتركة

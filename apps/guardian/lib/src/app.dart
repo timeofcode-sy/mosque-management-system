@@ -13,7 +13,7 @@ import 'screens/login_screen.dart';
 /// **وبلا `sync.start()`**: نظيرُه في تطبيق الأستاذ يشغّل دورةَ المزامنة عند
 /// جهوز الجلسة ويوقفها عند الخروج، ولا دورةَ ههنا — القراءةُ تقع عند فتح كل
 /// شاشة وعند السحب للتحديث
-/// ([CHECKPOINT-PHASE-7.1.MD §2](../../../../docs/CHECKPOINT-PHASE-7.1.MD)).
+/// ([CHECKPOINT-PHASE-7.1.MD §2](../../../../docs/checkpoints/CHECKPOINT-PHASE-7.1.MD)).
 class GuardianApp extends StatefulWidget {
   const GuardianApp({super.key, required this.dependencies});
 

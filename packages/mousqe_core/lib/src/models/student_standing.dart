@@ -6,7 +6,7 @@ part 'student_standing.g.dart';
 /// موقعُ الطالب بين زملائه — استجابةُ `GET /student/me/standing` ✅ م.8.1.
 ///
 /// 🔑 **رقمٌ لا كشف.** الرتبةُ تُحسب في الخادم عمداً، فلا يصل جهازَ الطالب صفٌّ
-/// عن زميلٍ واحد ([PHASE-8-STAGES.MD §1.1](../../../../../docs/PHASE-8-STAGES.MD)).
+/// عن زميلٍ واحد ([PHASE-8-STAGES.MD §1.1](../../../../../docs/phases/PHASE-8-STAGES.MD)).
 /// ولذلك ليس في هذا النموذج قائمةُ زملاء ولا أسماء — وغيابُها **قرارٌ لا نقص**.
 @freezed
 abstract class StudentStanding with _$StudentStanding {

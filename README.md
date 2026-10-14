@@ -21,10 +21,11 @@
 | `apps/student/` | ⏳ تطبيق الطالب القديم — حلّ محلَّه `apps/nuzuln/` |
 | `packages/mousqe_core/` | نماذج + drift(SQLite) + محرك المزامنة + عميل API |
 | `packages/nuzul_ui/` | هوية نزلاً v3 لـ Flutter: رموز، سمتان (فاتح وليلي)، خطوط، أيقونات، شعار، نقش، مكوّنات Nz |
-| `packages/mousqe_ui/` | ثيم التطبيقات فوق nuzul_ui + ودجتس مشتركة (شارات، بطاقات، مزامنة، دخول) |
+| `packages/mousqe_ui/` | ثيم التطبيقات فوق nuzul_ui + ودجتس مشتركة (شارات، بطاقات، مزامنة، دخول) + التحديثُ من داخل التطبيق |
+| `packages/mousqe_installer/` | إضافةُ أندرويد التي تسلّم ملفَّ التحديث إلى مثبّت النظام |
 | `design/` | رموز الهوية (`design-tokens.json`) وشرح المولِّدات والقرارات — المصدر الكامل في `brand-v3/` (غير مُتتبَّع)؛ انظر [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md) |
 | `design/logo/` | الشعار السابق وشعار معهد عمر الفاروق للأرشيف |
-| `docs/` | `PLAN.md` (الخطة وسجل تغييراتها) · `ERD.md` (نموذج البيانات) · `CHECKPOINT-PHASE-*.MD` (نقطة تفتيش لكل مرحلة منفَّذة) |
+| `docs/` | الوثائق كلُّها وفهرسُها [docs/README.md](docs/README.md): التشغيلُ والإصدارات (`VERSION.md`) والمرجعُ التقني، وخططُ المراحل في `phases/` ونقاطُ تفتيشها في `checkpoints/` |
 
 ## البدء
 
@@ -56,10 +57,12 @@ vendor/bin/pint --dirty --format agent
 .\scripts\export-apps.ps1 -Channel release    # إصدارٌ نهائي (من commit نظيف)
 ```
 
-كلُّ تصديرٍ ناجح يضيف نسخته إلى [`VERSION.md`](VERSION.md) — رقمٌ واحد للنظام، بقسمين: الإصدار والبيتا.
+كلُّ تصديرٍ ناجح يضيف نسخته إلى [`docs/VERSION.md`](docs/VERSION.md) — رقمٌ واحد للنظام، بقسمين: الإصدار والبيتا.
+ثم يُنشر من اللوحة («تحديثات التطبيقات») فيصل الأجهزةَ ويُثبَّت من داخل كل تطبيق: [docs/APP-UPDATES.md](docs/APP-UPDATES.md).
 
 ## التشغيل والنشر
 
 محلياً على شبكة مشتركة أو على Hostinger Cloud، وتصدير التطبيقات: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). وضمُّ معهدٍ ببياناته القديمة: [docs/IMPORT.md](docs/IMPORT.md). وهوية الواجهات ونظام التصميم: [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md).
 
-انظر `docs/PLAN.md` للخطة وحالتها، و`docs/ERD.md` لنموذج البيانات، وآخر نقطة تفتيش لتفاصيل ما نُفِّذ.
+انظر [`docs/PLAN.md`](docs/PLAN.md) للخطة وحالتها، و[`docs/ERD.md`](docs/ERD.md) لنموذج البيانات، وآخر نقطة تفتيش في
+[`docs/checkpoints/`](docs/checkpoints/) لتفاصيل ما نُفِّذ — والفهرسُ كلُّه في [`docs/README.md`](docs/README.md).

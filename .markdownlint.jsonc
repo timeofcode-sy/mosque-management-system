@@ -1,0 +1,14 @@
+// markdownlint — the house style of the docs (docs/README.md, «اصطلاحات الكتابة»).
+{
+  "default": true,
+
+  // Paragraphs are long Arabic lines, never hard-wrapped mid-sentence: wrapping breaks the
+  // reading order of mixed Arabic/Latin runs in some renderers.
+  "MD013": false,
+
+  // Tables use a tight delimiter row (|---|---|) with padded cells; the rule cannot express that mix.
+  "MD060": false,
+
+  // The repository README shows the logo with <img width> (Markdown has no size).
+  "MD033": { "allowed_elements": ["img"] }
+}

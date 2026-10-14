@@ -18,7 +18,7 @@
     default. The user can switch between nuzuln.com and a local server at any time
     by tapping the logo three times on the splash screen.
 
-    Every export is a new version of the whole system, recorded in VERSION.md:
+    Every export is a new version of the whole system, recorded in docs/VERSION.md:
     the script reads the last versions there, computes the next one, builds all
     apps with it, and only if every build succeeded adds the entry at the top of
     its section (Release or Beta). A failed export records nothing.
@@ -43,7 +43,7 @@
 
 .PARAMETER DryRun
     Print the next version, build number and notes, then stop: nothing is built
-    and VERSION.md is not touched.
+    and docs/VERSION.md is not touched.
 
 .PARAMETER Only
     Build only these apps (mobile, teacher, admin_desktop, admin_android, guardian, student), e.g.
@@ -108,7 +108,7 @@ $root = Split-Path -Parent $PSScriptRoot
 if (-not $OutDir) { $OutDir = Join-Path $root 'dist' }
 # Each app builds from its own folder, so a relative -OutDir is pinned to where the script was run.
 $OutDir = [IO.Path]::GetFullPath($OutDir, (Get-Location).Path)
-$versionFile = Join-Path $root 'VERSION.md'
+$versionFile = Join-Path $root 'docs/VERSION.md'
 
 $apps = @(
     @{ Name = 'mobile';        Dir = 'apps/nuzuln';        Kind = 'apk' },
@@ -234,7 +234,7 @@ $OutDir = Join-Path (Join-Path $OutDir $Channel) $next.Label
 
 # A version names a commit: a release must be exactly one, a beta may say it is not.
 $commit = (git -C $root rev-parse --short HEAD).Trim()
-$dirty = @(git -C $root status --porcelain -- . ':(exclude)VERSION.md')
+$dirty = @(git -C $root status --porcelain -- . ':(exclude)docs/VERSION.md')
 $commitLine = "Commit ``$commit``"
 if ($dirty.Count) {
     if ($Channel -eq 'release' -and -not $DryRun) {
@@ -250,7 +250,7 @@ Write-Host "Output folder              : $OutDir"
 Write-Host 'Highlights                 :'
 $notes | ForEach-Object { Write-Host "  - $_" }
 
-if ($DryRun) { Write-Host "`nDry run: nothing built, VERSION.md untouched."; exit 0 }
+if ($DryRun) { Write-Host "`nDry run: nothing built, docs/VERSION.md untouched."; exit 0 }
 
 if (-not (Get-Command flutter -ErrorAction SilentlyContinue)) {
     throw 'flutter was not found on PATH. Install Flutter or open a terminal where it works.'
@@ -334,7 +334,7 @@ $failed = @($results | Where-Object { $_.Status -eq 'FAILED' })
 $built = @($results | Where-Object { $_.Status -eq 'ok' })
 
 if ($failed.Count -gt 0) {
-    Write-Host "VERSION.md not updated: $($next.Label) did not ship." -ForegroundColor Red
+    Write-Host "docs/VERSION.md not updated: $($next.Label) did not ship." -ForegroundColor Red
     exit 1
 }
 
@@ -347,5 +347,5 @@ if ($built.Count -gt 0) {
     ) + @($notes | ForEach-Object { "- $_" })
 
     Add-VersionEntry $versionFile $Channel $entry
-    Write-Host "VERSION.md: $($next.Label) (build $($next.Build)) added under $Channel - commit it." -ForegroundColor Green
+    Write-Host "docs/VERSION.md: $($next.Label) (build $($next.Build)) added under $Channel - commit it." -ForegroundColor Green
 }

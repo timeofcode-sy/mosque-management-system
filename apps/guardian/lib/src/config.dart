@@ -13,7 +13,7 @@ class AppConfig {
 
   /// يُرسَل في `POST /devices/register` — وهو ما يظهر في شاشة `system/devices`
   /// باللوحة. **ولا يُرسَل في `sync/pull?app=`**: وليُّ الأمر لا يسحب التيّار
-  /// أصلاً ([CHECKPOINT-PHASE-7.1.MD §2](../../../../docs/CHECKPOINT-PHASE-7.1.MD)).
+  /// أصلاً ([CHECKPOINT-PHASE-7.1.MD §2](../../../../docs/checkpoints/CHECKPOINT-PHASE-7.1.MD)).
   static const String app = 'guardian';
 
   /// اسمُ التطبيق كما يظهر لصاحبه — على شاشة الدخول، وفي `device_name` الذي

@@ -11,7 +11,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * **ولا `scope_ids` في الخرج**: النطاقُ يُرشَّح في الخادم، ومعرّفاتُ الحلقات
  * الأخرى المشمولة بالإعلان ليست من شأن قارئه — بل هي بالضبط ما بُنيت هذه
- * المرحلة لئلّا يصل جهازَه ([PHASE-8-STAGES.MD §1.1](../../../../docs/PHASE-8-STAGES.MD)).
+ * المرحلة لئلّا يصل جهازَه ([PHASE-8-STAGES.MD §1.1](../../../../docs/phases/PHASE-8-STAGES.MD)).
  *
  * @mixin Announcement
  */

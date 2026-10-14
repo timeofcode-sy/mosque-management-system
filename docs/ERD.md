@@ -5,9 +5,9 @@
 
 > مخطّطُ الخادم لم يتغيّر بعد م.4.7 (آخرُ هجرة `add_login_credentials_to_users_table`): المراحل
 > 5.1–5.4 وسّعت `institutes.settings` (§4.5) والسلوكَ حول `change_log` (§6) لا الجداولَ نفسها.
-> ومخطّطُ **العميل** المحلي (drift) موصوفٌ في [CHECKPOINT-PHASE-5.3.MD](CHECKPOINT-PHASE-5.3.MD) §3
+> ومخطّطُ **العميل** المحلي (drift) موصوفٌ في [CHECKPOINT-PHASE-5.3.MD](checkpoints/CHECKPOINT-PHASE-5.3.MD) §3
 > — وجدولا المسودّة المضافان في م.5.4 (`local_recitations` · `local_points`) في
-> [CHECKPOINT-PHASE-5.4.MD](CHECKPOINT-PHASE-5.4.MD) §3.2
+> [CHECKPOINT-PHASE-5.4.MD](checkpoints/CHECKPOINT-PHASE-5.4.MD) §3.2
 > لا هنا — فهو مخزنٌ مشتقّ لا مصدرُ حقيقة.
 
 ## قواعد عامة
@@ -25,13 +25,13 @@
 
 🔄 **المرحلة 4.5:** حُذف `institutes.timezone` — كان يُكتب ولا يُقرأ أبداً. المنطقة الزمنية صارت واحدة
 للتطبيق كله في `config/app.php` عبر `APP_TIMEZONE` (الافتراضي `Asia/Damascus`). قبل ذلك كان التطبيق
-يعمل فعلياً على UTC، فينقلب «اليوم» الساعة ٣:٠٠ فجراً وتُنسب الجلسة بعد منتصف الليل لليوم السابق.
+يعمل فعلياً على UTC، فينقلب «اليوم» الساعة 3:00 فجراً وتُنسب الجلسة بعد منتصف الليل لليوم السابق.
 
 ---
 
 ## 1. التنظيم الهرمي
 
-```
+```text
 institutes (معهد)
   └─ courses (دورة)              ← نطاق تصفير عدّادات الغياب
        └─ shifts (دوام)          ← + shift_days: أيام ثابتة أسبوعياً

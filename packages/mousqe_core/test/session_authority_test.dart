@@ -13,7 +13,7 @@ class _MockApiClient extends Mock implements ApiClient {}
 /// ما يملكه الديسكتوب فوق تطبيق الأستاذ — ✅ م.6.4.
 ///
 /// أربعةُ فروق، كلُّها **معاملٌ في نفس المستودع** لا نسخةٌ ثانية منه
-/// ([PHASE-6-STAGES.MD §5](../../../docs/PHASE-6-STAGES.MD)):
+/// ([PHASE-6-STAGES.MD §5](../../../docs/phases/PHASE-6-STAGES.MD)):
 ///
 /// 1. الكشفُ معهدٌ كامل لا حلقاتُ صاحب الجهاز.
 /// 2. الجلسةُ المكتملة تُحرَّر لحاملِ `attendance.amend` وحده.

@@ -99,7 +99,7 @@ class StudentProfileQuery
      *
      * 🔑 م.7.1: **يومٌ بلا جلسة `rate: null` لا `0.0`** — وهي قاعدةُ م.6.6 حرفياً
      * («ما لم يُسجَّل لا يُفترض، و`null` ليست صفراً» —
-     * [CHECKPOINT-PHASE-6.6.MD §3](../../../docs/CHECKPOINT-PHASE-6.6.MD)) مطبَّقةً
+     * [CHECKPOINT-PHASE-6.6.MD §3](../../../docs/checkpoints/CHECKPOINT-PHASE-6.6.MD)) مطبَّقةً
      * على السطح الخادمي بعد أن طُبِّقت في `StatsRepository` على سطح الديسكتوب.
      *
      * الصفرُ كان يقول «حضر صفراً بالمئة» عن يومِ جمعةٍ لا تفقّدَ فيه أصلاً. لم

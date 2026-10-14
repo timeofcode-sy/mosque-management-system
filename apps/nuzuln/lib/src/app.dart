@@ -54,7 +54,7 @@ class _NuzulAppState extends State<NuzulApp> {
   }
 
   /// دورةُ المزامنة للأستاذ وحده: وليُّ الأمر والطالب خارجَ `sync/pull` كلِّه،
-  /// يقرآن عند فتح كل شاشة ([CHECKPOINT-PHASE-7.1.MD §2](../../../../docs/CHECKPOINT-PHASE-7.1.MD)).
+  /// يقرآن عند فتح كل شاشة ([CHECKPOINT-PHASE-7.1.MD §2](../../../../docs/checkpoints/CHECKPOINT-PHASE-7.1.MD)).
   void _onSessionChanged() {
     final sync = widget.dependencies.teacher.sync;
 

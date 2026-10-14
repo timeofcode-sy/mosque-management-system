@@ -59,7 +59,7 @@ Future<AppearanceController> _appearance() async {
 /// الإشعارُ ميزةٌ فوق الوظيفة لا شرطٌ لها: جهازٌ بلا Google Play Services، أو
 /// بناءٌ بلا `google-services.json` مسجَّلٍ لـ`com.timeofcode.nuzuln`، يعمل كاملاً بلا
 /// إشعارات — [SessionController] لا يمرّر توكناً حينئذ
-/// ([PHASE-7-STAGES.MD §0.2](../../../docs/PHASE-7-STAGES.MD)).
+/// ([PHASE-7-STAGES.MD §0.2](../../../docs/phases/PHASE-7-STAGES.MD)).
 Future<void> _initialiseFirebase() async {
   try {
     await Firebase.initializeApp(

@@ -30,7 +30,7 @@ import 'stats_views.dart';
 /// داشبوردِه ١٠٠% عن يومٍ لم يُتفقَّد فيه أحد.
 ///
 /// وهي نفسُ القاعدة التي حسمت تفقّدَ الأساتذة في م.6.4: «الأستاذُ غيرُ المسجَّل
-/// لا يُفترض حاضراً» ([CHECKPOINT-PHASE-6.4.MD §4](../../../../../docs/CHECKPOINT-PHASE-6.4.MD)).
+/// لا يُفترض حاضراً» ([CHECKPOINT-PHASE-6.4.MD §4](../../../../../docs/checkpoints/CHECKPOINT-PHASE-6.4.MD)).
 ///
 /// **وما يُحسب إذن صفّان:** المتزامنُ من `attendances`، تعلوه مسودّةُ هذا الجهاز
 /// من `local_attendances` — بنفس غلبةِ [CircleRepository.loadSession] حرفياً،

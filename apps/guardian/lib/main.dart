@@ -26,7 +26,7 @@ Future<void> main() async {
 /// فالفشلُ يُبتلع **ههنا وحده**: [SessionController] لا يمرّر توكناً حينئذ، وسطحُ
 /// الخادم يقبل التسجيلَ بلا الحقل منذ م.4 — فتنقص **الفوريةُ لا الوظيفة**، وهي
 /// القاعدةُ نفسُها التي بُنيت عليها المرحلة كلُّها
-/// ([PHASE-7-STAGES.MD §0.2](../../../docs/PHASE-7-STAGES.MD)).
+/// ([PHASE-7-STAGES.MD §0.2](../../../docs/phases/PHASE-7-STAGES.MD)).
 Future<void> _initialiseFirebase() async {
   try {
     await Firebase.initializeApp(

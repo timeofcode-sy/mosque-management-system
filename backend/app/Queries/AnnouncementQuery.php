@@ -22,7 +22,7 @@ use Illuminate\Support\Collection as SupportCollection;
  * خطأً في الوثيقة لا نقصاً في المخطط.
  *
  * فبُني طرفاه معاً في هذه المرحلة، وإلا لَصار شاشةَ عرضٍ بلا كاتب — **وعدٌ لا
- * يُنجَز** ([PHASE-8-STAGES.MD §1.3](../../../docs/PHASE-8-STAGES.MD)).
+ * يُنجَز** ([PHASE-8-STAGES.MD §1.3](../../../docs/phases/PHASE-8-STAGES.MD)).
  */
 class AnnouncementQuery
 {

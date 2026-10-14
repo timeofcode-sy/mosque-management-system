@@ -20,7 +20,7 @@ import '../di/app_scope.dart';
 ///
 /// **ولماذا لا يُصفّ هذا في الطابور فيُحلّ الأمرُ كلُّه؟** لأن ما يمرّ هنا
 /// صنفان لا يقبلان التأجيل: بنيةٌ يُبنى عليها، وسرٌّ يُنتظر
-/// ([PHASE-6-STAGES.MD §3.1](../../../../../docs/PHASE-6-STAGES.MD)).
+/// ([PHASE-6-STAGES.MD §3.1](../../../../../docs/phases/PHASE-6-STAGES.MD)).
 Future<bool> runConnected(
   BuildContext context,
   Future<void> Function() action, {

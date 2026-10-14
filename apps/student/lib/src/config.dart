@@ -11,7 +11,7 @@ class AppConfig {
 
   /// يُرسَل في `POST /devices/register` — **ولا يُرسَل في `sync/pull?app=`**:
   /// الطالبُ لا يسحب التيّار أصلاً
-  /// ([CHECKPOINT-PHASE-8.1.MD §2](../../../../docs/CHECKPOINT-PHASE-8.1.MD)).
+  /// ([CHECKPOINT-PHASE-8.1.MD §2](../../../../docs/checkpoints/CHECKPOINT-PHASE-8.1.MD)).
   static const String app = 'student';
 
   static const String label = 'تطبيق الطالب';

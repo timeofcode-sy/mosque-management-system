@@ -7,7 +7,7 @@ import '../di/app_scope.dart';
 /// إعلاناتُ المعهد والحلقة.
 ///
 /// 🔑 **والترشيحُ وقع في الخادم**: إعلانٌ وُجِّه إلى حلقةٍ ليست له لا يصل جهازَه
-/// أصلاً، فلا يعرف بوجوده ([CHECKPOINT-PHASE-8.1.MD §3](../../../../../../../docs/CHECKPOINT-PHASE-8.1.MD)).
+/// أصلاً، فلا يعرف بوجوده ([CHECKPOINT-PHASE-8.1.MD §3](../../../../../../../docs/checkpoints/CHECKPOINT-PHASE-8.1.MD)).
 /// فليس في هذه الشاشة سطرُ ترشيحٍ واحد — وذاك مقصود.
 class AnnouncementsScreen extends StatelessWidget {
   const AnnouncementsScreen({super.key});

@@ -10,7 +10,7 @@ part 'child_attendance.g.dart';
 /// **و[sessionDate] هو يومُ الحضور، [recordedAt] لحظةُ كتابة الأستاذ.** الفرقُ
 /// بينهما ليس تفصيلاً: أستاذٌ يصحّح جلسةَ أمس اليومَ يكتب [recordedAt] اليومَ،
 /// فمن يرتّب بها يضع سجلَّ أمس في يوم اليوم. **فالعرضُ يقرأ [sessionDate] دائماً**
-/// ([CHECKPOINT-PHASE-7.1.MD §3](../../../../../docs/CHECKPOINT-PHASE-7.1.MD)).
+/// ([CHECKPOINT-PHASE-7.1.MD §3](../../../../../docs/checkpoints/CHECKPOINT-PHASE-7.1.MD)).
 ///
 /// و[sessionDate] `null` حيث لم يحمّل الخادمُ العلاقة (`whenLoaded`) — وهو ما لا
 /// يقع في نقاط ولي الأمر، لكنّ النوعَ يقولها بدل أن يفترضها.

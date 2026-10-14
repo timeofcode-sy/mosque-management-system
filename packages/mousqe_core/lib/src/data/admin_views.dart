@@ -6,7 +6,7 @@ import '../support/arabic_search.dart';
 ///
 /// وهي **كائناتُ قراءةٍ مبنيّةٌ من drift** لا حمولاتُ JSON: نظائرُها في
 /// `models/` (`AdminUser` · `RoleOption` · …) لِما لا يصل عبر المزامنة وحده
-/// ([CHECKPOINT-PHASE-6.2.MD §7](../../../../../docs/CHECKPOINT-PHASE-6.2.MD)).
+/// ([CHECKPOINT-PHASE-6.2.MD §7](../../../../../docs/checkpoints/CHECKPOINT-PHASE-6.2.MD)).
 /// وما هنا يُجمَّع من صفوفٍ محلية، فلا `freezed` ولا `fromJson`.
 
 /// صفٌّ في كشف الطلاب.
@@ -298,7 +298,7 @@ class GuardianDraft {
 /// **والمراجعُ فيها كلُّها `uuid` لا مفاتيحَ أساسية**: الصفاتُ وبنودُ المناهج
 /// والواصفاتُ تصل الجهازَ بمعرّفاتها العالمية وحدها ولا يعرف أرقامَها الداخلية،
 /// فحمولةٌ تحمل `trait_ids` كانت ستكون عقداً لا يستطيع أحدٌ الوفاءَ به
-/// ([CHECKPOINT-PHASE-6.2.MD §5.1](../../../../../docs/CHECKPOINT-PHASE-6.2.MD)).
+/// ([CHECKPOINT-PHASE-6.2.MD §5.1](../../../../../docs/checkpoints/CHECKPOINT-PHASE-6.2.MD)).
 class StudentForm {
   const StudentForm({
     this.uuid,

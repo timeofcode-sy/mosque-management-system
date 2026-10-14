@@ -22,7 +22,7 @@ use Tests\TestCase;
  * عقدُ سطح الطالب — م.8.1.
  *
  * 🔑 وأهمُّ ما يحرسه: **ألّا يصل جهازَ الطالب صفٌّ عن زميل**. الرتبةُ تُحسب في
- * الخادم ويعود منها الرقمُ وحده ([PHASE-8-STAGES.MD §1.1](../../../../docs/PHASE-8-STAGES.MD)).
+ * الخادم ويعود منها الرقمُ وحده ([PHASE-8-STAGES.MD §1.1](../../../../docs/phases/PHASE-8-STAGES.MD)).
  */
 class StudentAppTest extends TestCase
 {

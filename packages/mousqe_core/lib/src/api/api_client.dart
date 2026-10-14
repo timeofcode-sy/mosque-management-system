@@ -290,7 +290,7 @@ abstract class ApiClient {
   // **وهي كلُّ مصادر تطبيقه**: لا `syncPull` ولا `syncPush` في تطبيق ولي الأمر
   // إطلاقاً. التيّارُ يبثّ معهداً كاملاً لكل الأدوار، وذاك على جهاز الأب تسريبٌ
   // لا حِمل — ولا يحتاجه لأنه لا يكتب في الطابور أصلاً
-  // ([CHECKPOINT-PHASE-7.1.MD §2](../../../../../docs/CHECKPOINT-PHASE-7.1.MD)).
+  // ([CHECKPOINT-PHASE-7.1.MD §2](../../../../../docs/checkpoints/CHECKPOINT-PHASE-7.1.MD)).
 
   @GET('/guardian/children')
   Future<HttpResponse<dynamic>> guardianChildren();
@@ -318,7 +318,7 @@ abstract class ApiClient {
   //
   // 🔑 و`standing` تُحسب في الخادم عمداً — لو حُسبت على الجهاز لَاستقبل صفوفَ
   // حضورِ كلِّ زملائه ليستخرج رقماً واحداً
-  // ([PHASE-8-STAGES.MD §1.1](../../../../../docs/PHASE-8-STAGES.MD)).
+  // ([PHASE-8-STAGES.MD §1.1](../../../../../docs/phases/PHASE-8-STAGES.MD)).
 
   @GET('/student/me/attendance')
   Future<HttpResponse<dynamic>> studentAttendance();

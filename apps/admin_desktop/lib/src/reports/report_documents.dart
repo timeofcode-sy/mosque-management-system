@@ -24,7 +24,7 @@ const _line = PdfColor.fromInt(0xFFC9D3CC);
 ///
 /// **وأرقامُه أرقامُ اللوحة نفسُها** لأنها تمرّ بـ`AttendanceRate` و
 /// `PointsSettings` — لا لأن الشاشةَ حرصت، بل لأن المعادلةَ والقيمَ في موضعٍ
-/// واحدٍ لكل سطح ([CHECKPOINT-PHASE-6.6.MD §3](../../../../../docs/CHECKPOINT-PHASE-6.6.MD)).
+/// واحدٍ لكل سطح ([CHECKPOINT-PHASE-6.6.MD §3](../../../../../docs/checkpoints/CHECKPOINT-PHASE-6.6.MD)).
 ///
 /// **ولا ويدجت فلاتر واحدة هنا:** `pw` عالمٌ آخر — فالبناءُ دالّةٌ صرفٌ تأخذ
 /// نموذجاً وتعيد بايتات، تُختبَر بلا شجرةٍ ولا نافذة.

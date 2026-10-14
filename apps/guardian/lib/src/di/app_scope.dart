@@ -8,7 +8,7 @@ import '../config.dart';
 ///
 /// **وهي خمسةٌ لا سبعة**: لا `SyncEngine` ولا `SyncController` ههنا. وليُّ الأمر
 /// خارجَ `sync/pull` كلِّه، وكتابتُه الوحيدة (تقديمُ الإذن) متّصلةٌ بطبعها فلا
-/// طابورَ لها ([CHECKPOINT-PHASE-7.1.MD §2](../../../../../docs/CHECKPOINT-PHASE-7.1.MD)).
+/// طابورَ لها ([CHECKPOINT-PHASE-7.1.MD §2](../../../../../docs/checkpoints/CHECKPOINT-PHASE-7.1.MD)).
 ///
 /// و[SessionController] يُعاد استخدامُه **كما هو**: ما يختلف بين الأسطح معاملان
 /// ([app] و[appLabel])، وقد بُني على ذلك في م.6.3 حين احتاجه الديسكتوب.
@@ -83,7 +83,7 @@ class AppDependencies {
 /// توكنُ الإشعارات لهذا الجهاز — ✅ م.7.4.
 ///
 /// يُستدعى **مرّةً عند الدخول** فيركب مع `POST /devices/register`
-/// ([CHECKPOINT-PHASE-7.4.MD §5](../../../../docs/CHECKPOINT-PHASE-7.4.MD)).
+/// ([CHECKPOINT-PHASE-7.4.MD §5](../../../../docs/checkpoints/CHECKPOINT-PHASE-7.4.MD)).
 ///
 /// ## 🔑 والإذنُ يُطلب هنا لا عند الإقلاع
 ///
