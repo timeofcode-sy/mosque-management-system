@@ -18,12 +18,20 @@ import 'screens/login_screen.dart';
 /// المدفوعة إلى الملّاح تُبنى تحت `MaterialApp` لا تحت `home`، فلو لُفّت الرئيسيّةُ
 /// وحدها لَما وجدت شاشةٌ مدفوعةٌ نطاقَها.
 class NuzulApp extends StatefulWidget {
-  const NuzulApp({super.key, required this.dependencies, this.appearance});
+  const NuzulApp({
+    super.key,
+    required this.dependencies,
+    this.appearance,
+    this.updater,
+  });
 
   final NuzulDependencies dependencies;
 
   /// الوضعُ وحجمُ الخط كما اختارهما صاحبُ الجهاز — `null` في الاختبارات.
   final AppearanceController? appearance;
+
+  /// التحديثُ من داخل التطبيق — `null` في الاختبارات.
+  final AppUpdater? updater;
 
   @override
   State<NuzulApp> createState() => _NuzulAppState();
@@ -63,6 +71,29 @@ class _NuzulAppState extends State<NuzulApp> {
   Widget build(BuildContext context) {
     final deps = widget.dependencies;
 
+    final app = MousqeApp(
+      title: AppConfig.launcherName,
+      theme: MousqeTheme.light(),
+      darkTheme: MousqeTheme.dark(),
+      appearance: widget.appearance,
+      home: SplashGate(
+        ready: _session.stage != SessionStage.starting,
+        caption: AppConfig.label,
+        onServerChoice: (context) =>
+            showServerChoiceDialog(context, _serverChoice),
+        // التحديثُ يحرس الدخولَ أيضاً: إصدارٌ إلزاميّ لا ينتظر حساباً.
+        child: UpdateGate(
+          child: switch (_session.stage) {
+            // تحت شاشة البدء لا يُبنى شيء: تغطّيه حتى تُحسم الجلسة.
+            SessionStage.starting => const SizedBox.shrink(),
+            SessionStage.signedOut => const LoginScreen(),
+            SessionStage.ready => _home(_session.app),
+          },
+        ),
+      ),
+    );
+    final updater = widget.updater;
+
     return NuzulScope(
       dependencies: deps,
       child: teacher.AppScope(
@@ -71,24 +102,13 @@ class _NuzulAppState extends State<NuzulApp> {
           dependencies: deps.guardian,
           child: student.AppScope(
             dependencies: deps.student,
-            child: MousqeApp(
-              title: AppConfig.launcherName,
-              theme: MousqeTheme.light(),
-              darkTheme: MousqeTheme.dark(),
-              appearance: widget.appearance,
-              home: SplashGate(
-                ready: _session.stage != SessionStage.starting,
-                caption: AppConfig.label,
-                onServerChoice: (context) =>
-                    showServerChoiceDialog(context, _serverChoice),
-                child: switch (_session.stage) {
-                  // تحت شاشة البدء لا يُبنى شيء: تغطّيه حتى تُحسم الجلسة.
-                  SessionStage.starting => const SizedBox.shrink(),
-                  SessionStage.signedOut => const LoginScreen(),
-                  SessionStage.ready => _home(_session.app),
-                },
-              ),
-            ),
+            child: updater == null
+                ? app
+                : AppUpdateScope(
+                    updater: updater,
+                    appName: AppConfig.launcherName,
+                    child: app,
+                  ),
           ),
         ),
       ),

@@ -165,6 +165,9 @@
                             <flux:sidebar.item icon="list-bullet" :href="route('system.change-log')" :current="request()->routeIs('system.change-log')" wire:navigate>
                                 سجل التغييرات
                             </flux:sidebar.item>
+                            <flux:sidebar.item icon="arrow-down-tray" :href="route('system.app-releases')" :current="request()->routeIs('system.app-releases')" wire:navigate>
+                                تحديثات التطبيقات
+                            </flux:sidebar.item>
                         @endcan
                     </flux:sidebar.group>
                 @endcanany

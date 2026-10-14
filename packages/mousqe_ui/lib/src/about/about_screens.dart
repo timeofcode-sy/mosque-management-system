@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../brand/brand.dart';
 import '../theme/appearance.dart';
+import '../update/update_gate.dart';
+import '../update/update_screen.dart';
 import 'developer.dart';
 
 /// ما يختلف بين تطبيقٍ وآخر في «حول التطبيق»: اسمُه على الهاتف وجملةٌ عمّن يخدم.
@@ -31,7 +33,8 @@ void openAboutDeveloper(BuildContext context) {
   );
 }
 
-/// زرُّ «حول» في شريط التطبيق: المظهرُ (الوضع وحجم الخط)، ثم «حول التطبيق» و«حول المطوِّر».
+/// زرُّ «حول» في شريط التطبيق: المظهرُ (الوضع وحجم الخط)، ثم «حول التطبيق» و«حول المطوِّر»،
+/// و«التحقق من التحديثات» حيث يحمل التطبيقُ محدِّثاً ([AppUpdateScope]).
 class AboutMenuButton extends StatelessWidget {
   const AboutMenuButton({super.key, required this.app});
 
@@ -39,25 +42,33 @@ class AboutMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final updates = AppUpdateScope.read(context) != null;
+
     return PopupMenuButton<_AboutPage>(
       tooltip: 'حول',
       icon: const NzIcon(NzIcons.informationCircle),
       onSelected: (page) => switch (page) {
         _AboutPage.appearance => showAppearanceSheet(context),
+        _AboutPage.updates => openUpdateScreen(context),
         _AboutPage.app => openAboutApp(context, app),
         _AboutPage.developer => openAboutDeveloper(context),
       },
-      itemBuilder: (context) => const [
-        PopupMenuItem(value: _AboutPage.appearance, child: Text('المظهر')),
-        PopupMenuDivider(),
-        PopupMenuItem(value: _AboutPage.app, child: Text('حول التطبيق')),
-        PopupMenuItem(value: _AboutPage.developer, child: Text('حول المطوِّر')),
+      itemBuilder: (context) => [
+        const PopupMenuItem(value: _AboutPage.appearance, child: Text('المظهر')),
+        if (updates)
+          const PopupMenuItem(
+            value: _AboutPage.updates,
+            child: Text('التحقق من التحديثات'),
+          ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(value: _AboutPage.app, child: Text('حول التطبيق')),
+        const PopupMenuItem(value: _AboutPage.developer, child: Text('حول المطوِّر')),
       ],
     );
   }
 }
 
-enum _AboutPage { appearance, app, developer }
+enum _AboutPage { appearance, updates, app, developer }
 
 /// رابطا «حول» نصّاً — أسفلَ شاشة الدخول حيث لا شريطَ تطبيق.
 class AboutLinks extends StatelessWidget {
@@ -87,6 +98,13 @@ class AboutLinks extends StatelessWidget {
           onPressed: () => openAboutDeveloper(context),
           child: const Text('حول المطوِّر'),
         ),
+        if (AppUpdateScope.read(context) != null) ...[
+          Text('·', style: TextStyle(color: muted)),
+          TextButton(
+            onPressed: () => openUpdateScreen(context),
+            child: const Text('التحديثات'),
+          ),
+        ],
       ],
     );
   }
@@ -153,6 +171,22 @@ class AboutAppScreen extends StatelessWidget {
           const _Label('المزيد'),
           _Group(
             children: [
+              if (AppUpdateScope.read(context) case final scope?)
+                ListenableBuilder(
+                  listenable: scope.updater,
+                  builder: (context, _) {
+                    final next = scope.updater.info;
+
+                    return _Row(
+                      icon: NzIcons.download,
+                      title: next == null ? 'التحديثات' : 'تحديثٌ متاح',
+                      subtitle: next == null
+                          ? 'تحقّق من وجود إصدارٍ أحدث'
+                          : 'الإصدار ${_ltr(next.version)}',
+                      onTap: () => openUpdateScreen(context),
+                    );
+                  },
+                ),
               _Row(
                 icon: NzIcons.informationCircle,
                 title: 'حول المطوِّر',

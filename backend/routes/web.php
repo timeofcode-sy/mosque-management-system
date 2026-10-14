@@ -52,6 +52,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('permission:system.debug')->group(function () {
         Route::livewire('system/devices', 'pages::system.devices')->name('system.devices');
         Route::livewire('system/change-log', 'pages::system.change-log')->name('system.change-log');
+        Route::livewire('system/app-releases', 'pages::system.app-releases')->name('system.app-releases');
     });
 
     Route::middleware('permission:settings.manage')->group(function () {

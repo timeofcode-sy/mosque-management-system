@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
@@ -25,8 +27,32 @@ Future<void> main() async {
     AdminDesktopApp(
       dependencies: dependencies,
       appearance: await _appearance(),
+      updater: await _updater(dependencies),
     ),
   );
+}
+
+/// التحديثُ من داخل البرنامج: APK على الهاتف، ومجلّدُ ويندوز مضغوطاً على الحاسوب — يُستبدل
+/// البرنامجُ ويعود وحده. يسأل الخادمَ الآن، فيكون الجوابُ غالباً قد وصل حين تنسحب شاشةُ البدء.
+Future<AppUpdater> _updater(AppDependencies dependencies) async {
+  final file = PreferencesFile('updates.json');
+  final updater = AppUpdater(
+    target: AppConfig.updateTarget,
+    baseUrl: () => dependencies.endpoint.baseUrl,
+    deviceUuid: () async => dependencies.session.deviceUuid,
+    read: file.read,
+    write: file.write,
+    // قبل أن يُغلق ويندوز البرنامجَ ليستبدله: تتوقّف المزامنة وتُغلق القاعدة فلا يُقطع
+    // طلبٌ في منتصفه ولا كتابة.
+    beforeRestart: () async {
+      dependencies.sync.stop();
+      await dependencies.db.close();
+    },
+  );
+  await updater.load();
+  unawaited(updater.check());
+
+  return updater;
 }
 
 /// مظهرُ صاحب الجهاز محفوظاً في ملفٍّ على الجهاز — يُقرأ قبل أول إطار فلا يومض الوضعُ.

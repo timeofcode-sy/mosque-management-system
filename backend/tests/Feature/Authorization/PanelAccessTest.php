@@ -66,6 +66,7 @@ class PanelAccessTest extends TestCase
             'تعارضات المزامنة' => ['system.conflicts', ['admin', 'supervisor', 'super_admin', 'developer']],
             'الأجهزة' => ['system.devices', ['developer']],
             'سجل التغييرات' => ['system.change-log', ['developer']],
+            'تحديثات التطبيقات' => ['system.app-releases', ['developer']],
         ];
     }
 

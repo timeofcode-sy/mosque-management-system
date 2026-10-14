@@ -28,6 +28,10 @@ class AppConfig {
   /// والهاتفُ يُسجَّل `admin_mobile` فيميّزه المشرفُ عن حاسوب المكتب.
   static String get app => isPhone ? 'admin_mobile' : 'admin_desktop';
 
+  /// هدفُ التحديث على الخادم (`App\Enums\AppTarget`) — اسمُ النسخة في `scripts/export-apps.ps1`:
+  /// APK للهاتف، ومجلّدُ ويندوز مضغوطاً للحاسوب.
+  static String get updateTarget => isPhone ? 'admin_android' : 'admin_desktop';
+
   /// اسمُ التطبيق كما يظهر لصاحبه — على شاشة الدخول، وفي عنوان النافذة، وفي
   /// `device_name` الذي يقرؤه المشرف في `system/devices`.
   static const String label = 'إدارة المعهد';

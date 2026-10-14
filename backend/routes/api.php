@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Admin\CatalogController;
 use App\Http\Controllers\Api\V1\Admin\CurriculumAdminController;
 use App\Http\Controllers\Api\V1\Admin\InstituteAdminController;
 use App\Http\Controllers\Api\V1\Admin\UserAdminController;
+use App\Http\Controllers\Api\V1\AppUpdateController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BootstrapController;
 use App\Http\Controllers\Api\V1\DeviceController;
@@ -18,6 +19,14 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function (): void {
     /** ✅ م.9.1 — سقفٌ على العنوان يسبق bcrypt؛ والقفلُ على الحساب في المتحكّم نفسِه */
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:api-login');
+
+    /**
+     * تحديثاتُ التطبيقات: بلا توكن، فالتطبيقُ يسأل قبل الدخول أيضاً — تحديثٌ إلزاميّ يصلح
+     * خللاً في الدخول لا ينتظر دخولاً لا ينجح. والتنزيلُ بسقفٍ أوسع: الاستئنافُ طلباتٌ متتابعة.
+     */
+    Route::middleware('throttle:60,1')->get('/app-updates/check', [AppUpdateController::class, 'check']);
+    Route::middleware('throttle:120,1')->get('/app-updates/{uuid}/download', [AppUpdateController::class, 'download'])
+        ->whereUuid('uuid');
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/auth/logout', [AuthController::class, 'logout']);

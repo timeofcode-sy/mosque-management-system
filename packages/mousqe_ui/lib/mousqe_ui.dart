@@ -23,3 +23,8 @@ export 'src/widgets/empty_state.dart';
 export 'src/widgets/snapshot_view.dart';
 export 'src/widgets/attendance_trend_chart.dart';
 export 'src/widgets/login_form.dart';
+export 'src/update/app_update_info.dart';
+export 'src/update/app_updater.dart';
+export 'src/update/download_strokes.dart';
+export 'src/update/update_gate.dart';
+export 'src/update/update_screen.dart' show UpdateScreen, openUpdateScreen;

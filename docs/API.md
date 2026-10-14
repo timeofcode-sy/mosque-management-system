@@ -63,6 +63,8 @@
 | `POST` | `/auth/logout` | إبطال التوكن الحالي وحده | `auth:sanctum` |
 | `GET` | `/auth/me` | هوية صاحب التوكن | `auth:sanctum` |
 | `POST` | `/devices/register` | فتح مؤشّر مزامنة للجهاز + تسجيل `fcm_token` | `auth:sanctum` |
+| `GET` | `/app-updates/check` | هل لهذه النسخة تحديث؟ وسجلُّ ما فاتها — [التفصيل](#تحديثات-التطبيقات) | — (مفتوحة، 60/دقيقة) |
+| `GET` | `/app-updates/{uuid}/download` | ملفُّ الإصدار، بدعم `Range` للاستئناف | — (مفتوحة، 120/دقيقة) |
 | `GET` | `/bootstrap` | لقطة أولى لنطاق المستخدم — أول استدعاء بعد الدخول | `institute.scope` |
 | `GET` | `/institutes` ✅ م.6.1 | معاهد صاحب التوكن — مصدر مبدّل المعاهد | `institute.scope` |
 | `GET` | `/sync/pull` | تغييرات `change_log` منذ `since` ضمن نطاق المستخدم | `permission:sync.pull` |
@@ -933,3 +935,35 @@ late_minutes = max(0, minutes(recorded_at − shift.starts_at) − late_grace_mi
 - الشكلُ واحد في النقاط الثلاث: `{uuid, title, body, scope, audience, published_at}` (دون `scope_ids`)، الأحدثُ أولاً، ≤30.
 - الإعلاناتُ التي سبقت الفئات بلا `audience` فتُعامَل كـ`["students"]` (وملأتها الهجرةُ بذلك).
 - 🔴 **تصحيح:** كانت اللوحةُ تخزّن `scope_ids` نصوصاً (`"3"`) والبحثُ بالرقم، فلا يصل إعلانُ حلقةٍ أحداً؛ تُخزَّن الآن أرقاماً وصحّحت الهجرةُ ما سبق.
+
+## تحديثات التطبيقات
+
+ينشرها المبرمج من شاشة **«تحديثات التطبيقات»** في اللوحة (`system/app-releases`، `system.debug`)، ويسأل عنها كلُّ تطبيقٍ عند فتحه وكلما عاد إلى الواجهة بعد ست ساعات. **بلا توكن**: التطبيقُ يسأل قبل الدخول أيضاً، فتحديثٌ إلزاميّ يصلح خللاً في الدخول لا ينتظر دخولاً لا ينجح.
+
+`GET /app-updates/check?target=mobile&build=5&version=1.0.0-beta.5&device=<uuid>`
+
+| المعامل | |
+|---|---|
+| `target` | `mobile` (نزلاً للهاتف) · `admin_android` · `admin_desktop` — أسماءُ `scripts/export-apps.ps1` نفسُها |
+| `build` | رقمُ البناء المثبَّت — **وحده ما يُقارَن** |
+| `version` · `device` | اختياريان: يُحفظان في `app_installs` فيرى المبرمج كم جهازاً على كل بناء |
+
+```json
+{
+  "target": "mobile",
+  "current_build": 5,
+  "update": {
+    "uuid": "…", "version": "1.0.0-beta.6", "build_number": 6, "title": "…",
+    "mandatory": false, "published_at": "…",
+    "file_name": "nuzuln-mobile-1.0.0-beta.6-b6.apk", "size": 40023456, "sha256": "…",
+    "download_url": null, "download_path": "app-updates/<uuid>/download",
+    "changes": [{ "version": "1.0.0-beta.6", "build_number": 6, "title": "…", "mandatory": false, "notes": ["…"], "published_at": "…" }]
+  }
+}
+```
+
+- `update: null` حين لا أحدث من المثبَّت.
+- **`mandatory` يُحسب من كل ما فات الجهاز** لا من الأخير وحده: جهازٌ على 3، والبناءُ 4 إلزاميّ والبناءُ 5 اختياريّ، يُعرض عليه 5 إلزامياً.
+- `changes`: كلُّ ما فات الجهازَ، الأحدثُ أولاً، ≤10. والبنودُ أسطرُ الحقل في اللوحة بلا علامات القوائم.
+- الملفُّ المرفوع يُنزَّل من **`download_path` نسبةً إلى عنوان الـ API الذي سأله التطبيق** (فيعمل على الخادم المحلّي كما على الرئيسي)، ومعه `size` و`sha256` يتحقّق منهما التطبيق قبل التثبيت. والرابطُ الخارجي في `download_url` بلا بصمة.
+- `GET /app-updates/{uuid}/download`: الإصدارُ المنشور وحده (المسودّة 404). يدعم `Range` فيُستأنف التنزيلُ المنقطع، ويُعدّ التنزيلُ مرّةً عند أول طلبٍ لا عند كل استئناف. والرابطُ الخارجي يُحوَّل إليه (302).

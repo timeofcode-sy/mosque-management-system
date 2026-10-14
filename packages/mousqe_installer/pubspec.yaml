@@ -1,0 +1,28 @@
+name: mousqe_installer
+description: >
+  يثبّت تحديثَ تطبيقات نزلاً على أندرويد من داخل التطبيق: يسلّم ملفَّ APK الذي نزّله
+  التطبيقُ إلى مثبّت النظام، ويسأل عن إذن «تثبيت التطبيقات غير المعروفة» ويفتح إعداده.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.27.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.timeofcode.nuzuln.mousqe_installer
+        pluginClass: MousqeInstallerPlugin

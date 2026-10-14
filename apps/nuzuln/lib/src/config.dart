@@ -21,6 +21,9 @@ class AppConfig {
   /// (لا يقرؤه Dart).
   static const String launcherName = 'نزلاً';
 
+  /// هدفُ التحديث على الخادم (`App\Enums\AppTarget`) — اسمُ هذا التطبيق في `scripts/export-apps.ps1`.
+  static const String updateTarget = 'mobile';
+
   /// «حول التطبيق» — والنظامُ ومطوّرُه مشتركان في `mousqe_ui`.
   static const AboutAppInfo about = AboutAppInfo(
     title: launcherName,
