@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../brand/brand.dart';
+import '../theme/appearance.dart';
 import 'developer.dart';
 
 /// ما يختلف بين تطبيقٍ وآخر في «حول التطبيق»: اسمُه على الهاتف وجملةٌ عمّن يخدم.
@@ -30,7 +31,7 @@ void openAboutDeveloper(BuildContext context) {
   );
 }
 
-/// زرُّ «حول» في شريط التطبيق: قائمةٌ ببابين.
+/// زرُّ «حول» في شريط التطبيق: المظهرُ (الوضع وحجم الخط)، ثم «حول التطبيق» و«حول المطوِّر».
 class AboutMenuButton extends StatelessWidget {
   const AboutMenuButton({super.key, required this.app});
 
@@ -42,10 +43,13 @@ class AboutMenuButton extends StatelessWidget {
       tooltip: 'حول',
       icon: const NzIcon(NzIcons.informationCircle),
       onSelected: (page) => switch (page) {
+        _AboutPage.appearance => showAppearanceSheet(context),
         _AboutPage.app => openAboutApp(context, app),
         _AboutPage.developer => openAboutDeveloper(context),
       },
       itemBuilder: (context) => const [
+        PopupMenuItem(value: _AboutPage.appearance, child: Text('المظهر')),
+        PopupMenuDivider(),
         PopupMenuItem(value: _AboutPage.app, child: Text('حول التطبيق')),
         PopupMenuItem(value: _AboutPage.developer, child: Text('حول المطوِّر')),
       ],
@@ -53,7 +57,7 @@ class AboutMenuButton extends StatelessWidget {
   }
 }
 
-enum _AboutPage { app, developer }
+enum _AboutPage { appearance, app, developer }
 
 /// رابطا «حول» نصّاً — أسفلَ شاشة الدخول حيث لا شريطَ تطبيق.
 class AboutLinks extends StatelessWidget {
@@ -69,6 +73,11 @@ class AboutLinks extends StatelessWidget {
       alignment: WrapAlignment.center,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
+        TextButton(
+          onPressed: () => showAppearanceSheet(context),
+          child: const Text('المظهر'),
+        ),
+        Text('·', style: TextStyle(color: muted)),
         TextButton(
           onPressed: () => openAboutApp(context, app),
           child: const Text('حول التطبيق'),

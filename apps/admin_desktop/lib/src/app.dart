@@ -10,7 +10,14 @@ import 'shell/desktop_shell.dart';
 /// جذر التطبيق: يعيد بناء الثيم كلّما تغيّرت لقطةُ المعهد، ويبدّل بين شاشة
 /// الدخول والهيكل بحسب حالة الجلسة.
 class AdminDesktopApp extends StatefulWidget {
-  const AdminDesktopApp({super.key, required this.dependencies});
+  const AdminDesktopApp({
+    super.key,
+    required this.dependencies,
+    this.appearance,
+  });
+
+  /// الوضعُ وحجمُ الخط كما اختارهما صاحبُ الجهاز — `null` في الاختبارات.
+  final AppearanceController? appearance;
 
   final AppDependencies dependencies;
 
@@ -59,6 +66,7 @@ class _AdminDesktopAppState extends State<AdminDesktopApp> {
         title: AppConfig.isPhone ? AppConfig.launcherName : Brand.name,
         theme: adaptTheme(MousqeTheme.light()),
         darkTheme: adaptTheme(MousqeTheme.dark()),
+        appearance: widget.appearance,
         home: SplashGate(
           ready: _session.stage != SessionStage.starting,
           caption: AppConfig.label,

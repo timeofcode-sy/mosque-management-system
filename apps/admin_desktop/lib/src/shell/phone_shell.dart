@@ -353,6 +353,11 @@ class MoreScreen extends StatelessWidget {
           _Group(
             children: [
               _DoorTile(
+                icon: NzIcons.sun,
+                label: 'المظهر',
+                onTap: () => showAppearanceSheet(context),
+              ),
+              _DoorTile(
                 icon: NzIcons.informationCircle,
                 label: 'حول التطبيق',
                 onTap: () => openAboutApp(context, AppConfig.about),

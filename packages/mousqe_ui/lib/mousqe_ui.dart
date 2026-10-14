@@ -9,6 +9,7 @@ export 'src/brand/brand.dart';
 export 'src/format/dates.dart';
 export 'src/brand/server_choice.dart';
 export 'src/brand/splash.dart';
+export 'src/theme/appearance.dart';
 export 'src/theme/mousqe_theme.dart';
 export 'src/l10n/mousqe_app.dart';
 export 'src/widgets/paged_list.dart';

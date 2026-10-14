@@ -18,9 +18,12 @@ import 'screens/login_screen.dart';
 /// المدفوعة إلى الملّاح تُبنى تحت `MaterialApp` لا تحت `home`، فلو لُفّت الرئيسيّةُ
 /// وحدها لَما وجدت شاشةٌ مدفوعةٌ نطاقَها.
 class NuzulApp extends StatefulWidget {
-  const NuzulApp({super.key, required this.dependencies});
+  const NuzulApp({super.key, required this.dependencies, this.appearance});
 
   final NuzulDependencies dependencies;
+
+  /// الوضعُ وحجمُ الخط كما اختارهما صاحبُ الجهاز — `null` في الاختبارات.
+  final AppearanceController? appearance;
 
   @override
   State<NuzulApp> createState() => _NuzulAppState();
@@ -72,6 +75,7 @@ class _NuzulAppState extends State<NuzulApp> {
               title: AppConfig.launcherName,
               theme: MousqeTheme.light(),
               darkTheme: MousqeTheme.dark(),
+              appearance: widget.appearance,
               home: SplashGate(
                 ready: _session.stage != SessionStage.starting,
                 caption: AppConfig.label,

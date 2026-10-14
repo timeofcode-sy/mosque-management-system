@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mousqe_core/mousqe_core.dart';
+import 'package:mousqe_ui/mousqe_ui.dart';
 
 import 'src/app.dart';
 import 'src/config.dart';
@@ -19,5 +21,19 @@ Future<void> main() async {
     await DesktopWindow.restoreAndShow();
   }
 
-  runApp(AdminDesktopApp(dependencies: dependencies));
+  runApp(
+    AdminDesktopApp(
+      dependencies: dependencies,
+      appearance: await _appearance(),
+    ),
+  );
+}
+
+/// مظهرُ صاحب الجهاز محفوظاً في ملفٍّ على الجهاز — يُقرأ قبل أول إطار فلا يومض الوضعُ.
+Future<AppearanceController> _appearance() async {
+  final file = PreferencesFile('appearance.json');
+  final appearance = AppearanceController(read: file.read, write: file.write);
+  await appearance.load();
+
+  return appearance;
 }

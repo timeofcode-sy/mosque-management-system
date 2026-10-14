@@ -12,7 +12,7 @@ import 'package:nuzul_ui/nuzul_ui.dart';
 /// وعلامةُ المعهد الخاصة (الشعار والاسم) تبقى ظاهرةً حيث كانت.
 ///
 /// ### السمتان
-/// التطبيقاتُ تمرّر [light] و[dark] مع `themeMode: ThemeMode.system`، فتتبع الليلُ تلقائياً.
+/// التطبيقاتُ تمرّر [light] و[dark] إلى `MousqeApp`، والوضعُ لصاحب الجهاز (`AppearanceController`): تلقائيٌّ يتبع النظام ما لم يختر غيره.
 class MousqeTheme {
   const MousqeTheme._();
 
