@@ -13,6 +13,7 @@ use App\Models\Guardian;
 use App\Models\Student;
 use App\Queries\AnnouncementQuery;
 use App\Queries\GuardianChildrenQuery;
+use App\Queries\RecitationLogQuery;
 use App\Queries\StudentBehaviorQuery;
 use App\Queries\StudentProfileQuery;
 use Illuminate\Http\JsonResponse;
@@ -92,6 +93,20 @@ class GuardianController extends Controller
 
         return response()->json([
             'data' => $this->groupedProgress($profile, $child),
+        ]);
+    }
+
+    /**
+     * سجلُّ تسميع ابنٍ بعينه — الأحدثُ أولاً.
+     */
+    public function childRecitations(
+        Request $request,
+        string $student,
+        GuardianChildrenQuery $children,
+        RecitationLogQuery $recitations,
+    ): JsonResponse {
+        return response()->json([
+            'data' => $recitations->forStudent($children->child($this->guardian($request), $student)),
         ]);
     }
 

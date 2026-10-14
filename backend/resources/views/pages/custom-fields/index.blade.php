@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\SaveCustomField;
 use App\Concerns\InteractsWithInstitute;
 use App\Enums\CustomFieldType;
 use App\Models\CustomField;
@@ -102,26 +103,11 @@ new #[Title('الواصفات المخصّصة')] class extends Component {
             'sort_order' => ['integer', 'min:0'],
         ], attributes: ['label' => 'اسم الواصفة', 'key' => 'المفتاح البرمجي']);
 
-        $options = collect(explode("\n", $validated['optionsText'] ?? ''))
-            ->map(fn (string $line) => trim($line))
-            ->filter()
-            ->values()
-            ->all();
-
-        CustomField::updateOrCreate(
-            ['id' => $this->editingId],
-            [
-                'institute_id' => $this->institute->id,
-                'entity' => $validated['entity'],
-                'label' => $validated['label'],
-                'key' => $validated['key'] ?: Str::slug($validated['label'], '_'),
-                'type' => $validated['type'],
-                'options' => $options ?: null,
-                'group' => $validated['group'] ?: null,
-                'is_required' => $validated['is_required'],
-                'is_active' => $validated['is_active'],
-                'sort_order' => $validated['sort_order'],
-            ],
+        // الكتابةُ نفسُها في برنامج الإدارة (`/admin/custom-fields`).
+        app(SaveCustomField::class)->handle(
+            $this->institute,
+            [...$validated, 'options' => $validated['optionsText'] ?? ''],
+            $this->editingId === null ? null : CustomField::findOrFail($this->editingId),
         );
 
         unset($this->fields);

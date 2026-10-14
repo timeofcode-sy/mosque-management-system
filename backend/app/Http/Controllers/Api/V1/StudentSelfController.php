@@ -9,6 +9,7 @@ use App\Http\Resources\V1\ProgressResource;
 use App\Http\Resources\V1\StandingResource;
 use App\Models\Student;
 use App\Queries\AnnouncementQuery;
+use App\Queries\RecitationLogQuery;
 use App\Queries\StudentBehaviorQuery;
 use App\Queries\StudentPointsQuery;
 use App\Queries\StudentProfileQuery;
@@ -55,6 +56,14 @@ class StudentSelfController extends Controller
                 ->map(fn ($entries) => ProgressResource::collection($entries))
                 ->all(),
         ]);
+    }
+
+    /**
+     * سجلُّ تسميعي — الأحدثُ أولاً، تحت شريط الأجزاء في «حفظي».
+     */
+    public function recitations(Request $request, RecitationLogQuery $recitations): JsonResponse
+    {
+        return response()->json(['data' => $recitations->forStudent($this->student($request))]);
     }
 
     /**

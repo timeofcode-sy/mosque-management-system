@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\GenerateAccount;
+use App\Actions\SaveTeacher;
 use App\Concerns\InteractsWithInstitute;
 use App\Enums\TeacherStatus;
 use App\Models\Teacher;
@@ -98,24 +99,13 @@ new #[Title('الأساتذة')] class extends Component {
 
     public function save(): void
     {
-        $validated = $this->validate([
-            'display_name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:32'],
-            'national_id' => ['nullable', 'string', 'max:32'],
-            'birth_date' => ['nullable', 'date', 'before:today'],
-            'specialization' => ['nullable', 'string', 'max:255'],
-            'qualification' => ['nullable', 'string', 'max:255'],
-            'address' => ['nullable', 'string', 'max:255'],
-            'hired_on' => ['nullable', 'date'],
-            'status' => ['required', Rule::enum(TeacherStatus::class)],
-            'notes' => ['nullable', 'string'],
-        ], attributes: ['display_name' => 'اسم الأستاذ']);
+        // القواعدُ والكتابةُ نفسُها في برنامج الإدارة (`/admin/teachers`).
+        $validated = $this->validate(SaveTeacher::rules(), attributes: ['display_name' => 'اسم الأستاذ']);
 
-        $attributes = collect($validated)->map(fn ($value) => $value === '' ? null : $value)->all();
-
-        Teacher::updateOrCreate(
-            ['id' => $this->editingId],
-            [...$attributes, 'institute_id' => $this->institute->id],
+        app(SaveTeacher::class)->handle(
+            $this->institute,
+            $validated,
+            $this->editingId === null ? null : Teacher::findOrFail($this->editingId),
         );
 
         unset($this->teachers);
