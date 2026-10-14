@@ -305,7 +305,9 @@ class _MemorizedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.nz;
 
-    if (details.memorizedJuz.isEmpty && details.otherMemorized.isEmpty) {
+    final hasJuz = details.memorizedJuz.isNotEmpty || details.currentJuz != null;
+
+    if (!hasJuz && details.otherMemorized.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -327,14 +329,20 @@ class _MemorizedCard extends StatelessWidget {
           spacing: 8,
           children: [
             Text('محفوظاته', style: Theme.of(context).textTheme.titleSmall),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final juz in details.memorizedJuz) chip('الجزء $juz'),
-                for (final item in details.otherMemorized) chip(item),
-              ],
-            ),
+            // الأجزاءُ ثلاثون خطّاً بنظرةٍ واحدة، وما عداها من المحفوظات شاراتٌ تحتها.
+            if (hasJuz)
+              NzJuzProgress(
+                memorized: details.memorizedJuz.toSet(),
+                current: details.currentJuz,
+              ),
+            if (details.otherMemorized.isNotEmpty)
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final item in details.otherMemorized) chip(item),
+                ],
+              ),
           ],
         ),
       ),

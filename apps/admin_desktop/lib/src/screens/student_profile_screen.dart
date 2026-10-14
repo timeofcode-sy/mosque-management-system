@@ -93,6 +93,14 @@ class _Body extends StatelessWidget {
             ),
           ],
         ),
+        if (profile.details.memorizedJuz.isNotEmpty ||
+            profile.details.currentJuz != null) ...[
+          const SizedBox(height: 16),
+          JuzProgressCard(
+            memorized: profile.details.memorizedJuz.toSet(),
+            current: profile.details.currentJuz,
+          ),
+        ],
         const SizedBox(height: 20),
         // عمودان على الشاشة العريضة، وعمودٌ واحد على الهاتف.
         Flex(

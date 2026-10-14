@@ -203,6 +203,13 @@ class _ProgressTab extends StatelessWidget {
       builder: (context, report) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (JuzSummary.fromEntries(report.byCurriculum.values.expand((rows) => rows))
+              case final juz when !juz.isEmpty)
+            JuzProgressCard(
+              memorized: juz.memorized,
+              current: juz.current,
+              margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            ),
           for (final curriculum in report.curricula) ...[
             _SectionTitle(curriculum),
             for (final entry in report.byCurriculum[curriculum]!)

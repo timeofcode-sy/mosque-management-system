@@ -1183,6 +1183,7 @@ class CircleRepository {
                   _db.studentCurriculumProgressTable.status.isIn([
                     'memorized',
                     'mastered',
+                    'in_progress',
                   ]),
             ))
             .get();
@@ -1190,11 +1191,25 @@ class CircleRepository {
     final juz = <int>[];
     final others = <String>[];
 
+    // الجزءُ الذي يُحفظ الآن: الجاري الأكثرُ تقدّماً — الخطُّ الأطول في شريط الأجزاء.
+    int? currentJuz;
+    var currentPercent = -1;
+
     for (final row in memorized) {
       final item = row.readTable(_db.curriculumItems);
+      final progress = row.readTable(_db.studentCurriculumProgressTable);
       final number = item.code.startsWith('juz-')
           ? int.tryParse(item.code.substring(4))
           : null;
+
+      if (progress.status == 'in_progress') {
+        if (number != null && progress.percent > currentPercent) {
+          currentJuz = number;
+          currentPercent = progress.percent;
+        }
+
+        continue;
+      }
 
       number == null ? others.add(item.name) : juz.add(number);
     }
@@ -1227,6 +1242,7 @@ class CircleRepository {
       father: parent('father'),
       mother: parent('mother'),
       memorizedJuz: juz..sort((a, b) => b.compareTo(a)),
+      currentJuz: juz.contains(currentJuz) ? null : currentJuz,
       otherMemorized: others,
       customFields: {
         for (final row in values)

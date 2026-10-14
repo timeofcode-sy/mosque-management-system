@@ -374,6 +374,7 @@ class StudentDetails {
     this.father,
     this.mother,
     this.memorizedJuz = const [],
+    this.currentJuz,
     this.otherMemorized = const [],
     this.customFields = const {},
   });
@@ -393,6 +394,9 @@ class StudentDetails {
 
   /// أرقامُ الأجزاء المحفوظة، تنازلياً كما تُحفظ عادةً (30، 29…).
   final List<int> memorizedJuz;
+
+  /// الجزءُ الذي يُحفظ الآن — الجاري الأكثرُ تقدّماً، أو `null`.
+  final int? currentJuz;
 
   /// محفوظاتٌ من غير القرآن (الأربعون النووية، تحفة الأطفال…).
   final List<String> otherMemorized;

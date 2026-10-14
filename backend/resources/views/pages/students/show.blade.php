@@ -9,8 +9,10 @@ use App\Models\Curriculum;
 use App\Models\CurriculumItem;
 use App\Models\Enrollment;
 use App\Models\Student;
+use App\Models\StudentCurriculumProgress;
 use App\Models\StudentTransfer;
 use App\Queries\InstituteCatalogQuery;
+use App\Queries\JuzProgressQuery;
 use App\Queries\StudentProfileQuery;
 use App\Support\Quran;
 use App\Support\SabrSettings;
@@ -106,6 +108,17 @@ new #[Title('ملف الطالب')] class extends Component
     public function progressByItem(): Collection
     {
         return $this->student->curriculumProgress()->get()->keyBy('curriculum_item_id');
+    }
+
+    /**
+     * الأجزاءُ الثلاثون: المحفوظُ منها والذي يُحفظ الآن — شريطُ الأجزاء في رأس قسم الحفظ.
+     *
+     * @return array{memorized: array<int, int>, current: ?int}
+     */
+    #[Computed]
+    public function juzProgress(): array
+    {
+        return app(JuzProgressQuery::class)->forStudent($this->student->id);
     }
 
     #[Computed]
@@ -453,6 +466,11 @@ new #[Title('ملف الطالب')] class extends Component
             </flux:table>
         </div>
     @endif
+
+    <div class="rounded-xl border border-line bg-raised p-6" data-test="juz-progress">
+        <flux:heading size="lg">الأجزاء</flux:heading>
+        <x-juz-progress class="mt-4" :memorized="$this->juzProgress['memorized']" :current="$this->juzProgress['current']" />
+    </div>
 
     <div class="rounded-xl border border-line bg-raised p-6">
         <div class="flex flex-wrap items-baseline justify-between gap-3">

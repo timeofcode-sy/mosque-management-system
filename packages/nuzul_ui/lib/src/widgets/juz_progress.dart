@@ -29,7 +29,7 @@ class NzJuzProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.nz;
-    final summary = 'محفوظ ${nzDigits(memorized.length)} من ٣٠ جزءًا';
+    final summary = 'محفوظ ${nzDigits(memorized.length)} من 30 جزءًا';
     final h = compact ? 16.0 : 26.0;
     return Semantics(
       label: current == null ? summary : '$summary، يحفظ الآن الجزء ${nzDigits(current!)}',
