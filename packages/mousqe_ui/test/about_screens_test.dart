@@ -87,6 +87,36 @@ void main() {
     await tester.scrollUntilVisible(find.text(Developer.address), 200);
   });
 
+  testWidgets('the app page offers privacy and terms instead of the licenses, each a full document', (tester) async {
+    await tester.pumpWidget(host());
+
+    await tester.tap(find.text('حول التطبيق'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('تراخيص البرمجيات مفتوحة المصدر'), findsNothing);
+
+    for (final document in [Legal.privacy, Legal.terms]) {
+      final entry = document == Legal.privacy ? 'الخصوصية' : 'الشروط والأحكام';
+      await tester.scrollUntilVisible(find.text(entry), 200);
+      await tester.ensureVisible(find.text(entry));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(entry));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(LegalScreen), findsOneWidget);
+      expect(find.text(document.title), findsOneWidget);
+      await tester.scrollUntilVisible(find.text(document.updated), 400);
+      expect(find.text('${document.sections.length}. التواصل معنا'), findsOneWidget);
+
+      Navigator.of(tester.element(find.byType(LegalScreen))).pop();
+      await tester.pumpAndSettle();
+    }
+
+    // The licenses some components require now sit at the end of the terms.
+    expect(Legal.terms.showLicenses, isTrue);
+    expect(Legal.privacy.showLicenses, isFalse);
+  });
+
   testWidgets('the developer page builds on the night theme too', (tester) async {
     await tester.pumpWidget(host(theme: MousqeTheme.dark()));
 

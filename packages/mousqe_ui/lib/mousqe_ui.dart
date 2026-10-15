@@ -5,6 +5,7 @@ export 'package:nuzul_ui/nuzul_ui.dart';
 
 export 'src/about/about_screens.dart';
 export 'src/about/developer.dart';
+export 'src/about/legal.dart';
 export 'src/about/more_page.dart';
 export 'src/brand/brand.dart';
 export 'src/format/dates.dart';

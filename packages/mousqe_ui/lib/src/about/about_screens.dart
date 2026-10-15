@@ -9,6 +9,7 @@ import '../theme/appearance.dart';
 import '../update/update_gate.dart';
 import '../update/update_screen.dart';
 import 'developer.dart';
+import 'legal.dart';
 
 /// ما يختلف بين تطبيقٍ وآخر في «حول التطبيق»: اسمُه على الهاتف وجملةٌ عمّن يخدم.
 /// وما سواهما — النظامُ ومزاياه ومطوّرُه — واحدٌ في كل التطبيقات.
@@ -254,12 +255,16 @@ class AboutAppScreen extends StatelessWidget {
                 onTap: () => openLink(context, 'https://${Brand.domain}'),
               ),
               _Row(
+                icon: NzIcons.shield,
+                title: 'الخصوصية',
+                subtitle: 'ما نجمعه من بيانات وكيف نحميه',
+                onTap: () => openLegal(context, Legal.privacy),
+              ),
+              _Row(
                 icon: NzIcons.note,
-                title: 'تراخيص البرمجيات مفتوحة المصدر',
-                onTap: () => showLicensePage(
-                  context: context,
-                  applicationName: app.title,
-                ),
+                title: 'الشروط والأحكام',
+                subtitle: 'ما يُتّفق عليه عند استعمال ${Brand.name}',
+                onTap: () => openLegal(context, Legal.terms),
               ),
             ],
           ),
