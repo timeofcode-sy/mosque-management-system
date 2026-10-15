@@ -142,7 +142,7 @@ const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'announcements',
     label: 'الإعلانات',
-    icon: NzIcons.megaphone,
+    icon: NzIcons.announcement,
     group: SectionGroup.daily,
     permissions: ['announcements.manage'],
     builder: _announcements,

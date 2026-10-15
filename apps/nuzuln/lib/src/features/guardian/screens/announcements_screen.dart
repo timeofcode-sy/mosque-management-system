@@ -47,7 +47,7 @@ class AnnouncementsAction extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       tooltip: 'الإعلانات',
-      icon: const NzIcon(NzIcons.megaphone),
+      icon: const NzIcon(NzIcons.announcement),
       onPressed: () => Navigator.of(context).push(
         MaterialPageRoute<void>(builder: (_) => const AnnouncementsScreen()),
       ),

@@ -240,7 +240,7 @@ class _More extends StatelessWidget {
           ),
         ),
         MoreEntry(
-          icon: NzIcons.megaphone,
+          icon: NzIcons.announcement,
           label: 'الإعلانات',
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const AnnouncementsScreen()),

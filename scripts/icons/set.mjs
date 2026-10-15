@@ -66,7 +66,8 @@ export const icons = {
   'qr-code': { paths: ['M3.5 3.5h7v7h-7z', 'M13.5 3.5h7v7h-7z', 'M3.5 13.5h7v7h-7z', 'M13.5 13.5h3v3h-3z', 'M17.5 17.5h3v3h-3z'] },
   play: { paths: ['M7 3.6v16.8L19 12z'] },
   pause: { paths: ['M7 4.5h3.5v15H7z', 'M13.5 4.5H17v15h-3.5z'] },
-  megaphone: { paths: ['M3.5 9.5h4L15.5 3.9v16.2L7.5 14.5h-4z', 'M18.5 9.5H21M18.5 14.5H21'] },
+  // A notice board on two legs with a pin and lines of text (replaced the megaphone, which read as a speaker).
+  announcement: { paths: ['M3.5 4.5h17v11h-17z', 'M7.5 15.5V21M16.5 15.5V21', 'M7 8.5h10M7 12h6', 'M12 2l1.5 1.5L12 5l-1.5-1.5z'] },
   list: { paths: ['M4 7h2M9 7h11M4 12h2M9 12h11M4 17h2M9 17h11'] },
   shield: { paths: ['M12 3l7.5 3v7.5L12 21l-7.5-7.5V6z', 'M9 11.5l2 2 4-4.5'] },
   envelope: { paths: ['M3 5.5h18v13H3z', 'M3 5.5 12 11.8l9-6.3'] },
@@ -103,7 +104,7 @@ export const flux = {
   'information-circle': 'information-circle', 'check-circle': 'check-circle', 'x-circle': 'x-circle', 'document-duplicate': 'copy',
   identification: 'badge', 'arrow-uturn-left': 'undo', 'arrow-right-start-on-rectangle': 'logout', 'arrow-left-end-on-rectangle': 'login',
   'arrow-right-end-on-rectangle': 'logout', user: 'user', 'user-plus': 'user-plus', 'user-minus': 'user-minus', sun: 'sun', moon: 'moon',
-  'computer-desktop': 'desktop', 'device-phone-mobile': 'phone', 'qr-code': 'qr-code', play: 'play', pause: 'pause', megaphone: 'megaphone',
+  'computer-desktop': 'desktop', 'device-phone-mobile': 'phone', 'qr-code': 'qr-code', play: 'play', pause: 'pause', megaphone: 'announcement',
   'list-bullet': 'list', 'finger-print': 'shield', 'shield-check': 'shield', envelope: 'envelope', 'envelope-open': 'envelope-open',
   bookmark: 'bookmark', 'archive-box': 'archive', minus: 'minus', funnel: 'funnel', 'arrow-top-right-on-square': 'external-link',
   'arrow-up-right': 'external-link', 'folder-git-2': 'note',

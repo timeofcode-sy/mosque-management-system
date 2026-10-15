@@ -66,7 +66,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _edit(context),
-        icon: const NzIcon(NzIcons.megaphone),
+        icon: const NzIcon(NzIcons.announcement),
         label: const Text('إعلان جديد'),
       ),
       body: RefreshIndicator(
@@ -96,7 +96,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
               return const _Scrollable(
                 child: EmptyState(
                   message: 'لا إعلانات بعد.\nما يُنشر هنا يظهر في تطبيقات الطلاب وأولياء الأمور والأساتذة.',
-                  icon: NzIcons.megaphone,
+                  icon: NzIcons.announcement,
                 ),
               );
             }
