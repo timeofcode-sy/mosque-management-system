@@ -20,9 +20,10 @@ use Illuminate\Support\Facades\DB;
 class UserAdminQuery
 {
     /**
+     * @param  int|array<int, int>|null  $institutes  معهدٌ واحد، أو معاهدُ صاحب اللوحة، أو كلُّها (null)
      * @return LengthAwarePaginator<int, User>
      */
-    public function list(string $search = '', string $role = '', ?int $instituteId = null, int $perPage = 20): LengthAwarePaginator
+    public function list(string $search = '', string $role = '', int|array|null $institutes = null, int $perPage = 20): LengthAwarePaginator
     {
         $pivotTable = config('permission.table_names.model_has_roles');
         $rolesTable = config('permission.table_names.roles');
@@ -41,8 +42,8 @@ class UserAdminQuery
             ->when($role !== '', fn ($query) => $query->whereExists(
                 fn ($sub) => $matchesAssignment($sub)->where("{$rolesTable}.name", $role),
             ))
-            ->when($instituteId !== null, fn ($query) => $query->whereExists(
-                fn ($sub) => $matchesAssignment($sub)->where($pivotTable.'.'.$teamKey, $instituteId),
+            ->when($institutes !== null, fn ($query) => $query->whereExists(
+                fn ($sub) => $matchesAssignment($sub)->whereIn($pivotTable.'.'.$teamKey, (array) $institutes),
             ))
             ->orderBy('first_name')
             ->orderBy('last_name')

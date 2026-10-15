@@ -13,6 +13,7 @@ enum PanelRole: string
 {
     case Developer = 'developer';
     case SuperAdmin = 'super_admin';
+    case RegionSupervisor = 'region_supervisor';
     case Admin = 'admin';
     case Supervisor = 'supervisor';
     case Teacher = 'teacher';
@@ -24,6 +25,7 @@ enum PanelRole: string
         return match ($this) {
             self::Developer => 'مبرمج',
             self::SuperAdmin => 'المشرف الأعلى',
+            self::RegionSupervisor => 'مشرف معاهد',
             self::Admin => 'مدير معهد',
             self::Supervisor => 'مشرف',
             self::Teacher => 'أستاذ',
@@ -34,6 +36,9 @@ enum PanelRole: string
 
     /**
      * الدور العابر للمعاهد يُسنَد خارج كل معهد (User::GLOBAL_TEAM_ID) لا داخل واحد.
+     *
+     * ومشرفُ المعاهد ليس عابراً: يُسنَد داخل كلِّ معهدٍ يشرف عليه، فلا يرى غيرها —
+     * «مشرف معاهد عربين» يُسند في معهد عمر الفاروق والنور والسلام وحدها.
      */
     public function isGlobal(): bool
     {
@@ -56,6 +61,7 @@ enum PanelRole: string
         return match ($this) {
             self::Developer => 'dev',
             self::SuperAdmin => 'sadmin',
+            self::RegionSupervisor => 'rsupervisor',
             self::Admin => 'admin',
             self::Supervisor => 'supervisor',
             self::Teacher => 'teacher',

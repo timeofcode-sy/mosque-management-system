@@ -20,7 +20,7 @@ class RolesAndPermissionsSeeder extends Seeder
      * @var array<int, string>
      */
     private const PERMISSIONS = [
-        'institutes.view', 'institutes.manage',
+        'institutes.view', 'institutes.manage', 'institutes.overview',
         'courses.view', 'courses.manage',
         'shifts.manage',
         'circles.view', 'circles.manage',
@@ -49,6 +49,7 @@ class RolesAndPermissionsSeeder extends Seeder
     private const ROLES = [
         'developer' => ['*'],
         'super_admin' => ['*'],
+        'region_supervisor' => ['*'],
         'admin' => ['*'],
         'supervisor' => [
             'institutes.view', 'courses.view', 'circles.view', 'students.view', 'students.manage',
@@ -85,14 +86,16 @@ class RolesAndPermissionsSeeder extends Seeder
     /**
      * ما يُنزَع من الأدوار الشاملة — وهو وحده ما يميّز الثلاثة بعضها من بعض.
      *
-     * المبرمج يملك كل شيء. المشرف الأعلى مثله عدا أدوات النظام التقنية. ومدير المعهد
-     * مثلهما داخل معهده وحده: لا ينشئ معهداً ولا يبدّل بين المعاهد.
+     * المبرمج يملك كل شيء. المشرف الأعلى مثله عدا أدوات النظام التقنية. ومشرف المعاهد
+     * مثله في المعاهد المسندة إليه وحدها: يقارن بينها في «لوحة المعاهد» ولا ينشئ معهداً.
+     * ومدير المعهد مثلهم داخل معهده وحده: لا ينشئ معهداً ولا يقارن بين المعاهد.
      *
      * @var array<string, array<int, string>>
      */
     private const WITHHELD = [
         'super_admin' => ['system.debug'],
-        'admin' => ['system.debug', 'institutes.manage'],
+        'region_supervisor' => ['system.debug', 'institutes.manage'],
+        'admin' => ['system.debug', 'institutes.manage', 'institutes.overview'],
     ];
 
     public function run(): void

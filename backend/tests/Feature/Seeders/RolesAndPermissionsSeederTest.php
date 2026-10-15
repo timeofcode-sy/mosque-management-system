@@ -26,7 +26,7 @@ class RolesAndPermissionsSeederTest extends TestCase
     public function test_it_seeds_every_role_of_the_system(): void
     {
         $this->assertEqualsCanonicalizing(
-            ['developer', 'super_admin', 'admin', 'supervisor', 'teacher', 'guardian', 'student'],
+            ['developer', 'super_admin', 'region_supervisor', 'admin', 'supervisor', 'teacher', 'guardian', 'student'],
             Role::query()->pluck('name')->all(),
         );
     }

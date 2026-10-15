@@ -2,6 +2,7 @@
 
 use App\Queries\InstituteAdminQuery;
 use App\Support\DateRange;
+use App\Support\PanelScope;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -13,6 +14,8 @@ use Livewire\Component;
  *
  * الشاشة الوحيدة في اللوحة التي لا نطاق معهد لها عمداً، ولذلك لا تستعمل
  * InteractsWithInstitute: قراءتها كلها تعبر المعاهد (انظر تحذير InstituteAdminQuery).
+ *
+ * والمعاهدُ المعروضة هي معاهدُ صاحبها: كلُّها للمشرف الأعلى، والمسندةُ إليه وحدها لمشرف المعاهد.
  */
 new #[Title('لوحة المعاهد')] class extends Component {
     #[Url]
@@ -30,7 +33,12 @@ new #[Title('لوحة المعاهد')] class extends Component {
     #[Computed]
     public function overview(): array
     {
-        return app(InstituteAdminQuery::class)->overview($this->dateRange);
+        $user = auth()->user();
+
+        return app(InstituteAdminQuery::class)->overview(
+            $this->dateRange,
+            $user->hasGlobalRole() ? null : PanelScope::institutesFor($user)->modelKeys(),
+        );
     }
 
     /**
@@ -55,9 +63,11 @@ new #[Title('لوحة المعاهد')] class extends Component {
 
 <div class="flex w-full flex-col gap-6">
     <x-page-header heading="لوحة المعاهد" :subheading="'من '.$this->dateRange->from.' إلى '.$this->dateRange->to">
-        <x-slot name="actions">
-            <flux:button :href="route('institutes.index')" wire:navigate variant="ghost" icon="building-library">إدارة المعاهد</flux:button>
-        </x-slot>
+        @can('institutes.manage')
+            <x-slot name="actions">
+                <flux:button :href="route('institutes.index')" wire:navigate variant="ghost" icon="building-library">إدارة المعاهد</flux:button>
+            </x-slot>
+        @endcan
     </x-page-header>
 
     <flux:radio.group wire:model.live="range" variant="segmented" size="sm">

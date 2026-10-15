@@ -301,8 +301,8 @@ institute (معهد)
 `spatie/laravel-permission` **بوضع الفرق (teams) مفعّل والمفتاح `institute_id`** — كان مضبوطاً مسبقاً
 في `config/permission.php`، وهو ما يجعل تعدّد المعاهد جاهزاً بنيوياً.
 
-الأدوار السبعة: 🔄 م.4.6 `developer` · `super_admin` · `admin` · `supervisor` · `teacher` · `guardian` ·
-`student`، مع 40 صلاحية مصنّفة في `RolesAndPermissionsSeeder`. الأدوار عامة (`team_id = null`) والإسناد
+الأدوار الثمانية: 🔄 م.4.6 `developer` · `super_admin` · `region_supervisor` (🔄 2026-10-15) · `admin` · `supervisor` · `teacher` ·
+`guardian` · `student`، مع 42 صلاحية مصنّفة في `RolesAndPermissionsSeeder`. الأدوار عامة (`team_id = null`) والإسناد
 وحده مرتبط بمعهد.
 
 🔄 **م.4.6 — الأدوار العليا الثلاثة صارت متمايزة:** المبرمج وحده يملك `system.debug`، والمشرف الأعلى

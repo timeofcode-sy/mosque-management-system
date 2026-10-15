@@ -117,12 +117,15 @@
                     </flux:sidebar.group>
                 @endcanany
 
-                @canany(['institutes.manage', 'users.manage'])
+                @canany(['institutes.manage', 'institutes.overview', 'users.manage'])
                     <flux:sidebar.group heading="الإدارة العليا" class="grid">
                         @can('institutes.manage')
                             <flux:sidebar.item icon="building-office-2" :href="route('institutes.index')" :current="request()->routeIs('institutes.index') || request()->routeIs('institutes.create') || request()->routeIs('institutes.edit')" wire:navigate>
                                 المعاهد
                             </flux:sidebar.item>
+                        @endcan
+
+                        @can('institutes.overview')
                             <flux:sidebar.item icon="presentation-chart-line" :href="route('institutes.overview')" :current="request()->routeIs('institutes.overview')" wire:navigate>
                                 لوحة المعاهد
                             </flux:sidebar.item>

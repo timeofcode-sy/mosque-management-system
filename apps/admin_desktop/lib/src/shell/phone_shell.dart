@@ -75,6 +75,7 @@ String phoneLabelOf(DesktopSection section) => switch (section.id) {
 String roleLabelOf(String role) => switch (role) {
   'developer' => 'مبرمج',
   'super_admin' => 'المشرف الأعلى',
+  'region_supervisor' => 'مشرف معاهد',
   'admin' => 'مدير معهد',
   'supervisor' => 'مشرف',
   'teacher' => 'أستاذ',

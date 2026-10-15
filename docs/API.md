@@ -712,6 +712,7 @@ institute() = ترويسة X-Institute إن وصلت  ⇒ يُتحقَّق أن�
 | `guardian` | أبناؤه وحدهم | `guardian->students()->where('students.uuid', …)` — لا استعلام مفتوح على `students` |
 | `student` | نفسه وحده | `user->student` مباشرةً؛ لا معرّف في أي مسار |
 | `supervisor` · `admin` ✅ م.6.1 | معهدَه كاملاً | إسنادُ الدور في `model_has_roles.institute_id` |
+| `region_supervisor` 🔄 2026-10-15 | معاهدَه المسندة، واحداً في كل طلب | إسنادٌ في كل معهد، والترويسة تختار بينها |
 | `super_admin` · `developer` ✅ م.6.1 | المعاهد كلَّها، واحداً في كل طلب | الترويسة، وإلا أوّلُ معهدٍ فعّال |
 | **الجميع** | **معهدهم كاملاً في `sync/pull`** | `scope_key = "institute:{uuid}"` — أوسع من النطاق أعلاه عمداً، انظر [SYNC-PROTOCOL.md §4](SYNC-PROTOCOL.md) |
 
