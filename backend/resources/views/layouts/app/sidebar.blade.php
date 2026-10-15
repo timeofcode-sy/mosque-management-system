@@ -34,7 +34,7 @@
             <flux:sidebar.nav>
                 <flux:sidebar.group heading="المتابعة" class="grid">
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        لوحة المعلومات
+                        الصفحة الرئيسية
                     </flux:sidebar.item>
 
                     @can('attendance.take')

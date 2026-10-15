@@ -8,7 +8,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('لوحة المعلومات')] class extends Component {
+new #[Title('الصفحة الرئيسية')] class extends Component {
     use InteractsWithInstitute;
 
     /**
@@ -64,14 +64,14 @@ new #[Title('لوحة المعلومات')] class extends Component {
 }; ?>
 
 <div class="flex w-full flex-col gap-6">
-    <x-page-header heading="لوحة المعلومات" :subheading="$this->institute?->name">
+    <x-page-header heading="الصفحة الرئيسية" :subheading="$this->institute?->name">
         <x-slot name="actions">
             <flux:button :href="route('attendance.index')" wire:navigate variant="primary" icon="clipboard-document-check">تفقّد اليوم</flux:button>
         </x-slot>
     </x-page-header>
 
     {{-- الحديثُ الذي سُمّي منه النظام، كما في الموقع وفي رئيسيّة كل تطبيق. --}}
-    <figure class="nz nz-quote mx-auto w-full max-w-[860px]" aria-label="حديث" data-test="home-hadith">
+    <figure class="nz nz-quote w-full" aria-label="حديث" data-test="home-hadith">
         <blockquote class="nz-quote__text">مَن غدا إلى المسجدِ أو راحَ، أعدَّ اللهُ له نُزُلَهُ من الجنّةِ كلّما غدا أو راحَ</blockquote>
         <figcaption class="nz-quote__src">متفق عليه</figcaption>
     </figure>

@@ -71,7 +71,7 @@ class AboutPagesTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get(route('about'))
             ->assertOk()
-            ->assertSee('لوحة المعلومات');
+            ->assertSee('حسابي');
     }
 
     public function test_the_phone_and_whatsapp_contacts_reach_the_same_number(): void

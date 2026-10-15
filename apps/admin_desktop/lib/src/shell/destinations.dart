@@ -77,7 +77,7 @@ class DesktopSection {
 const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'dashboard',
-    label: 'الداشبورد',
+    label: 'الصفحة الرئيسية',
     icon: NzIcons.grid,
     group: SectionGroup.overview,
     permissions: ['reports.view'],

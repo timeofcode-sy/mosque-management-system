@@ -25,7 +25,7 @@
                 </nav>
 
                 <a href="{{ auth()->check() ? route('dashboard') : route('login') }}" class="nz-btn nz-btn--primary nz-btn--sm ms-auto sm:ms-0">
-                    {{ auth()->check() ? 'لوحة المعلومات' : 'تسجيل الدخول' }}
+                    {{ auth()->check() ? 'حسابي' : 'تسجيل الدخول' }}
                 </a>
             </div>
         </header>
@@ -133,7 +133,7 @@
 
             <section class="pb-12 sm:pb-16 lg:pb-20" aria-label="حديث">
                 <div class="nz-container">
-                    <figure class="nz nz-quote mx-auto max-w-[860px]">
+                    <figure class="nz nz-quote w-full">
                         <blockquote class="nz-quote__text">مَن غدا إلى المسجدِ أو راحَ، أعدَّ اللهُ له نُزُلَهُ من الجنّةِ كلّما غدا أو راحَ</blockquote>
                         <figcaption class="nz-quote__src">متفق عليه</figcaption>
                     </figure>

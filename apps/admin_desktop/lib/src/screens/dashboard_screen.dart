@@ -26,7 +26,7 @@ class DashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الداشبورد'),
+        title: const Text('الصفحة الرئيسية'),
         actions: [
           const PhoneSyncAction(),
           // على الهاتف «زامن الآن» في ورقة زرّ المزامنة، فلا يتكرّر الفعلُ أيقونتين متجاورتين.
@@ -51,13 +51,8 @@ class DashboardScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // الحديثُ الذي سُمّي منه النظامُ في رأس الرئيسيّة.
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 860),
-                  child: const HomeHadith(padding: EdgeInsets.zero),
-                ),
-              ),
+              // الحديثُ الذي سُمّي منه النظامُ في رأس الرئيسيّة، بعرض الصفحة كبقيّة بطاقاتها.
+              const HomeHadith(padding: EdgeInsets.zero),
               const SizedBox(height: 16),
               _Counters(counters: overview.counters),
               const SizedBox(height: 16),
