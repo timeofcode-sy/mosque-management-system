@@ -15,16 +15,14 @@
 |---|---|
 | `backend/` | Laravel 13 · Livewire 4 · Flux · Fortify · Spatie Permission — لوحة التحكم + API |
 | `apps/nuzuln/` | **تطبيق «نزلاً» للهاتف** (Android) — الأستاذ وولي الأمر والطالب؛ السطحُ يُحسم من دور الحساب عند الدخول ([README](apps/nuzuln/README.md)) |
-| `apps/teacher/` | ⏳ تطبيق الأستاذ القديم — حلّ محلَّه `apps/nuzuln/`، ويُحذف بعد تجربته على جهاز |
 | `apps/admin_desktop/` | برنامج المشرف (Windows + Android) — إدارة كاملة أوف-لاين، وعلى الهاتف بشريطٍ سفلي |
-| `apps/guardian/` | ⏳ تطبيق ولي الأمر القديم — حلّ محلَّه `apps/nuzuln/` |
-| `apps/student/` | ⏳ تطبيق الطالب القديم — حلّ محلَّه `apps/nuzuln/` |
 | `packages/mousqe_core/` | نماذج + drift(SQLite) + محرك المزامنة + عميل API |
 | `packages/nuzul_ui/` | هوية نزلاً v3 لـ Flutter: رموز، سمتان (فاتح وليلي)، خطوط، أيقونات، شعار، نقش، مكوّنات Nz |
 | `packages/mousqe_ui/` | ثيم التطبيقات فوق nuzul_ui + ودجتس مشتركة (شارات، بطاقات، مزامنة، دخول) + التحديثُ من داخل التطبيق |
 | `packages/mousqe_installer/` | إضافةُ أندرويد التي تسلّم ملفَّ التحديث إلى مثبّت النظام |
 | `design/` | رموز الهوية (`design-tokens.json`) وشرح المولِّدات والقرارات — المصدر الكامل في `brand-v3/` (غير مُتتبَّع)؛ انظر [docs/DESIGN-SYSTEM.md](docs/DESIGN-SYSTEM.md) |
 | `design/logo/` | الشعار السابق وشعار معهد عمر الفاروق للأرشيف |
+| `marketing/` | الحزمة التسويقية: عرضٌ تقديمي تفاعلي، ومنشوراتٌ وريلز، وسكتشات، ولقطاتٌ من الموقع والتطبيقين — غير مُتتبَّع في git لحجمه، وأدواتُ توليده في `marketing/_source` |
 | `docs/` | الوثائق كلُّها وفهرسُها [docs/README.md](docs/README.md): التشغيلُ والإصدارات (`VERSION.md`) والمرجعُ التقني، وخططُ المراحل في `phases/` ونقاطُ تفتيشها في `checkpoints/` |
 
 ## البدء

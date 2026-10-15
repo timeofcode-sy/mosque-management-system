@@ -4,11 +4,8 @@
 
 .DESCRIPTION
     mobile         -> Android APK            (apps/nuzuln: teacher, guardian and student in one app)
-    teacher        -> Android APK            (apps/teacher)
     admin_desktop  -> Windows folder + zip   (apps/admin_desktop)
     admin_android  -> Android APK            (apps/admin_desktop, the phone layout)
-    guardian       -> Android APK            (apps/guardian)  skipped until the app exists
-    student        -> Android APK            (apps/student)   skipped until the app exists
 
     Each app is built on its own: one failure does not stop the others, and the
     summary at the end says what was produced and what was not. The exit code is
@@ -46,8 +43,8 @@
     and docs/VERSION.md is not touched.
 
 .PARAMETER Only
-    Build only these apps (mobile, teacher, admin_desktop, admin_android, guardian, student), e.g.
-    -Only teacher,admin_desktop
+    Build only these apps (mobile, admin_desktop, admin_android), e.g.
+    -Only mobile,admin_desktop
 
 .PARAMETER BaseUrl
     Default API address compiled into the apps. Default: https://nuzuln.com/api/v1
@@ -76,7 +73,7 @@
     .\scripts\export-apps.ps1 -Channel release
 
 .EXAMPLE
-    .\scripts\export-apps.ps1 -Only teacher -BaseUrl http://192.168.1.10:8000/api/v1
+    .\scripts\export-apps.ps1 -Only mobile -BaseUrl http://192.168.1.10:8000/api/v1
 #>
 [CmdletBinding()]
 param(
@@ -112,11 +109,8 @@ $versionFile = Join-Path $root 'docs/VERSION.md'
 
 $apps = @(
     @{ Name = 'mobile';        Dir = 'apps/nuzuln';        Kind = 'apk' },
-    @{ Name = 'teacher';       Dir = 'apps/teacher';       Kind = 'apk' },
     @{ Name = 'admin_desktop'; Dir = 'apps/admin_desktop'; Kind = 'windows' },
-    @{ Name = 'admin_android'; Dir = 'apps/admin_desktop'; Kind = 'apk' },
-    @{ Name = 'guardian';      Dir = 'apps/guardian';      Kind = 'apk' },
-    @{ Name = 'student';       Dir = 'apps/student';       Kind = 'apk' }
+    @{ Name = 'admin_android'; Dir = 'apps/admin_desktop'; Kind = 'apk' }
 )
 if ($Only) {
     # "pwsh -File x.ps1 -Only a,b" delivers one string "a,b" - split it ourselves.

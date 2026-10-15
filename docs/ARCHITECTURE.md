@@ -36,8 +36,7 @@ mousqe/
      │    ├─ features/teacher/   ✅ م.5.3–5.4 ── REST /api/v1 + مزامنة أوف-لاين
      │    ├─ features/guardian/  ✅ م.7.1–7.4 ── بلا مزامنة — REST + لقطات
      │    └─ features/student/   ✅ م.8.1–8.2 ── بلا مزامنة — REST + لقطات
-     ├─ admin_desktop/ ✅ م.6.1–6.6 · Windows + Android ── REST /api/v1 + مزامنة أوف-لاين
-     └─ teacher/ · guardian/ · student/   ⏳ التطبيقات المنفصلة القديمة — تُحذف بعد تجربة nuzuln على جهاز
+     └─ admin_desktop/ ✅ م.6.1–6.6 · Windows + Android ── REST /api/v1 + مزامنة أوف-لاين
 ```
 
 مسار البيانات — الكتابة تلتقي في `app/Actions/` مهما كان مصدرها:

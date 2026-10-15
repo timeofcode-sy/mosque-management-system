@@ -22,7 +22,7 @@ lib/src/
 
 ## ⚠️ الإشعارات (Firebase)
 
-`google-services.json` غير موجود بعد: الملفُّ الحالي في `apps/guardian` مسجَّلٌ لـ`sy.mousqe.mousqe_guardian`.
+`google-services.json` غير موجود بعد: الملفُّ القديم كان لتطبيق ولي الأمر المحذوف (`sy.mousqe.mousqe_guardian`).
 حتى يُضاف، يُبنى التطبيقُ ويعمل كاملاً **بلا إشعارات**. للتفعيل:
 
 1. أضِف تطبيق أندرويد `com.timeofcode.nuzuln` في مشروع Firebase `mousqe`.

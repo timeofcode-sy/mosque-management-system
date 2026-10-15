@@ -25,7 +25,7 @@
 🔄 **2026-10-11: الأستاذ والأهل والطالب في تطبيقٍ واحد** — `apps/nuzuln/` (`com.timeofcode.nuzuln`)، دخولٌ
 واحد يحسم السطحَ من `user.roles` في ردّ الدخول، ويسجّل الجهازَ باسم السطح فيبقى ما يعتمد عليه الخادم كما هو
 (`NotifyGuardians` يرشّح بـ`app = guardian`، و`sync/pull?app=teacher`). والإدارةُ باقيةٌ تطبيقاً منفصلاً
-(`com.timeofcode.nuzuln.admin`). المجلّداتُ القديمة الثلاثة تُحذف بعد تجربة التطبيق الجديد على جهاز.
+(`com.timeofcode.nuzuln.admin`).
 
 الحزمتان المشتركتان `packages/mousqe_core` و`packages/mousqe_ui` ✅ منجَزتان (م.5.2)؛ محتواهما
 المخطَّط في [PLAN.md §7](PLAN.md)، وعقدُ العميل الملزم — منفَّذاً كاملاً — في

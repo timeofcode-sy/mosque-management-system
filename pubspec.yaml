@@ -13,9 +13,6 @@ workspace:
   - packages/mousqe_ui
   - packages/mousqe_installer
   - apps/nuzuln
-  - apps/guardian
-  - apps/student
-  - apps/teacher
   - apps/admin_desktop
 
 melos:
