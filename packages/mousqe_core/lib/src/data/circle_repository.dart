@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../db/database.dart';
 import '../models/enums.dart';
+import '../models/student_behavior.dart';
 import '../support/late_minutes.dart';
 import '../sync/sync_engine.dart';
 import 'circle_views.dart';
@@ -21,7 +24,7 @@ import 'circle_views.dart';
 /// ### 🔑 م.6.4: رُفع من `apps/teacher/` ولم يُنسخ إليه
 ///
 /// كان `TeacherRepository` في تطبيق الأستاذ، فلمّا احتاجه الديسكتوبُ رُفع إلى هنا
-/// بحسب القرار 4 في [PHASE-6-STAGES.MD §0](../../../../../docs/PHASE-6-STAGES.MD):
+/// بحسب القرار 4 في [PHASE-6-STAGES.MD §0](../../../../../docs/phases/PHASE-6-STAGES.MD):
 /// «ما يُعاد استخدامه يُرفع إلى `packages/` حين يحتاجه الاثنان». وما تغيّر في
 /// الرفع **ثلاثةُ فروقٍ بين السطحين، كلُّها معاملٌ لا فرعٌ في الشيفرة**:
 ///
@@ -61,10 +64,7 @@ class CircleRepository {
         _db.circles,
         _db.circles.id.equalsExp(_db.courseCircles.circleId),
       ),
-      innerJoin(
-        _db.shifts,
-        _db.shifts.id.equalsExp(_db.courseCircles.shiftId),
-      ),
+      innerJoin(_db.shifts, _db.shifts.id.equalsExp(_db.courseCircles.shiftId)),
       innerJoin(
         _db.courses,
         _db.courses.id.equalsExp(_db.courseCircles.courseId),
@@ -158,10 +158,9 @@ class CircleRepository {
     final day = _dateOnly(date);
 
     final statuses = {
-      for (final row
-          in await (_db.select(
-            _db.attendanceSessions,
-          )..where((t) => t.sessionDate.equals(day))).get())
+      for (final row in await (_db.select(
+        _db.attendanceSessions,
+      )..where((t) => t.sessionDate.equals(day))).get())
         row.courseCircleId: row.status,
     };
 
@@ -186,6 +185,29 @@ class CircleRepository {
 
   Stream<Map<int, String>> watchDayStatuses(DateTime date) =>
       _watch(() => loadDayStatuses(date));
+
+  /// الحلقاتُ التي يقع [date] في أيام دوامها — كشفُ التفقّد اليوميّ. وما عداها تفقّدٌ
+  /// استدراكي يُفتح عند الحاجة.
+  ///
+  /// أيامُ الدوام 0 (الأحد) إلى 6 (السبت) كما في `App\Enums\Weekday`، و`DateTime.weekday`
+  /// من 1 (الاثنين) إلى 7 (الأحد): فباقي القسمة على 7 هو اليومُ نفسُه.
+  Future<Set<int>> loadScheduledCircleIds(DateTime date) async {
+    final weekday = date.weekday % 7;
+
+    final query = _db.select(_db.courseCircles).join([
+      innerJoin(
+        _db.shiftDays,
+        _db.shiftDays.shiftId.equalsExp(_db.courseCircles.shiftId),
+      ),
+    ])..where(_db.shiftDays.weekday.equals(weekday));
+
+    return {
+      for (final row in await query.get()) row.readTable(_db.courseCircles).id,
+    };
+  }
+
+  Stream<Set<int>> watchScheduledCircleIds(DateTime date) =>
+      _watch(() => loadScheduledCircleIds(date));
 
   Future<int> _activeEnrollmentCount(int courseCircleId) async {
     final total = _db.enrollments.id.count();
@@ -279,6 +301,7 @@ class CircleRepository {
                 ),
             lateMinutesOverride: draft.lateMinutes,
             note: draft.note,
+            notePolarity: NotePolarity.fromValue(draft.notePolarity),
             recordedAt: draft.recordedAt,
           ),
         );
@@ -297,6 +320,7 @@ class CircleRepository {
             origin: AttendanceOrigin.synced,
             lateMinutes: confirmed.lateMinutes,
             note: confirmed.note,
+            notePolarity: NotePolarity.fromValue(confirmed.notePolarity),
             recordedAt: confirmed.recordedAt,
           ),
         );
@@ -334,11 +358,12 @@ class CircleRepository {
       // هو من ضغط، ودورةُ السحب التي تؤكّده لم تصل بعد. والعكسُ ليس صحيحاً —
       // جلسةٌ قفلها غيرُه تصل مقفلةً في `attendance_sessions` بلا مسودّة.
       status: switch ((session?.status, local)) {
-        (final String status, final local?) when local.locked && status != 'locked' => 'locked',
+        (final String status, final local?)
+            when local.locked && status != 'locked' =>
+          'locked',
         (final String status, _) => status,
-        (null, final local?) => local.locked
-            ? 'locked'
-            : (local.completed ? 'completed' : 'draft'),
+        (null, final local?) =>
+          local.locked ? 'locked' : (local.completed ? 'completed' : 'draft'),
         (null, null) => null,
       },
       roster: roster,
@@ -692,6 +717,7 @@ class CircleRepository {
             // حين يصحّحها الأستاذ بيده (§0 البند 2 · API.md §6).
             lateMinutes: entry.lateMinutesOverride,
             note: entry.note,
+            notePolarity: entry.note == null ? null : entry.notePolarity?.value,
             recordedAt: entry.recordedAt ?? DateTime.now(),
           ),
           mode: InsertMode.insertOrReplace,
@@ -716,8 +742,11 @@ class CircleRepository {
             'status': entry.status.name,
             if (entry.lateMinutesOverride != null)
               'late_minutes': entry.lateMinutesOverride,
-            if (entry.note != null && entry.note!.isNotEmpty)
+            if (entry.note != null && entry.note!.isNotEmpty) ...{
               'note': entry.note,
+              // يُرسل مع الملاحظة وحدها: `TakeAttendance` يُسقطه حين لا ملاحظة.
+              'note_polarity': entry.notePolarity?.value,
+            },
             // زمنُ الجهاز وقت الحدث لا وقت الإرسال — به يحسم الخادم التعارض
             // (SYNC-PROTOCOL §8 البند 2).
             'recorded_at': (entry.recordedAt ?? DateTime.now())
@@ -1135,7 +1164,222 @@ class CircleRepository {
                 ..where((t) => t.studentId.equals(studentId))
                 ..orderBy([(t) => OrderingTerm.desc(t.awardedOn)]))
               .get(),
+      details: await _detailsOf(student),
+      behavior: await _behaviorOf(student.id, attendances, sessions),
     );
+  }
+
+  /// بطاقةُ الطالب: صفُّه وأهلُه ووضعُه ومحفوظاتُه وواصفاتُه.
+  Future<StudentDetails> _detailsOf(StudentRow student) async {
+    final parents = await (_db.select(_db.guardianStudentTable).join([
+      innerJoin(
+        _db.guardians,
+        _db.guardians.id.equalsExp(_db.guardianStudentTable.guardianId),
+      ),
+    ])..where(_db.guardianStudentTable.studentId.equals(student.id))).get();
+
+    ParentInfo? parent(String relation) {
+      final row = parents
+          .where(
+            (r) => r.readTable(_db.guardianStudentTable).relation == relation,
+          )
+          .firstOrNull;
+
+      if (row == null) {
+        return null;
+      }
+
+      final guardian = row.readTable(_db.guardians);
+
+      return ParentInfo(
+        name: guardian.fullName,
+        phone: guardian.phone,
+        occupation: guardian.occupation,
+        isAlive: guardian.isAlive,
+      );
+    }
+
+    final memorized =
+        await (_db.select(_db.studentCurriculumProgressTable).join([
+              innerJoin(
+                _db.curriculumItems,
+                _db.curriculumItems.id.equalsExp(
+                  _db.studentCurriculumProgressTable.curriculumItemId,
+                ),
+              ),
+            ])..where(
+              _db.studentCurriculumProgressTable.studentId.equals(student.id) &
+                  _db.studentCurriculumProgressTable.status.isIn([
+                    'memorized',
+                    'mastered',
+                    'in_progress',
+                  ]),
+            ))
+            .get();
+
+    final juz = <int>[];
+    final others = <String>[];
+
+    // الجزءُ الذي يُحفظ الآن: الجاري الأكثرُ تقدّماً — الخطُّ الأطول في شريط الأجزاء.
+    int? currentJuz;
+    var currentPercent = -1;
+
+    for (final row in memorized) {
+      final item = row.readTable(_db.curriculumItems);
+      final progress = row.readTable(_db.studentCurriculumProgressTable);
+      final number = item.code.startsWith('juz-')
+          ? int.tryParse(item.code.substring(4))
+          : null;
+
+      if (progress.status == 'in_progress') {
+        if (number != null && progress.percent > currentPercent) {
+          currentJuz = number;
+          currentPercent = progress.percent;
+        }
+
+        continue;
+      }
+
+      number == null ? others.add(item.name) : juz.add(number);
+    }
+
+    final values =
+        await (_db.select(_db.customFieldValues).join([
+              innerJoin(
+                _db.customFields,
+                _db.customFields.id.equalsExp(
+                  _db.customFieldValues.customFieldId,
+                ),
+              ),
+            ])..where(
+              _db.customFieldValues.entityId.equals(student.id) &
+                  _db.customFieldValues.entityType.like('%Student'),
+            ))
+            .get();
+
+    return StudentDetails(
+      birthDate: student.birthDate,
+      gradeLevel: student.gradeLevel,
+      phone: student.phone,
+      address: student.currentAddress ?? student.permanentAddress,
+      studentJob: student.studentJob,
+      familyMembersCount: student.familyMembersCount,
+      healthStatus: student.studentHealthStatus,
+      familyHealthStatus: student.familyHealthStatus,
+      notes: student.notes,
+      registrationDate: student.registrationDate,
+      father: parent('father'),
+      mother: parent('mother'),
+      memorizedJuz: juz..sort((a, b) => b.compareTo(a)),
+      currentJuz: juz.contains(currentJuz) ? null : currentJuz,
+      otherMemorized: others,
+      customFields: {
+        for (final row in values)
+          if (_plain(row.readTable(_db.customFieldValues).value)
+              case final value when value.isNotEmpty)
+            row.readTable(_db.customFields).label: value,
+      },
+    );
+  }
+
+  /// الجانبُ السلوكي من drift بقواعد `StudentBehaviorQuery` في الخادم: ملاحظاتُ التفقّد غيرُ
+  /// الفارغة (الأحدثُ أولاً)، والصفاتُ بملاحظاتها، ونقاطُ السبب «سلوك».
+  Future<StudentBehavior> _behaviorOf(
+    int studentId,
+    List<AttendanceRow> attendances,
+    Map<int, AttendanceSessionRow> sessions,
+  ) async {
+    final circles = {
+      for (final row in await (_db.select(_db.courseCircles).join([
+        innerJoin(
+          _db.circles,
+          _db.circles.id.equalsExp(_db.courseCircles.circleId),
+        ),
+      ])).get())
+        row.readTable(_db.courseCircles).id: row.readTable(_db.circles).name,
+    };
+
+    final notes = [
+      for (final row in attendances)
+        if ((row.note ?? '').trim().isNotEmpty)
+          BehaviorNote(
+            date:
+                sessions[row.attendanceSessionId]?.sessionDate ??
+                row.recordedAt,
+            polarity: row.notePolarity,
+            note: row.note!.trim(),
+            circle: circles[sessions[row.attendanceSessionId]?.courseCircleId],
+          ),
+    ]..sort((a, b) => (b.date ?? DateTime(0)).compareTo(a.date ?? DateTime(0)));
+
+    final traits =
+        await (_db.select(_db.studentTraitTable).join([
+                innerJoin(
+                  _db.personalTraits,
+                  _db.personalTraits.id.equalsExp(
+                    _db.studentTraitTable.traitId,
+                  ),
+                ),
+              ])
+              ..where(_db.studentTraitTable.studentId.equals(studentId))
+              ..orderBy([
+                OrderingTerm(expression: _db.personalTraits.sortOrder),
+              ]))
+            .get();
+
+    final points =
+        await (_db.select(_db.studentPoints)
+              ..where(
+                (t) =>
+                    t.studentId.equals(studentId) & t.reason.equals('behavior'),
+              )
+              ..orderBy([(t) => OrderingTerm.desc(t.awardedOn)]))
+            .get();
+
+    return StudentBehavior(
+      positive: notes.where((n) => n.polarity == 'positive').length,
+      negative: notes.where((n) => n.polarity == 'negative').length,
+      neutral: notes.where((n) => n.polarity == null).length,
+      behaviorPoints: points.fold(0.0, (sum, row) => sum + row.points),
+      notes: notes.take(50).toList(),
+      traits: [
+        for (final row in traits)
+          BehaviorTrait(
+            name: row.readTable(_db.personalTraits).name,
+            polarity: row.readTable(_db.personalTraits).polarity,
+            note: row.readTable(_db.studentTraitTable).note,
+          ),
+      ],
+      points: [
+        for (final row in points.take(50))
+          BehaviorPoint(
+            date: row.awardedOn,
+            points: row.points,
+            note: row.note,
+          ),
+      ],
+    );
+  }
+
+  /// قيمةُ الواصفة تصل نصَّ JSON — والمعروضُ ما بداخلها.
+  static String _plain(String? raw) {
+    if (raw == null || raw.isEmpty) {
+      return '';
+    }
+
+    try {
+      final decoded = jsonDecode(raw);
+
+      return switch (decoded) {
+        null => '',
+        List() => decoded.join('، '),
+        true => 'نعم',
+        false => 'لا',
+        _ => decoded.toString(),
+      };
+    } on FormatException {
+      return raw;
+    }
   }
 
   Stream<StudentProfile?> watchStudentProfile(int studentId) =>

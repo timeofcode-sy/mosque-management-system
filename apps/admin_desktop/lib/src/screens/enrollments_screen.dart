@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/sync_bar.dart';
 import 'transfer_dialog.dart';
 
 /// التسجيلُ والنقل — ✅ م.6.5.
@@ -42,7 +43,7 @@ class _EnrollmentsScreenState extends State<EnrollmentsScreen> {
             return EmptyState(
               message:
                   'لا حلقات في الدورة الجارية.\n'
-                  'هيّئ الدورةَ ودواماتِها وحلقاتِها أوّلاً من باب «الدورات والدوامات».',
+                  'هيّئ الدورةَ وأوقاتَ دوامها وحلقاتِها أوّلاً من باب «الدورات وأوقات الدوام».',
               icon: NzIcons.halaqa,
               onRetry: deps.sync.syncNow,
             );
@@ -127,8 +128,10 @@ class _EnrollmentsBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
-  Widget build(BuildContext context) =>
-      AppBar(title: const Text('التسجيل والنقل'));
+  Widget build(BuildContext context) => AppBar(
+    title: const Text('التسجيل والنقل'),
+    actions: const [PhoneSyncAction()],
+  );
 }
 
 class _CircleList extends StatelessWidget {

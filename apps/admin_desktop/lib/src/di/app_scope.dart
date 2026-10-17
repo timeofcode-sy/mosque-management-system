@@ -28,6 +28,7 @@ class AppDependencies {
     required this.students,
     required this.catalog,
     required this.admin,
+    required this.content,
     required this.stats,
     required this.conflicts,
   });
@@ -61,6 +62,9 @@ class AppDependencies {
   final CatalogRepository catalog;
 
   final AdminRepository admin;
+
+  /// الأساتذةُ والإعلاناتُ والواصفاتُ والصفات — على تركيب [catalog]، والإعلاناتُ من الشبكة.
+  final InstituteContentRepository content;
 
   /// ✅ م.6.6 — والقناتان الأخيرتان في جدول القراءة والكتابة:
   ///
@@ -147,6 +151,7 @@ class AppDependencies {
       students: students,
       catalog: CatalogRepository(db: db, apiClient: apiClient),
       admin: AdminRepository(apiClient: apiClient),
+      content: InstituteContentRepository(db: db, apiClient: apiClient),
       stats: StatsRepository(db: db),
       conflicts: ConflictRepository(apiClient: apiClient),
     );

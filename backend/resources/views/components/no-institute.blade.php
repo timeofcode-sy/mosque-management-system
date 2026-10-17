@@ -11,7 +11,7 @@
     <flux:callout icon="building-library" variant="warning">
         <flux:callout.heading>لا يوجد معهد بعد</flux:callout.heading>
         <flux:callout.text>
-            ابدأ بإنشاء بيانات المعهد، ثم أنشئ الدورة الأولى ودواماتها وحلقاتها.
+            ابدأ بإنشاء بيانات المعهد، ثم أنشئ الدورة الأولى وأوقات دوامها وحلقاتها.
         </flux:callout.text>
         <x-slot name="actions">
             <flux:button

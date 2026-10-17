@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\SavePersonalTrait;
 use App\Concerns\InteractsWithInstitute;
 use App\Enums\TraitPolarity;
 use App\Models\PersonalTrait;
@@ -78,13 +79,11 @@ new #[Title('الصفات')] class extends Component {
             'is_active' => ['boolean'],
         ], attributes: ['name' => 'اسم الصفة']);
 
-        PersonalTrait::updateOrCreate(
-            ['id' => $this->editingId],
-            [
-                ...$validated,
-                'institute_id' => $this->institute->id,
-                'slug' => Str::slug($validated['name']) ?: Str::random(8),
-            ],
+        // الكتابةُ نفسُها في برنامج الإدارة (`/admin/traits`).
+        app(SavePersonalTrait::class)->handle(
+            $this->institute,
+            $validated,
+            $this->editingId === null ? null : PersonalTrait::findOrFail($this->editingId),
         );
 
         unset($this->personalTraits);
@@ -94,13 +93,13 @@ new #[Title('الصفات')] class extends Component {
 
     public function delete(PersonalTrait $personalTrait): void
     {
-        if ($personalTrait->students()->exists()) {
-            Flux::toast(variant: 'danger', text: 'لا يمكن حذف صفة مسنَدة إلى طلاب.');
+        try {
+            app(SavePersonalTrait::class)->delete($personalTrait);
+        } catch (RuntimeException $exception) {
+            Flux::toast(variant: 'danger', text: $exception->getMessage());
 
             return;
         }
-
-        $personalTrait->delete();
 
         unset($this->personalTraits);
         Flux::toast(variant: 'success', text: 'حُذفت الصفة.');

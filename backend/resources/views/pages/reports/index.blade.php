@@ -165,7 +165,7 @@ new #[Title('التقارير')] class extends Component {
             <flux:input type="date" wire:model.live="date" label="التاريخ" class="latin-numerals max-w-48" data-test="report-date" />
 
             <flux:select wire:model.live="shiftId" label="الدوام" class="max-w-48" data-test="report-shift">
-                <flux:select.option value="">كل الدوامات</flux:select.option>
+                <flux:select.option value="">كل أوقات الدوام</flux:select.option>
                 @foreach ($this->shifts as $shift)
                     <flux:select.option :value="$shift->id">{{ $shift->name }}</flux:select.option>
                 @endforeach

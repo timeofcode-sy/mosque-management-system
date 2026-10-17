@@ -5,9 +5,9 @@
 
 > مخطّطُ الخادم لم يتغيّر بعد م.4.7 (آخرُ هجرة `add_login_credentials_to_users_table`): المراحل
 > 5.1–5.4 وسّعت `institutes.settings` (§4.5) والسلوكَ حول `change_log` (§6) لا الجداولَ نفسها.
-> ومخطّطُ **العميل** المحلي (drift) موصوفٌ في [CHECKPOINT-PHASE-5.3.MD](CHECKPOINT-PHASE-5.3.MD) §3
+> ومخطّطُ **العميل** المحلي (drift) موصوفٌ في [CHECKPOINT-PHASE-5.3.MD](checkpoints/CHECKPOINT-PHASE-5.3.MD) §3
 > — وجدولا المسودّة المضافان في م.5.4 (`local_recitations` · `local_points`) في
-> [CHECKPOINT-PHASE-5.4.MD](CHECKPOINT-PHASE-5.4.MD) §3.2
+> [CHECKPOINT-PHASE-5.4.MD](checkpoints/CHECKPOINT-PHASE-5.4.MD) §3.2
 > لا هنا — فهو مخزنٌ مشتقّ لا مصدرُ حقيقة.
 
 ## قواعد عامة
@@ -25,13 +25,13 @@
 
 🔄 **المرحلة 4.5:** حُذف `institutes.timezone` — كان يُكتب ولا يُقرأ أبداً. المنطقة الزمنية صارت واحدة
 للتطبيق كله في `config/app.php` عبر `APP_TIMEZONE` (الافتراضي `Asia/Damascus`). قبل ذلك كان التطبيق
-يعمل فعلياً على UTC، فينقلب «اليوم» الساعة ٣:٠٠ فجراً وتُنسب الجلسة بعد منتصف الليل لليوم السابق.
+يعمل فعلياً على UTC، فينقلب «اليوم» الساعة 3:00 فجراً وتُنسب الجلسة بعد منتصف الليل لليوم السابق.
 
 ---
 
 ## 1. التنظيم الهرمي
 
-```
+```text
 institutes (معهد)
   └─ courses (دورة)              ← نطاق تصفير عدّادات الغياب
        └─ shifts (دوام)          ← + shift_days: أيام ثابتة أسبوعياً
@@ -76,15 +76,20 @@ institutes (معهد)
 
 | حقل الاستمارة | الموقع |
 |---|---|
-| اسم الأب | `guardians.full_name` حيث `guardian_student.relation = father` |
+| اسم الأب | `guardians.first_name` + `family_name` حيث `guardian_student.relation = father` — لا يُكتب: اسم الأب والكنية من بيانات الطالب |
 | عمل الأب | `guardians.occupation` |
 | رقم هاتف الأب | `guardians.phone` (+ `alternate_phone`) |
-| اسم الأم / عملها / هاتفها | نفس الأعمدة حيث `relation = mother` |
+| اسم الأم / كنيتها | `guardians.first_name` / `guardians.family_name` حيث `relation = mother` 🔄 2026-10-14 |
+| عمل الأم / هاتفها | نفس أعمدة الأب حيث `relation = mother` |
 | عدد أفراد العائلة | `students.family_members_count` |
 
 **لماذا هذا الفصل؟** ولي الأمر يملك حساباً في تطبيق الأهل، وقد يتابع أكثر من ابن في المعهد، ويحتاج
 صلاحيات (`can_view_reports`, `can_submit_excuses`). لو كانت الحقول مكرّرة داخل `students` لتكرّرت بياناته
 مع كل ابن ولاستحال ربطه بحساب واحد. الوصول المختصر متاح عبر `$student->father()` و`$student->mother()`.
+
+🔄 **2026-10-14: اسم ولي الأمر بقسمين.** `first_name` (الاسم) و`family_name` (الكنية) هما الأصل، و`full_name`
+يبقى عموداً يُركَّب منهما عند الحفظ (`Guardian::booted`) لأن القوائم وحسابات الدخول ومطابقة الإخوة تقرؤه.
+ومن يكتب `full_name` وحده (نسخة أقدم من التطبيق) يُقسم اسمه على أول فراغ: الكلمة الأولى اسم والباقي كنية.
 
 ### 2.3 الحالة الصحية والاجتماعية → `students`
 
@@ -280,6 +285,7 @@ institutes (معهد)
 |---|---|
 | `developer` 🔄 م.4.6 | **عابر للمعاهد** — كل الصلاحيات، وهو الوحيد الذي يملك `system.debug` |
 | `super_admin` | **عابر للمعاهد** — كل الصلاحيات عدا `system.debug` |
+| `region_supervisor` 🔄 2026-10-15 | «مشرف معاهد»: يُسنَد **في كل معهدٍ يشرف عليه** لا عابراً — صلاحياتُ مدير المعهد فيها، و`institutes.overview` («لوحة المعاهد» مقصورةً على معاهده)، بلا `institutes.manage` |
 | `admin` | معهده وحده — كل الصلاحيات عدا `system.debug` و`institutes.manage` |
 | `supervisor` | إدارة الطلاب والتسجيل والنقل + تفقّد وتعديل وقفل + تقارير + مراجعة التعارضات |
 | `teacher` | تفقّد حلقاته، متابعة الحفظ والتقييم، مراجعة الأعذار، قراءة التقارير |

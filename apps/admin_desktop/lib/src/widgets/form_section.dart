@@ -7,7 +7,7 @@ import 'adaptive.dart';
 /// وهو ما يفرّق استمارةَ المكتب عن استمارة الهاتف: نافذةٌ من ١٤٤٠ بكسلاً تسع
 /// أربعةَ حقولٍ في السطر، وعمودٌ واحد فيها يجعل استمارةَ الطالب عشرين شاشةَ
 /// تمرير. ولذلك لم تُرفع الشاشاتُ إلى `mousqe_ui` في م.6.4
-/// ([CHECKPOINT-PHASE-6.4.MD §2.1](../../../../../docs/CHECKPOINT-PHASE-6.4.MD)).
+/// ([CHECKPOINT-PHASE-6.4.MD §2.1](../../../../../docs/checkpoints/CHECKPOINT-PHASE-6.4.MD)).
 class FormSection extends StatelessWidget {
   const FormSection({
     super.key,

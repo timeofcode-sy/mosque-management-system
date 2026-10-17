@@ -6,11 +6,12 @@ use App\Enums\ExcuseStatus;
 use App\Models\AbsenceExcuse;
 use App\Models\Institute;
 use App\Models\Student;
+use App\Support\ArabicSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 /**
- * قراءات شاشة أذونات الغياب المسبقة.
+ * قراءات شاشة أعذار الغياب.
  */
 class AbsenceExcuseQuery
 {
@@ -27,11 +28,14 @@ class AbsenceExcuseQuery
             $query->where('status', $status);
         }
 
-        if ($search !== '') {
-            $query->whereHas('student', fn ($builder) => $builder
-                ->where('first_name', 'like', "%{$search}%")
-                ->orWhere('family_name', 'like', "%{$search}%")
-                ->orWhere('registration_no', 'like', "%{$search}%"));
+        if (ArabicSearch::words($search) !== []) {
+            $students = ArabicSearch::constrain(
+                Student::query()->where('institute_id', $institute?->id),
+                $search,
+                ['first_name', 'father_name', 'family_name', 'registration_no'],
+            );
+
+            $query->whereIn('student_id', $students->select('id'));
         }
 
         return $query

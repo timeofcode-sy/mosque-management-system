@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/sync_bar.dart';
 
 /// مراجعةُ أعذار الغياب — ✅ م.6.5، نوعُ `excuse.review`.
 ///
@@ -45,7 +46,7 @@ class _ExcusesScreenState extends State<ExcusesScreen> {
         title: const Text('أعذار الغياب'),
         // على الهاتف المرشّحُ تحت العنوان بعرض الشاشة.
         actions: context.isCompact
-            ? null
+            ? const [PhoneSyncAction()]
             : [
                 Padding(
                   padding: const EdgeInsetsDirectional.only(end: 16),
@@ -76,8 +77,8 @@ class _ExcusesScreenState extends State<ExcusesScreen> {
           if (excuses.isEmpty) {
             return EmptyState(
               message: _filter == 'pending'
-                  ? 'لا إذنَ ينتظر المراجعة.'
-                  : 'لم يصل أيُّ إذنِ غيابٍ بعد.',
+                  ? 'لا عذرَ ينتظر المراجعة.'
+                  : 'لم يصل أيُّ عذرِ غيابٍ بعد.',
               icon: NzIcons.envelopeOpen,
               onRetry: deps.sync.syncNow,
             );
@@ -194,8 +195,8 @@ class _ExcuseCard extends StatelessWidget {
       SnackBar(
         content: Text(
           approve
-              ? 'قُبل الإذن وصُفَّ للمزامنة.'
-              : 'رُفض الإذن وصُفَّ للمزامنة.',
+              ? 'قُبل العذر وصُفَّ للمزامنة.'
+              : 'رُفض العذر وصُفَّ للمزامنة.',
         ),
       ),
     );
@@ -209,7 +210,7 @@ class _ExcuseCard extends StatelessWidget {
     return showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(approve ? 'قبول الإذن' : 'رفض الإذن'),
+        title: Text(approve ? 'قبول العذر' : 'رفض العذر'),
         content: SizedBox(
           width: 420,
           child: TextField(

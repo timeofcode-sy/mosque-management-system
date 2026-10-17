@@ -9,7 +9,7 @@ import '../models/institute_option.dart';
 ///
 /// - **الحساباتُ والأدوارُ وكلماتُ المرور متّصلةٌ بطبعها** — من يُنشئ حساباً
 ///   ينتظر كلمةَ المرور ليطبعها، ولا معنى لطابورٍ يحمل **سرّاً** إلى وقتٍ لاحق
-///   ([PHASE-6-STAGES.MD §3.1](../../../../../docs/PHASE-6-STAGES.MD)).
+///   ([PHASE-6-STAGES.MD §3.1](../../../../../docs/phases/PHASE-6-STAGES.MD)).
 /// - **و`users` جدولٌ لا يُزامَن عمداً** — حمولتُه بيانات دخول لا تُبثّ في تيّارٍ
 ///   يقرؤه كل جهاز في المعهد ([SYNC-PROTOCOL.md §2](../../../../../docs/SYNC-PROTOCOL.md)).
 ///   فما لا يصل في `sync/pull` لا بدّ أن يُقرأ من الشبكة، ولا مخزنَ له.
@@ -70,9 +70,12 @@ class AdminRepository {
   Future<void> revokeRole({required int userId, required String role}) =>
       _api.revokeUserRole(userId, {'role': role});
 
-  /// توليدُ كلمةِ مرورٍ جديدة — تعود مرّةً واحدة كما في [inviteUser].
-  Future<IssuedCredentials> resetPassword(int userId) async {
-    final response = await _api.resetUserPassword(userId, const {});
+  /// كلمةُ مرورٍ جديدة — يكتبها المشرف في [password]، أو يولّد الخادمُ ثمانيةَ أرقام إن غابت.
+  /// وتعود مرّةً واحدة كما في [inviteUser].
+  Future<IssuedCredentials> resetPassword(int userId, {String? password}) async {
+    final response = await _api.resetUserPassword(userId, {
+      if (password != null && password.isNotEmpty) 'password': password,
+    });
 
     final body = response.data;
 
@@ -103,7 +106,7 @@ class AdminRepository {
   /// ترسل النموذج كلَّه في كل حفظ؛ والديسكتوبُ يبعث بابَ الألوان وحده. فبدل
   /// **تليين القاعدة** — وهو ما يجعل نموذجين للمعهد يفترقان — تُكمَّل الحمولةُ
   /// على الخادم من الحالة المخزَّنة قبل التحقّق
-  /// ([CHECKPOINT-PHASE-6.2.MD §3.4](../../../../../docs/CHECKPOINT-PHASE-6.2.MD)).
+  /// ([CHECKPOINT-PHASE-6.2.MD §3.4](../../../../../docs/checkpoints/CHECKPOINT-PHASE-6.2.MD)).
   Future<void> updateInstitute(Map<String, dynamic> body) =>
       _api.updateInstitute(body);
 

@@ -21,7 +21,7 @@ use Illuminate\Support\Collection;
  *
  * فقُلب الاتجاه: الخادمُ يحسب الرتبة ويعيد **الرقمَ وحده**، ويخرج الطالبُ من
  * `sync/pull` كما خرج وليُّ الأمر في م.7.1
- * ([PHASE-8-STAGES.MD §1.1](../../../docs/PHASE-8-STAGES.MD)).
+ * ([PHASE-8-STAGES.MD §1.1](../../../docs/phases/PHASE-8-STAGES.MD)).
  *
  * ## والمعادلةُ واحدة
  *

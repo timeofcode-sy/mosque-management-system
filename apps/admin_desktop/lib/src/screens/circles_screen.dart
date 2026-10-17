@@ -4,8 +4,8 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/sync_bar.dart';
 import 'attendance_screen.dart';
-import 'sessions_log_screen.dart';
 
 /// كشفُ حلقات المعهد — **كلُّها لا حلقاتُ صاحب الجهاز**.
 ///
@@ -43,17 +43,8 @@ class _CirclesScreenState extends State<CirclesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('حلقات المعهد'),
-        actions: [
-          IconButton(
-            tooltip: 'سجل الجلسات',
-            icon: const NzIcon(NzIcons.clock),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const SessionsLogScreen(),
-              ),
-            ),
-          ),
-        ],
+        // سجلُّ الجلسات انتقل إلى باب «التفقّد»: هو سجلُّ ما تُفقِّد.
+        actions: const [PhoneSyncAction()],
       ),
       body: StreamBuilder<List<CircleView>>(
         stream: deps.circles.watchCircles(),
@@ -124,12 +115,13 @@ class _CirclesScreenState extends State<CirclesScreen> {
       return true;
     }
 
-    return [
+    // بحثٌ عربيٌّ متسامح: «عثمان بن عفان» تجدها «عثمان»، و«احمد» تجد أستاذها «أحمد».
+    return ArabicSearch.match(_query, [
       circle.circleName,
       circle.shiftName,
-      circle.room ?? '',
+      circle.room,
       circle.teachersLabel,
-    ].any((field) => field.contains(_query));
+    ]).complete;
   }
 }
 
@@ -173,7 +165,7 @@ class _Filters extends StatelessWidget {
         border: OutlineInputBorder(),
       ),
       items: [
-        const DropdownMenuItem(value: null, child: Text('كل الدوامات')),
+        const DropdownMenuItem(value: null, child: Text('كل أوقات الدوام')),
         for (final name in shifts)
           DropdownMenuItem(value: name, child: Text(name)),
       ],

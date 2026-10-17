@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 
+import '../screens/announcements_screen.dart';
 import '../screens/attendance_hub_screen.dart';
 import '../screens/backup_screen.dart';
 import '../screens/catalog_screen.dart';
@@ -12,10 +13,12 @@ import '../screens/curricula_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/enrollments_screen.dart';
 import '../screens/excuses_screen.dart';
+import '../screens/fields_traits_screen.dart';
 import '../screens/institute_settings_screen.dart';
 import '../screens/institutes_screen.dart';
 import '../screens/reports_screen.dart';
 import '../screens/students_screen.dart';
+import '../screens/teachers_screen.dart';
 import '../screens/users_screen.dart';
 
 /// عائلاتُ الأبواب في القائمة الجانبية — عناوينُ تجميعٍ لا شاشات.
@@ -74,7 +77,7 @@ class DesktopSection {
 const List<DesktopSection> desktopSections = [
   DesktopSection(
     id: 'dashboard',
-    label: 'الداشبورد',
+    label: 'الصفحة الرئيسية',
     icon: NzIcons.grid,
     group: SectionGroup.overview,
     permissions: ['reports.view'],
@@ -113,6 +116,14 @@ const List<DesktopSection> desktopSections = [
     builder: _students,
   ),
   DesktopSection(
+    id: 'teachers',
+    label: 'الأساتذة',
+    icon: NzIcons.user,
+    group: SectionGroup.daily,
+    permissions: ['teachers.manage'],
+    builder: _teachers,
+  ),
+  DesktopSection(
     id: 'enrollments',
     label: 'التسجيل والنقل',
     icon: NzIcons.review,
@@ -129,8 +140,16 @@ const List<DesktopSection> desktopSections = [
     builder: _excuses,
   ),
   DesktopSection(
+    id: 'announcements',
+    label: 'الإعلانات',
+    icon: NzIcons.announcement,
+    group: SectionGroup.daily,
+    permissions: ['announcements.manage'],
+    builder: _announcements,
+  ),
+  DesktopSection(
     id: 'catalog',
-    label: 'الدورات والدوامات',
+    label: 'الدورات وأوقات الدوام',
     icon: NzIcons.calendar,
     group: SectionGroup.institute,
     permissions: ['courses.manage', 'shifts.manage', 'circles.manage'],
@@ -167,6 +186,14 @@ const List<DesktopSection> desktopSections = [
     group: SectionGroup.institute,
     permissions: ['settings.manage'],
     builder: _settings,
+  ),
+  DesktopSection(
+    id: 'fields',
+    label: 'الواصفات والصفات',
+    icon: NzIcons.list,
+    group: SectionGroup.institute,
+    permissions: ['settings.manage'],
+    builder: _fields,
   ),
   DesktopSection(
     id: 'institutes',
@@ -224,6 +251,13 @@ Widget _students(BuildContext context) => const StudentsScreen();
 Widget _enrollments(BuildContext context) => const EnrollmentsScreen();
 
 Widget _excuses(BuildContext context) => const ExcusesScreen();
+
+// ما كان في لوحة الويب وحدها: الأساتذةُ والإعلاناتُ والواصفاتُ والصفات.
+Widget _teachers(BuildContext context) => const TeachersScreen();
+
+Widget _announcements(BuildContext context) => const AnnouncementsScreen();
+
+Widget _fields(BuildContext context) => const FieldsTraitsScreen();
 
 Widget _catalog(BuildContext context) => const CatalogScreen();
 

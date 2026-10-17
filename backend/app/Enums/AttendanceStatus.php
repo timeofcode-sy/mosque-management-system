@@ -20,6 +20,14 @@ enum AttendanceStatus: string
     }
 
     /**
+     * غائبٌ بعذرٍ أو بغيره: لم يحضر الجلسة، فلا ملاحظةَ عليه فيها ولا نقاطَ ولا تسميع.
+     */
+    public function isAbsence(): bool
+    {
+        return $this === self::Absent || $this === self::Excused;
+    }
+
+    /**
      * @return array<string, string>
      */
     public static function options(): array

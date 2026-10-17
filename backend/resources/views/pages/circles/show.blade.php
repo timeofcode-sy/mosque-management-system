@@ -10,6 +10,7 @@ use App\Models\CourseCircleTeacher;
 use App\Models\Enrollment;
 use App\Models\Student;
 use App\Queries\CircleQuery;
+use App\Queries\JuzProgressQuery;
 use Flux\Flux;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -52,6 +53,17 @@ new #[Title('الحلقة')] class extends Component {
     public function enrollments(): Collection
     {
         return $this->query()->activeEnrollments($this->courseCircle);
+    }
+
+    /**
+     * أجزاءُ طلاب الحلقة كلِّهم باستعلامٍ واحد — شريطٌ مضغوط في صفّ كل طالب.
+     *
+     * @return array<int, array{memorized: array<int, int>, current: ?int}>
+     */
+    #[Computed]
+    public function juzByStudent(): array
+    {
+        return app(JuzProgressQuery::class)->forStudents($this->enrollments->pluck('student_id'));
     }
 
     /**
@@ -236,6 +248,7 @@ new #[Title('الحلقة')] class extends Component {
             <flux:table>
                 <flux:table.columns>
                     <flux:table.column>الطالب</flux:table.column>
+                    <flux:table.column>الأجزاء</flux:table.column>
                     <flux:table.column>رقم المعرف</flux:table.column>
                     <flux:table.column>الهاتف</flux:table.column>
                     <flux:table.column>تاريخ التسجيل</flux:table.column>
@@ -249,6 +262,14 @@ new #[Title('الحلقة')] class extends Component {
                                 <flux:link :href="route('students.show', $enrollment->student)" wire:navigate>
                                     {{ $enrollment->student->full_name }}
                                 </flux:link>
+                            </flux:table.cell>
+                            <flux:table.cell class="min-w-72">
+                                @php($juz = $this->juzByStudent[$enrollment->student_id] ?? ['memorized' => [], 'current' => null])
+                                {{-- 240px وفاصلٌ أضيق: ثلاثون خطّاً يُقرأ كلٌّ منها في صفّ جدول. --}}
+                                <div class="flex items-center gap-2">
+                                    <x-juz-progress size="sm" :label="false" class="w-60 [&_.nz-juz\_\_bar]:gap-[2px]" :memorized="$juz['memorized']" :current="$juz['current']" />
+                                    <span class="latin-numerals text-xs text-muted">{{ count($juz['memorized']) }}/30</span>
+                                </div>
                             </flux:table.cell>
                             <flux:table.cell class="latin-numerals">{{ $enrollment->student->registration_no ?: '—' }}</flux:table.cell>
                             <flux:table.cell class="latin-numerals">{{ $enrollment->student->phone ?: '—' }}</flux:table.cell>

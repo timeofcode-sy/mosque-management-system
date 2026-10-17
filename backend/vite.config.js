@@ -16,6 +16,10 @@ export default defineConfig({
         }),
         tailwindcss(),
     ],
+    build: {
+        // ApexCharts (~570KB) قطعةٌ تُحمَّل عند أول مخطط في الصفحة (resources/js/charts.js)، لا مع كل صفحة.
+        chunkSizeWarningLimit: 600,
+    },
     server: {
         cors: true,
         watch: {

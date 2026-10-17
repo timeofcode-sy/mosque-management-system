@@ -5,6 +5,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
 import '../widgets/connected_action.dart';
+import '../widgets/sync_bar.dart';
 
 /// بنيةُ الدورة: الدوراتُ والدواماتُ والحلقات — ✅ م.6.5.
 ///
@@ -27,7 +28,7 @@ class CatalogScreen extends StatelessWidget {
     // ولا يملك `courses.manage` يرى الدوامات وحدها.
     final tabs = <(String, Widget)>[
       if (session.can('courses.manage')) ('الدورات', const _CoursesTab()),
-      if (session.can('shifts.manage')) ('الدوامات', const _ShiftsTab()),
+      if (session.can('shifts.manage')) ('أوقات الدوام', const _ShiftsTab()),
       if (session.can('circles.manage')) ('الحلقات', const _CirclesTab()),
     ];
 
@@ -44,7 +45,8 @@ class CatalogScreen extends StatelessWidget {
       length: tabs.length,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('الدورات والدوامات والحلقات'),
+          title: const Text('الدورات وأوقات الدوام والحلقات'),
+          actions: const [PhoneSyncAction()],
           bottom: TabBar(tabs: [for (final tab in tabs) Tab(text: tab.$1)]),
         ),
         body: TabBarView(children: [for (final tab in tabs) tab.$2]),
@@ -257,7 +259,7 @@ class _ShiftsTab extends StatelessWidget {
     return _TabBody<ShiftView>(
       stream: deps.catalog.watchShifts(),
       emptyMessage:
-          'لا دوامات في الدورة الجارية.\n'
+          'لا أوقات دوام في الدورة الجارية.\n'
           'الدوامُ هو ما يحدّد أيامَ الحلقة وساعتَها، ولا جلسةَ بلا دوام.',
       emptyIcon: NzIcons.clock,
       onCreate: () => _edit(context),
@@ -407,7 +409,7 @@ class _CirclesTab extends StatelessWidget {
                 actions: [
                   RowAction(
                     icon: NzIcons.play,
-                    label: circle.isRunning ? 'تشغيل في دوام آخر' : 'تشغيل',
+                    label: circle.isRunning ? 'تفعيل في وقت دوام آخر' : 'تفعيل',
                     onPressed: () => _run(context, circle),
                   ),
                   RowAction(
@@ -423,7 +425,7 @@ class _CirclesTab extends StatelessWidget {
                   TextButton(
                     onPressed: () => _run(context, circle),
                     child: Text(
-                      circle.isRunning ? 'تشغيل في دوام آخر' : 'تشغيل',
+                      circle.isRunning ? 'تفعيل في وقت دوام آخر' : 'تفعيل',
                     ),
                   ),
                   IconButton(
@@ -525,7 +527,7 @@ class _CirclesTab extends StatelessWidget {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text('تشغيل «${circle.name}»'),
+          title: Text('تفعيل «${circle.name}»'),
           content: SizedBox(
             width: 420,
             child: Column(
@@ -573,7 +575,7 @@ class _CirclesTab extends StatelessWidget {
             ),
             FilledButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('تشغيل'),
+              child: const Text('تفعيل'),
             ),
           ],
         ),

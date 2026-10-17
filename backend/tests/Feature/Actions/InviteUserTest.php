@@ -112,7 +112,7 @@ class InviteUserTest extends TestCase
 
         $names = array_map(fn (PanelRole $role) => $role->value, AssignUserRole::creatableRoles($superAdmin));
 
-        $this->assertSame(['super_admin', 'admin', 'supervisor'], $names);
+        $this->assertSame(['super_admin', 'region_supervisor', 'admin', 'supervisor'], $names);
     }
 
     public function test_an_admin_cannot_grant_a_role_above_his_own(): void

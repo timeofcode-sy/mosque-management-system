@@ -26,7 +26,7 @@ class SaveStudentRegistration
 
     /**
      * @param  array<string, mixed>  $attributes  أعمدة جدول students
-     * @param  array<string, array{full_name?: ?string, occupation?: ?string, phone?: ?string}>  $guardians  مفتاحها صلة القرابة
+     * @param  array<string, array{first_name?: ?string, family_name?: ?string, full_name?: ?string, occupation?: ?string, phone?: ?string}>  $guardians  مفتاحها صلة القرابة
      * @param  array<int, int>  $traitIds
      * @param  array<int, int>  $memorizedItemIds  بنود المناهج التي أتمّها الطالب
      * @param  array<int, mixed>  $customFieldValues  مفتاحها معرّف الواصفة
@@ -67,20 +67,27 @@ class SaveStudentRegistration
      * ولي الأمر سجلٌّ واحد يتشاركه الإخوة، فحسابه يرى أبناءه كلَّهم. لذا لا يُعاد تسمية
      * سجلٍّ مشترك من استمارة أحد الإخوة: تغيّرُ الاسم يعني أن لهذا الطالب ولياً آخر.
      *
-     * @param  array<string, array{full_name?: ?string, occupation?: ?string, phone?: ?string}>  $guardians
+     * الاسم يصل بقسميه (الاسم والكنية)، أو كاملاً من عميلٍ أقدم فيُقسم على أول فراغ.
+     *
+     * @param  array<string, array{first_name?: ?string, family_name?: ?string, full_name?: ?string, occupation?: ?string, phone?: ?string}>  $guardians
      * @param  array<string, int>  $siblingGuardianIds
      */
     private function syncGuardians(Institute $institute, Student $student, array $guardians, array $siblingGuardianIds): void
     {
         foreach ($guardians as $relation => $data) {
-            $fullName = trim((string) ($data['full_name'] ?? ''));
+            [$firstName, $familyName] = array_key_exists('first_name', $data) || array_key_exists('family_name', $data)
+                ? [Guardian::composeName($data['first_name'] ?? null), Guardian::composeName($data['family_name'] ?? null)]
+                : Guardian::splitName($data['full_name'] ?? null);
+
+            $fullName = Guardian::composeName($firstName, $familyName);
 
             if ($fullName === '') {
                 continue;
             }
 
             $details = [
-                'full_name' => $fullName,
+                'first_name' => $firstName ?: null,
+                'family_name' => $familyName ?: null,
                 'occupation' => $data['occupation'] ?? null,
                 'phone' => $data['phone'] ?? null,
             ];

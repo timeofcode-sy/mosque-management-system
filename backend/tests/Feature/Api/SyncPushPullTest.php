@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\NotePolarity;
 use App\Enums\RecitationGrade;
 use App\Enums\TeacherRole;
 use App\Models\ChangeLog;
@@ -95,6 +96,51 @@ class SyncPushPullTest extends TestCase
 
         $this->assertSame(AttendanceStatus::Present->value, $change->payload['status']);
         $this->assertSame($takeOp, $change->op_uuid);
+    }
+
+    public function test_push_carries_the_note_polarity_and_drops_an_absent_students_note(): void
+    {
+        $present = Student::factory()->create(['institute_id' => $this->institute->id]);
+        $absent = Student::factory()->create(['institute_id' => $this->institute->id]);
+
+        foreach ([$present, $absent] as $student) {
+            Enrollment::factory()->create(['course_circle_id' => $this->courseCircle->id, 'student_id' => $student->id]);
+        }
+
+        $teacher = $this->actingAsTeacher($this->institute);
+        CourseCircleTeacher::create(['course_circle_id' => $this->courseCircle->id, 'teacher_id' => $teacher->id, 'role' => TeacherRole::Main]);
+
+        $sessionUuid = (string) Str::uuid7();
+
+        $this->postJson('/api/v1/sync/push', [
+            'device_uuid' => (string) Str::uuid7(),
+            'operations' => [
+                [
+                    'op_uuid' => (string) Str::uuid7(),
+                    'type' => 'attendance.session.open',
+                    'uuid' => $sessionUuid,
+                    'course_circle_uuid' => $this->courseCircle->uuid,
+                    'session_date' => '2026-09-01',
+                ],
+                [
+                    'op_uuid' => (string) Str::uuid7(),
+                    'type' => 'attendance.take',
+                    'session_uuid' => $sessionUuid,
+                    'attendances' => [
+                        ['student_uuid' => $present->uuid, 'status' => 'present', 'note' => 'أحسن التلاوة', 'note_polarity' => 'positive'],
+                        ['student_uuid' => $absent->uuid, 'status' => 'absent', 'note' => 'كثير الكلام', 'note_polarity' => 'negative'],
+                    ],
+                ],
+            ],
+        ])->assertOk();
+
+        $rows = $this->courseCircle->attendanceSessions()->sole()->attendances()->get()->keyBy('student_id');
+
+        $this->assertSame(NotePolarity::Positive, $rows[$present->id]->note_polarity);
+        $this->assertSame('أحسن التلاوة', $rows[$present->id]->note);
+
+        $this->assertNull($rows[$absent->id]->note);
+        $this->assertNull($rows[$absent->id]->note_polarity);
     }
 
     public function test_resending_the_same_op_uuid_is_ignored(): void

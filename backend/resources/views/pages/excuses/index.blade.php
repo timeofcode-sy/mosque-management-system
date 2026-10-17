@@ -17,7 +17,7 @@ use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('أذونات الغياب')] class extends Component {
+new #[Title('أعذار الغياب')] class extends Component {
     use InteractsWithInstitute, WithPagination;
 
     #[Url]
@@ -119,7 +119,7 @@ new #[Title('أذونات الغياب')] class extends Component {
         unset($this->excuses, $this->pendingCount);
 
         Flux::modal('excuse-form')->close();
-        Flux::toast(variant: 'success', text: 'سُجّل الإذن وهو بانتظار المراجعة.');
+        Flux::toast(variant: 'success', text: 'سُجّل العذر وهو بانتظار المراجعة.');
     }
 
     public function startReview(AbsenceExcuse $excuse): void
@@ -153,16 +153,16 @@ new #[Title('أذونات الغياب')] class extends Component {
         Flux::toast(
             variant: $status === ExcuseStatus::Approved ? 'success' : 'warning',
             text: $status === ExcuseStatus::Approved
-                ? 'قُبل الإذن، وحُوّل غياب الطالب في الجلسات غير المقفلة إلى "غائب بعذر".'
-                : 'رُفض الإذن.',
+                ? 'قُبل العذر، وحُوّل غياب الطالب في الجلسات غير المقفلة إلى "غائب بعذر".'
+                : 'رُفض العذر.',
         );
     }
 }; ?>
 
 <div class="flex w-full flex-col gap-6">
-    <x-page-header heading="أذونات الغياب المسبقة" :subheading="$this->institute?->name">
+    <x-page-header heading="أعذار الغياب" :subheading="$this->institute?->name">
         <x-slot name="actions">
-            <flux:button wire:click="create" variant="primary" icon="plus" data-test="new-excuse">إذن جديد</flux:button>
+            <flux:button wire:click="create" variant="primary" icon="plus" data-test="new-excuse">عذر جديد</flux:button>
         </x-slot>
     </x-page-header>
 
@@ -185,7 +185,7 @@ new #[Title('أذونات الغياب')] class extends Component {
 
     <div class="rounded-xl border border-line bg-raised">
         @if ($this->excuses->isEmpty())
-            <flux:text class="p-6 text-center">لا توجد أذونات مطابقة.</flux:text>
+            <flux:text class="p-6 text-center">لا توجد أعذار مطابقة.</flux:text>
         @else
             <flux:table>
                 <flux:table.columns>
@@ -241,7 +241,7 @@ new #[Title('أذونات الغياب')] class extends Component {
 
     <flux:modal name="excuse-form" class="w-full max-w-lg">
         <form wire:submit="save" class="space-y-6">
-            <flux:heading size="lg">إذن غياب جديد</flux:heading>
+            <flux:heading size="lg">عذر غياب جديد</flux:heading>
 
             <flux:select wire:model="studentId" label="الطالب" placeholder="اختر الطالب" data-test="excuse-student">
                 @foreach ($this->students as $student)
@@ -267,11 +267,11 @@ new #[Title('أذونات الغياب')] class extends Component {
 
     <flux:modal name="review-excuse" class="w-full max-w-lg">
         <div class="space-y-6">
-            <flux:heading size="lg">مراجعة الإذن</flux:heading>
+            <flux:heading size="lg">مراجعة العذر</flux:heading>
 
             <flux:callout icon="information-circle" variant="secondary">
                 <flux:callout.text>
-                    قبول الإذن يحوّل غياب الطالب إلى «غائب بعذر» في كل جلسة غير مقفلة يغطّيها الإذن،
+                    قبول العذر يحوّل غياب الطالب إلى «غائب بعذر» في كل جلسة غير مقفلة يغطّيها العذر،
                     ويعيد حساب نسبة الحلقة وترتيبها.
                 </flux:callout.text>
             </flux:callout>

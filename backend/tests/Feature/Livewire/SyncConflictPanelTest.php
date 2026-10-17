@@ -90,12 +90,11 @@ class SyncConflictPanelTest extends TestCase
 
         Livewire::test('pages::system.sync-conflicts')->assertDontSee(Str::limit($other->row_uuid, 13));
 
-        try {
-            Livewire::test('pages::system.sync-conflicts')->call('overturn', $other->uuid);
-            $this->fail('التعارض خارج المعهد كان قابلاً للقلب.');
-        } catch (ModelNotFoundException) {
-            // المطلوب: لا يُعثر عليه أصلاً — لا رفضٌ بعد قراءته
-        }
+        // المطلوب: لا يُعثر عليه أصلاً — لا رفضٌ بعد قراءته. ولايفواير (4.4.5+) يجيب
+        // `ModelNotFoundException` في فعلٍ بـ404 بدل أن يمرّر الاستثناء.
+        Livewire::test('pages::system.sync-conflicts')
+            ->call('overturn', $other->uuid)
+            ->assertNotFound();
 
         $this->assertNull($other->fresh()->resolved_at);
     }

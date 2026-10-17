@@ -117,6 +117,14 @@ class DemoInstituteSeeder extends Seeder
         ]);
         $admin->assignRole('admin');
 
+        // مشرفُ معاهد المنطقة: يُسنَد في كل معهدٍ يشرف عليه، وهنا في المعهد التجريبي وحده.
+        User::factory()->create([
+            'username' => 'rsupervisor1000',
+            'first_name' => 'مشرف',
+            'last_name' => 'معاهد عربين',
+            'email' => 'region@mousqe.test',
+        ])->assignRole('region_supervisor');
+
         $this->seedGlobalAccounts();
 
         $course = Course::factory()->current()->create([
@@ -223,7 +231,8 @@ class DemoInstituteSeeder extends Seeder
 
             $father = Guardian::factory()->create([
                 'institute_id' => $institute->id,
-                'full_name' => "{$student->father_name} {$student->family_name}",
+                'first_name' => $student->father_name,
+                'family_name' => $student->family_name,
             ]);
 
             $mother = Guardian::factory()->mother()->create(['institute_id' => $institute->id]);

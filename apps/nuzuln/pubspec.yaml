@@ -23,6 +23,8 @@ dependencies:
   intl: ^0.20.3
   firebase_core: ^4.14.0
   firebase_messaging: ^16.6.0
+  # ملفُّ الطالب عند الأستاذ: الاتصالُ بوليّ الأمر بنقرة.
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

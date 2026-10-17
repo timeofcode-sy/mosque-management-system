@@ -11,7 +11,7 @@ use App\Models\User;
  *
  * فعلٌ لا كتابةٌ في الشاشة، كقاعدة المشروع: ما يُكتب من سطحين فأكثر يسكن
  * `app/Actions/`. وهو **الطرفُ الثاني** الذي كان ينقص جدولَ `announcements`
- * منذ م.1 ([PHASE-8-STAGES.MD §1.3](../../../docs/PHASE-8-STAGES.MD)) — فبلا
+ * منذ م.1 ([PHASE-8-STAGES.MD §1.3](../../../docs/phases/PHASE-8-STAGES.MD)) — فبلا
  * كاتبٍ تبقى نقطةُ القراءة وعداً لا يُنجَز.
  */
 class PublishAnnouncement

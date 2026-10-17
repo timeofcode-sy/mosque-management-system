@@ -4,37 +4,17 @@
     /** @var \Illuminate\Support\Collection<int, array{date: string, rate: float|null, sessions: int}> $points */
     $points = collect($points);
     $withSessions = $points->where('sessions', '>', 0);
-    $count = max($points->count(), 1);
 
-    // صندوق عرض عريض بنسبة ثابتة (400×160) حتى لا يُشوَّه بالتمدد غير المتساوي على المحورين،
-    // فتبقى النقاط دائرية فعلاً بدل أن تُرسَم كبيضاوية مضغوطة.
-    $viewWidth = 400;
-    $viewHeight = 160;
-    $padY = 12;
-
-    // 🔑 م.7.1: **الخطّ يصل أيامَ التفقّد بعضَها ببعض ويتخطّى ما بينها.**
-    //
-    // كان يمرّ بكل يوم من الثلاثين، ويومٌ بلا جلسة يأتي بـrate صفر — فيهبط الخطُّ
-    // إلى القاع في كل جمعةٍ وعطلة ثم يعود. الدوائرُ كانت مرشَّحةً بـsessions > 0
-    // منذ بنائها، فالنقاطُ صحيحةٌ والخطُّ الواصلُ بينها يكذب: منحنى طالبٍ مواظبٍ
-    // يبدو مسنَّناً بين المئة والصفر. وصارت rate الآن null لتلك الأيام
-    // (StudentProfileQuery::attendanceTrend) فلزم الترشيحُ ههنا أيضاً.
-    $step = $count > 1 ? $viewWidth / ($count - 1) : 0;
-    $coords = $points->values()
-        ->map(fn (array $point, int $i) => [
-            'x' => round($i * $step, 2),
-            'y' => $point['rate'] === null ? null : round($padY + (($viewHeight - 2 * $padY) * (100 - min(100, max(0, $point['rate'])))) / 100, 2),
-            'point' => $point,
-        ])
-        ->filter(fn (array $c) => $c['y'] !== null)
-        ->values();
-
-    $line = $coords->map(fn (array $c) => $c['x'].','.$c['y'])->implode(' ');
-    // والمساحةُ تُغلَق تحت أوّلِ نقطةٍ مقيسة وآخرِها لا تحت حافّتَي الصندوق، وإلا
-    // امتدّ ظلُّها فوق مدى لا قياسَ فيه.
-    $area = $coords->isEmpty()
-        ? ''
-        : $coords->first()['x'].",{$viewHeight} ".$line.' '.$coords->last()['x'].",{$viewHeight}";
+    // يومٌ بلا جلسة فجوةٌ في المنحنى لا هبوطٌ إلى الصفر: الخطّ يصل أيامَ التفقّد وحدها.
+    $config = [
+        'type' => 'trend',
+        'name' => 'نسبة الحضور',
+        'points' => $points->map(fn (array $point) => [
+            'label' => \Illuminate\Support\Carbon::parse($point['date'])->format('j/n'),
+            'value' => $point['sessions'] > 0 && $point['rate'] !== null ? round($point['rate'], 1) : null,
+            'detail' => $point['sessions'] > 0 ? $point['sessions'].' جلسة' : null,
+        ])->values()->all(),
+    ];
 @endphp
 
 <div {{ $attributes->class('rounded-xl border border-line bg-raised') }}>
@@ -51,35 +31,8 @@
     @if ($withSessions->isEmpty())
         <flux:text class="p-6 text-center">لا توجد جلسات مغلقة بعد — المنحنى يظهر بعد أول تفقّد مكتمل.</flux:text>
     @else
-        <div class="p-4">
-            {{-- الرسم بـ SVG خالص: لا مكتبة مخططات، ويطبع مع التقرير كما هو على الشاشة --}}
-            <svg viewBox="0 0 {{ $viewWidth }} {{ $viewHeight }}" preserveAspectRatio="none" class="h-40 w-full overflow-visible" role="img" aria-label="{{ $heading }}">
-                @foreach ([25, 50, 75] as $gridline)
-                    @php $gy = $padY + (($viewHeight - 2 * $padY) * (100 - $gridline)) / 100; @endphp
-                    <line x1="0" y1="{{ $gy }}" x2="{{ $viewWidth }}" y2="{{ $gy }}" class="stroke-line" stroke-width="1" />
-                @endforeach
-
-                <polygon points="{{ $area }}" class="fill-primary/10" />
-                <polyline
-                    points="{{ $line }}"
-                    fill="none"
-                    class="stroke-primary"
-                    stroke-width="2"
-                    stroke-linejoin="miter"
-                    stroke-linecap="square"
-                />
-
-                @foreach ($coords as $c)
-                    @if ($c['point']['sessions'] > 0)
-                        <circle cx="{{ $c['x'] }}" cy="{{ $c['y'] }}" r="3.5" class="fill-raised stroke-primary" stroke-width="2" />
-                    @endif
-                @endforeach
-            </svg>
-
-            <div class="latin-numerals mt-2 flex justify-between text-xs text-muted">
-                <span>{{ $points->first()['date'] ?? '' }}</span>
-                <span>{{ $points->last()['date'] ?? '' }}</span>
-            </div>
+        <div class="px-2 pt-2 pb-1">
+            <x-charts.canvas :config="$config" />
         </div>
     @endif
 </div>

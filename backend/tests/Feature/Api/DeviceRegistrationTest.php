@@ -65,4 +65,38 @@ class DeviceRegistrationTest extends TestCase
         $this->assertSame(1, SyncDevice::query()->where('device_uuid', $deviceUuid)->count());
         $this->assertSame('1.1.0', SyncDevice::query()->where('device_uuid', $deviceUuid)->sole()->app_version);
     }
+
+    public function test_the_device_description_is_stored_for_the_developer_statistics(): void
+    {
+        $this->actingAsGuardian();
+        $deviceUuid = (string) Str::uuid7();
+
+        $this->postJson('/api/v1/devices/register', [
+            'device_uuid' => $deviceUuid,
+            'app' => 'guardian',
+            'platform' => 'android',
+            'app_version' => '1.0.0-beta.7',
+            'app_build' => 7,
+            'device_type' => 'phone',
+            'manufacturer' => 'samsung',
+            'model' => 'SM-A155F',
+            'os_version' => 'Android 14',
+            'sdk_int' => 34,
+            'screen' => '384x854',
+            'is_physical' => true,
+        ])->assertCreated();
+
+        $device = SyncDevice::query()->where('device_uuid', $deviceUuid)->sole();
+        $this->assertSame('samsung', $device->manufacturer);
+        $this->assertSame(34, $device->sdk_int);
+        $this->assertSame(7, $device->app_build);
+        $this->assertTrue($device->is_physical);
+
+        // نوعٌ خارج الثلاثة يُرفض لا يُخزَّن.
+        $this->postJson('/api/v1/devices/register', [
+            'device_uuid' => $deviceUuid,
+            'app' => 'guardian',
+            'device_type' => 'toaster',
+        ])->assertUnprocessable();
+    }
 }

@@ -6,13 +6,15 @@ import '../models/child_attendance.dart';
 import '../models/curriculum_progress_entry.dart';
 import '../models/guardian_child.dart';
 import '../models/guardian_excuse.dart';
+import '../models/recitation_log_entry.dart';
+import '../models/student_behavior.dart';
 import 'snapshot_store.dart';
 
 /// ما يقرؤه وليُّ الأمر عن أبنائه — **ومصدرُه REST وحده**.
 ///
 /// ## القرارُ الحاكم: قناةُ القراءة تحدّد المستودع
 ///
-/// وليُّ الأمر خارجَ `sync/pull` كلِّه ([CHECKPOINT-PHASE-7.1.MD §2](../../../../../docs/CHECKPOINT-PHASE-7.1.MD)):
+/// وليُّ الأمر خارجَ `sync/pull` كلِّه ([CHECKPOINT-PHASE-7.1.MD §2](../../../../../docs/checkpoints/CHECKPOINT-PHASE-7.1.MD)):
 /// التيّارُ يبثّ معهداً كاملاً لكل الأدوار، وذاك على جهاز الأستاذ حِملٌ وعلى
 /// جهاز الأب **تسريب** — ولا يحتاجه لأنه لا يكتب في الطابور.
 ///
@@ -80,6 +82,26 @@ class GuardianRepository {
             ? (json['data'] as Map).cast<String, dynamic>()
             : const <String, dynamic>{},
       ),
+    );
+  }
+
+  /// سجلُّ تسميع ابنٍ بعينه — الأحدثُ أولاً، تحت شريط الأجزاء في لسان «الحفظ».
+  Future<Snapshot<List<RecitationLogEntry>>> recitationsOf(String childUuid) {
+    return _snapshots.read(
+      key: 'guardian.child.$childUuid.recitations',
+      fetch: () async =>
+          (await _apiClient.guardianChildRecitations(childUuid)).data,
+      decode: RecitationLogEntry.listFromJson,
+    );
+  }
+
+  /// الجانبُ السلوكي لابنٍ بعينه — ويبقى آخرُ ما وصل مقروءاً والشبكةُ مقطوعة.
+  Future<Snapshot<StudentBehavior>> behaviorOf(String childUuid) {
+    return _snapshots.read(
+      key: 'guardian.child.$childUuid.behavior',
+      fetch: () async =>
+          (await _apiClient.guardianChildBehavior(childUuid)).data,
+      decode: StudentBehavior.fromJson,
     );
   }
 

@@ -4,11 +4,8 @@
 
 .DESCRIPTION
     mobile         -> Android APK            (apps/nuzuln: teacher, guardian and student in one app)
-    teacher        -> Android APK            (apps/teacher)
     admin_desktop  -> Windows folder + zip   (apps/admin_desktop)
     admin_android  -> Android APK            (apps/admin_desktop, the phone layout)
-    guardian       -> Android APK            (apps/guardian)  skipped until the app exists
-    student        -> Android APK            (apps/student)   skipped until the app exists
 
     Each app is built on its own: one failure does not stop the others, and the
     summary at the end says what was produced and what was not. The exit code is
@@ -18,7 +15,7 @@
     default. The user can switch between nuzuln.com and a local server at any time
     by tapping the logo three times on the splash screen.
 
-    Every export is a new version of the whole system, recorded in VERSION.md:
+    Every export is a new version of the whole system, recorded in docs/VERSION.md:
     the script reads the last versions there, computes the next one, builds all
     apps with it, and only if every build succeeded adds the entry at the top of
     its section (Release or Beta). A failed export records nothing.
@@ -43,17 +40,18 @@
 
 .PARAMETER DryRun
     Print the next version, build number and notes, then stop: nothing is built
-    and VERSION.md is not touched.
+    and docs/VERSION.md is not touched.
 
 .PARAMETER Only
-    Build only these apps (mobile, teacher, admin_desktop, admin_android, guardian, student), e.g.
-    -Only teacher,admin_desktop
+    Build only these apps (mobile, admin_desktop, admin_android), e.g.
+    -Only mobile,admin_desktop
 
 .PARAMETER BaseUrl
     Default API address compiled into the apps. Default: https://nuzuln.com/api/v1
 
 .PARAMETER OutDir
-    Where the artifacts go. Default: <repo>/dist
+    Where the artifacts go. Default: <repo>/dist. Each version gets its own
+    folder inside it, by channel: dist/beta/1.0.0-beta.5/, dist/release/1.0.0/.
 
 .PARAMETER SkipPubGet
     Do not run "flutter pub get" at the workspace root, and pass --no-pub to the
@@ -75,7 +73,7 @@
     .\scripts\export-apps.ps1 -Channel release
 
 .EXAMPLE
-    .\scripts\export-apps.ps1 -Only teacher -BaseUrl http://192.168.1.10:8000/api/v1
+    .\scripts\export-apps.ps1 -Only mobile -BaseUrl http://192.168.1.10:8000/api/v1
 #>
 [CmdletBinding()]
 param(
@@ -107,15 +105,12 @@ $root = Split-Path -Parent $PSScriptRoot
 if (-not $OutDir) { $OutDir = Join-Path $root 'dist' }
 # Each app builds from its own folder, so a relative -OutDir is pinned to where the script was run.
 $OutDir = [IO.Path]::GetFullPath($OutDir, (Get-Location).Path)
-$versionFile = Join-Path $root 'VERSION.md'
+$versionFile = Join-Path $root 'docs/VERSION.md'
 
 $apps = @(
     @{ Name = 'mobile';        Dir = 'apps/nuzuln';        Kind = 'apk' },
-    @{ Name = 'teacher';       Dir = 'apps/teacher';       Kind = 'apk' },
     @{ Name = 'admin_desktop'; Dir = 'apps/admin_desktop'; Kind = 'windows' },
-    @{ Name = 'admin_android'; Dir = 'apps/admin_desktop'; Kind = 'apk' },
-    @{ Name = 'guardian';      Dir = 'apps/guardian';      Kind = 'apk' },
-    @{ Name = 'student';       Dir = 'apps/student';       Kind = 'apk' }
+    @{ Name = 'admin_android'; Dir = 'apps/admin_desktop'; Kind = 'apk' }
 )
 if ($Only) {
     # "pwsh -File x.ps1 -Only a,b" delivers one string "a,b" - split it ourselves.
@@ -228,9 +223,12 @@ $entries = @(Read-Versions ([IO.File]::ReadAllText($versionFile, [Text.Encoding]
 $next = Get-NextVersion $entries $Channel $Bump
 $notes = @(Get-ReleaseNotes $Notes $entries)
 
+# One folder per version, by channel, so dist/ never piles up loose files.
+$OutDir = Join-Path (Join-Path $OutDir $Channel) $next.Label
+
 # A version names a commit: a release must be exactly one, a beta may say it is not.
 $commit = (git -C $root rev-parse --short HEAD).Trim()
-$dirty = @(git -C $root status --porcelain -- . ':(exclude)VERSION.md')
+$dirty = @(git -C $root status --porcelain -- . ':(exclude)docs/VERSION.md')
 $commitLine = "Commit ``$commit``"
 if ($dirty.Count) {
     if ($Channel -eq 'release' -and -not $DryRun) {
@@ -246,7 +244,18 @@ Write-Host "Output folder              : $OutDir"
 Write-Host 'Highlights                 :'
 $notes | ForEach-Object { Write-Host "  - $_" }
 
-if ($DryRun) { Write-Host "`nDry run: nothing built, VERSION.md untouched."; exit 0 }
+if ($DryRun) { Write-Host "`nDry run: nothing built, docs/VERSION.md untouched."; exit 0 }
+
+# An APK signed with any other key cannot update the installed app: no release key, no Android export.
+# The key lives outside the repository (docs/APP-UPDATES.md, signing key).
+if (@($apps | Where-Object { $_.Kind -eq 'apk' -and (Test-Path (Join-Path (Join-Path $root $_.Dir) 'pubspec.yaml')) }).Count) {
+    $signing = $env:NUZULN_SIGNING_PROPERTIES
+    if (-not $signing) { $signing = Join-Path $env:USERPROFILE '.nuzuln-signing\key.properties' }
+    if (-not (Test-Path $signing)) {
+        throw "No Android release key at $signing. Restore the backup of .nuzuln-signing (or set NUZULN_SIGNING_PROPERTIES) before exporting APKs."
+    }
+    Write-Host "Android signing          : $signing"
+}
 
 if (-not (Get-Command flutter -ErrorAction SilentlyContinue)) {
     throw 'flutter was not found on PATH. Install Flutter or open a terminal where it works.'
@@ -299,14 +308,25 @@ foreach ($app in $apps) {
             }
 
             if ($app.Kind -eq 'apk') {
-                Invoke-Native "$name apk build" { flutter build apk @buildArgs }
+                # ARM only (64 and 32 bit): x86_64 serves emulators, and its libraries were a third
+                # of the APK (docs/suggestions/SUGGESTIONS.md, 1.2 #2).
+                Invoke-Native "$name apk build" { flutter build apk @buildArgs --target-platform android-arm,android-arm64 }
                 $built = Join-Path $dir 'build/app/outputs/flutter-apk/app-release.apk'
                 $target = Join-Path $OutDir "$stem.apk"
                 Copy-Item -Force $built $target
             }
             else {
-                Invoke-Native "$name windows build" { flutter build windows @buildArgs }
                 $built = Join-Path $dir 'build/windows/x64/runner/Release'
+                # A plugin dropped since the last build leaves its DLL behind: start from an empty folder.
+                if (Test-Path $built) { Remove-Item -Recurse -Force $built }
+                Invoke-Native "$name windows build" { flutter build windows @buildArgs }
+                # The Visual C++ runtime travels with the app, so a PC without the redistributable
+                # still starts it (Flutter's Windows deployment guidance).
+                foreach ($dll in 'msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll') {
+                    $source = Join-Path $env:SystemRoot "System32\$dll"
+                    if (Test-Path $source) { Copy-Item -Force $source $built }
+                    else { Write-Host "WARNING: $dll not found - the zip needs the VC++ redistributable." -ForegroundColor Yellow }
+                }
                 $target = Join-Path $OutDir "$stem-windows.zip"
                 if (Test-Path $target) { Remove-Item -Force $target }
                 Compress-Archive -Path (Join-Path $built '*') -DestinationPath $target
@@ -330,11 +350,14 @@ $failed = @($results | Where-Object { $_.Status -eq 'FAILED' })
 $built = @($results | Where-Object { $_.Status -eq 'ok' })
 
 if ($failed.Count -gt 0) {
-    Write-Host "VERSION.md not updated: $($next.Label) did not ship." -ForegroundColor Red
+    Write-Host "docs/VERSION.md not updated: $($next.Label) did not ship." -ForegroundColor Red
     exit 1
 }
 
 if ($built.Count -gt 0) {
+    # What each program needs to run travels with the files.
+    Copy-Item -Force (Join-Path $root 'docs/REQUIREMENTS.md') (Join-Path $OutDir 'REQUIREMENTS.md')
+
     $entry = @(
         "### $($next.Label) - build $($next.Build) - $(Get-Date -Format 'yyyy-MM-dd')",
         '',
@@ -343,5 +366,5 @@ if ($built.Count -gt 0) {
     ) + @($notes | ForEach-Object { "- $_" })
 
     Add-VersionEntry $versionFile $Channel $entry
-    Write-Host "VERSION.md: $($next.Label) (build $($next.Build)) added under $Channel - commit it." -ForegroundColor Green
+    Write-Host "docs/VERSION.md: $($next.Label) (build $($next.Build)) added under $Channel - commit it." -ForegroundColor Green
 }

@@ -20,9 +20,13 @@ Route::view('developer', 'site.developer')->name('developer');
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('dashboard', 'pages::dashboard')->name('dashboard');
 
+    // لوحة المعاهد للمشرف الأعلى ولمشرف المعاهد (على معاهده وحدها)؛ وإنشاءُ المعاهد للأول وحده.
+    Route::middleware('permission:institutes.overview')->group(function () {
+        Route::livewire('institutes/overview', 'pages::institutes.overview')->name('institutes.overview');
+    });
+
     Route::middleware('permission:institutes.manage')->group(function () {
         Route::livewire('institutes', 'pages::institutes.index')->name('institutes.index');
-        Route::livewire('institutes/overview', 'pages::institutes.overview')->name('institutes.overview');
         Route::livewire('institutes/create', 'pages::institutes.form')->name('institutes.create');
         Route::livewire('institutes/{institute}/edit', 'pages::institutes.form')->name('institutes.edit');
     });
@@ -52,6 +56,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware('permission:system.debug')->group(function () {
         Route::livewire('system/devices', 'pages::system.devices')->name('system.devices');
         Route::livewire('system/change-log', 'pages::system.change-log')->name('system.change-log');
+        Route::livewire('system/app-releases', 'pages::system.app-releases')->name('system.app-releases');
     });
 
     Route::middleware('permission:settings.manage')->group(function () {

@@ -3,7 +3,9 @@ import '../db/database.dart';
 import '../models/announcement.dart';
 import '../models/child_attendance.dart';
 import '../models/curriculum_progress_entry.dart';
+import '../models/recitation_log_entry.dart';
 import '../models/student_points_summary.dart';
+import '../models/student_behavior.dart';
 import '../models/student_standing.dart';
 import 'snapshot_store.dart';
 
@@ -19,7 +21,7 @@ import 'snapshot_store.dart';
 ///
 /// وليُّ الأمر يقرأ عن أبنائه وهم أكثرُ من واحد، **والطالبُ يقرأ عن نفسه
 /// وحدها**. فبثُّ معهدٍ كامل إلى هاتفه أوسعُ تسريباً وأقلُّ مبرِّراً
-/// ([PHASE-8-STAGES.MD §1.1](../../../../../docs/PHASE-8-STAGES.MD)).
+/// ([PHASE-8-STAGES.MD §1.1](../../../../../docs/phases/PHASE-8-STAGES.MD)).
 ///
 /// **وما كان يمنع** أن ميزةً واحدة تحتاج بيانَ غيره: ترتيبُه في الحلقة. فقُلب
 /// الاتجاه — الخادمُ يحسب الرتبة ويعيد الرقمَ وحده، ولا يصل الجهازَ صفٌّ عن
@@ -28,7 +30,7 @@ import 'snapshot_store.dart';
 /// ## ولا كتابةَ إطلاقاً
 ///
 /// أفقرُ المستودعات صلاحيةً: قراءةٌ صرف. لا `SyncEngine` ولا طابور ولا حتى
-/// كتابةٌ متّصلة كتقديم إذن ولي الأمر — والطالبُ لا يملك `sync.push` في كتالوج
+/// كتابةٌ متّصلة كتقديم عذر ولي الأمر — والطالبُ لا يملك `sync.push` في كتالوج
 /// الأدوار أصلاً.
 class StudentSelfRepository {
   StudentSelfRepository({required AppDatabase db, required ApiClient apiClient})
@@ -68,6 +70,15 @@ class StudentSelfRepository {
     );
   }
 
+  /// سجلُّ تسميعه — الأحدثُ أولاً، تحت شريط الأجزاء في «حفظي».
+  Future<Snapshot<List<RecitationLogEntry>>> recitations() {
+    return _snapshots.read(
+      key: 'student.me.recitations',
+      fetch: () async => (await _apiClient.studentRecitations()).data,
+      decode: RecitationLogEntry.listFromJson,
+    );
+  }
+
   /// موقعُه بين زملائه — **رقمٌ لا كشف**.
   Future<Snapshot<StudentStanding>> standing() {
     return _snapshots.read(
@@ -76,6 +87,15 @@ class StudentSelfRepository {
       decode: (json) => StudentStanding.fromJson(
         (json['data'] as Map).cast<String, dynamic>(),
       ),
+    );
+  }
+
+  /// جانبُه السلوكي: ما كتبه أساتذتُه عنه، وصفاتُه، ونقاطُ سلوكه.
+  Future<Snapshot<StudentBehavior>> behavior() {
+    return _snapshots.read(
+      key: 'student.me.behavior',
+      fetch: () async => (await _apiClient.studentBehavior()).data,
+      decode: StudentBehavior.fromJson,
     );
   }
 

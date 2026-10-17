@@ -88,8 +88,17 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 8;
 
+  /// 7 ⇒ 8: نوعُ ملاحظة التفقّد (`note_polarity`) على المسودّة المحلية — كان
+  /// الجدولُ المتزامن يحمله منذ وصل من الخادم، والمسودّةُ وحدها بلا عمودٍ له،
+  /// فلم يكن للأستاذ أن يقول إن ملاحظتَه ثناءٌ أو تنبيه.
+  ///
+  /// 6 ⇒ 7: اسمُ وليِّ الأمر بقسمين — عمودا `first_name` و`family_name` على
+  /// `guardians`. لا يُعاد السحب: حمولاتُ `change_log` القديمة لقطاتٌ بلا القسمين،
+  /// فالصفُّ المخزَّن يبقيهما `null` وتقسمه الاستمارةُ عند فتحه
+  /// (`GuardianDraft.fromFullName`)، وأوّلُ حفظٍ يكتبهما.
+  ///
   /// 5 ⇒ 6 (م.6.5): **الاستمارةُ والكتالوج** — عشرةُ جداول كان `sync/pull`
   /// يُسقطها على الأرض منذ م.4 لأن لا صفَّ drift يستقبلها (`guardians` ·
   /// `guardian_student` · `traits` · `student_trait` · `curricula` ·
@@ -187,6 +196,15 @@ class AppDatabase extends _$AppDatabase {
             // أُهمل إلا من الخادم. فيُصفَّر المؤشّرُ ليعيد السحبَ من أوّله —
             // نفسُ ما يفعله تبديلُ المعهد (م.6.3)، وثمنُه دورةٌ واحدة.
             await customStatement('DELETE FROM sync_state');
+          }
+
+          if (from < 7) {
+            await m.addColumn(guardians, guardians.firstName);
+            await m.addColumn(guardians, guardians.familyName);
+          }
+
+          if (from < 8) {
+            await m.addColumn(localAttendances, localAttendances.notePolarity);
           }
         },
       );

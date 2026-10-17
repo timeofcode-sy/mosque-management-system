@@ -48,20 +48,23 @@ class InstituteAdminQuery
     /**
      * لوحة المقارنة: صفٌّ لكل معهد ومجاميعُ فوقها.
      *
+     * @param  array<int, int>|null  $instituteIds  المعاهد المعروضة — كلُّها إن كان null (المشرف الأعلى)
      * @return array{
      *     rows: Collection<int, array{institute: Institute, students: int, circles: int, teachers: int, sessions: int, rate: float, points: float}>,
      *     totals: array{institutes: int, students: int, circles: int, teachers: int, rate: float}
      * }
      */
-    public function overview(DateRange $range): array
+    public function overview(DateRange $range, ?array $instituteIds = null): array
     {
         $institutes = Institute::query()
+            ->when($instituteIds !== null, fn ($query) => $query->whereIn('id', $instituteIds))
             ->withCount(['circles', 'students', 'teachers'])
             ->orderByDesc('is_active')
             ->orderBy('name')
             ->get();
 
-        $attendance = $this->attendanceByInstitute($range);
+        // المجاميعُ تُقرأ لكل المعاهد ثم تُقصَر على المعروضة، فلا يتسرّب إلى «متوسّط الحضور» معهدٌ لا يراه صاحبُ اللوحة.
+        $attendance = array_intersect_key($this->attendanceByInstitute($range), $institutes->keyBy('id')->all());
         $points = $this->pointsByInstitute($institutes, $range);
 
         $rows = $institutes->map(function (Institute $institute) use ($attendance, $points): array {

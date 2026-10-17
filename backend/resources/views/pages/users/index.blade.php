@@ -55,6 +55,13 @@ new #[Title('المستخدمون')] class extends Component {
     public string $new_institute = '';
 
     /**
+     * معاهدُ «مشرف معاهد» — يُسنَد الدورُ في كلٍّ منها دفعةً واحدة.
+     *
+     * @var array<int, string>
+     */
+    public array $new_institutes = [];
+
+    /**
      * بيانات الدخول المولَّدة — تُعرض مرّةً بعد الإنشاء. لا قناة بريد في المشروع،
      * فالنسخ اليدوي هو التسليم.
      *
@@ -79,8 +86,57 @@ new #[Title('المستخدمون')] class extends Component {
         return app(UserAdminQuery::class)->list(
             $this->search,
             $this->role,
-            $this->institute === '' ? null : (int) $this->institute,
+            $this->institute === '' ? $this->visibleInstituteIds() : (int) $this->institute,
         );
+    }
+
+    /**
+     * «كل المعاهد» تعني كلَّها لحامل الدور العابر، ومعاهدَ صاحب اللوحة وحدها لغيره —
+     * فلا يرى مديرُ معهدٍ أو مشرفُ معاهدٍ حساباتِ معاهد لا يعمل فيها.
+     *
+     * @return array<int, int>|null
+     */
+    private function visibleInstituteIds(): ?array
+    {
+        return auth()->user()->hasGlobalRole() ? null : $this->institutes->modelKeys();
+    }
+
+    /**
+     * المعاهد التي يُسنَد فيها الدور: لا شيء للعابر، وما اختير لمشرف المعاهد، والمعهدُ الواحد لغيرهما.
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<int, Institute|null>
+     */
+    private function targetInstitutes(PanelRole $role, array $validated): array
+    {
+        if ($role->isGlobal()) {
+            return [null];
+        }
+
+        if ($role === PanelRole::RegionSupervisor) {
+            return Institute::query()->whereIn('id', $validated['new_institutes'])->orderBy('name')->get()->all();
+        }
+
+        return [Institute::find($validated['new_institute'] ?: null)];
+    }
+
+    /**
+     * قواعدُ المعهد أو المعاهد بحسب الدور المختار.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    private function instituteRules(): array
+    {
+        $keys = $this->institutes->modelKeys();
+
+        if ($this->new_role === PanelRole::RegionSupervisor->value) {
+            return [
+                'new_institutes' => ['required', 'array', 'min:1'],
+                'new_institutes.*' => [Rule::in($keys)],
+            ];
+        }
+
+        return ['new_institute' => ['nullable', Rule::in($keys)]];
     }
 
     /**
@@ -121,7 +177,7 @@ new #[Title('المستخدمون')] class extends Component {
 
     public function invite(): void
     {
-        $this->reset('first_name', 'last_name', 'email', 'phone', 'new_role', 'new_institute', 'issuedCredentials', 'targetUserId');
+        $this->reset('first_name', 'last_name', 'email', 'phone', 'new_role', 'new_institute', 'new_institutes', 'issuedCredentials', 'targetUserId');
         $this->new_institute = (string) (PanelScope::resolve()?->id ?? '');
         $this->resetValidation();
 
@@ -136,13 +192,15 @@ new #[Title('المستخدمون')] class extends Component {
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:32'],
             'new_role' => ['required', Rule::in(collect($this->creatableRoles)->map->value->all())],
-            'new_institute' => ['nullable', Rule::in($this->institutes->modelKeys())],
+            ...$this->instituteRules(),
         ], attributes: [
             'first_name' => 'الاسم', 'last_name' => 'الكنية', 'email' => 'البريد',
-            'new_role' => 'الدور', 'new_institute' => 'المعهد',
+            'new_role' => 'الدور', 'new_institute' => 'المعهد', 'new_institutes' => 'المعاهد',
         ]);
 
         $role = PanelRole::from($validated['new_role']);
+        $others = $this->targetInstitutes($role, $validated);
+        $first = array_shift($others);
 
         try {
             $result = app(InviteUser::class)->handle(
@@ -154,8 +212,12 @@ new #[Title('المستخدمون')] class extends Component {
                     'phone' => $validated['phone'] ?: null,
                 ],
                 $role,
-                $role->isGlobal() ? null : Institute::find($validated['new_institute'] ?: null),
+                $first,
             );
+
+            foreach ($others as $institute) {
+                app(AssignUserRole::class)->handle(auth()->user(), $result['user'], $role, $institute);
+            }
         } catch (RuntimeException $exception) {
             Flux::toast(variant: 'danger', text: $exception->getMessage());
 
@@ -177,6 +239,7 @@ new #[Title('المستخدمون')] class extends Component {
         $this->targetUserId = $user->id;
         $this->new_role = '';
         $this->new_institute = (string) (PanelScope::resolve()?->id ?? '');
+        $this->new_institutes = [];
         $this->resetValidation();
 
         Flux::modal('assign-role')->show();
@@ -186,18 +249,16 @@ new #[Title('المستخدمون')] class extends Component {
     {
         $validated = $this->validate([
             'new_role' => ['required', Rule::in(collect($this->assignableRoles)->map->value->all())],
-            'new_institute' => ['nullable', Rule::in($this->institutes->modelKeys())],
-        ], attributes: ['new_role' => 'الدور', 'new_institute' => 'المعهد']);
+            ...$this->instituteRules(),
+        ], attributes: ['new_role' => 'الدور', 'new_institute' => 'المعهد', 'new_institutes' => 'المعاهد']);
 
         $role = PanelRole::from($validated['new_role']);
+        $user = User::findOrFail($this->targetUserId);
 
         try {
-            app(AssignUserRole::class)->handle(
-                auth()->user(),
-                User::findOrFail($this->targetUserId),
-                $role,
-                $role->isGlobal() ? null : Institute::find($validated['new_institute'] ?: null),
-            );
+            foreach ($this->targetInstitutes($role, $validated) as $institute) {
+                app(AssignUserRole::class)->handle(auth()->user(), $user, $role, $institute);
+            }
         } catch (RuntimeException $exception) {
             Flux::toast(variant: 'danger', text: $exception->getMessage());
 
@@ -417,13 +478,15 @@ new #[Title('المستخدمون')] class extends Component {
                     حسابات الأساتذة وأولياء الأمور والطلاب يولّدها النظام مع سجلّاتها، وتُدار من شاشة «بيانات الدخول».
                 </flux:text>
 
-                @unless (\App\Enums\PanelRole::tryFrom($new_role)?->isGlobal())
+                @if ($new_role === \App\Enums\PanelRole::RegionSupervisor->value)
+                    <x-institutes-picker :institutes="$this->institutes" />
+                @elseif (! \App\Enums\PanelRole::tryFrom($new_role)?->isGlobal())
                     <flux:select wire:model="new_institute" label="المعهد" description="الدور يُسنَد داخل هذا المعهد وحده">
                         @foreach ($this->institutes as $option)
                             <flux:select.option value="{{ $option->id }}">{{ $option->name }}</flux:select.option>
                         @endforeach
                     </flux:select>
-                @endunless
+                @endif
 
                 <div class="flex gap-2">
                     <flux:button type="submit" variant="primary" data-test="save-user">إنشاء</flux:button>
@@ -459,13 +522,15 @@ new #[Title('المستخدمون')] class extends Component {
                 @endforeach
             </flux:select>
 
-            @unless (\App\Enums\PanelRole::tryFrom($new_role)?->isGlobal())
+            @if ($new_role === \App\Enums\PanelRole::RegionSupervisor->value)
+                <x-institutes-picker :institutes="$this->institutes" />
+            @elseif (! \App\Enums\PanelRole::tryFrom($new_role)?->isGlobal())
                 <flux:select wire:model="new_institute" label="المعهد">
                     @foreach ($this->institutes as $option)
                         <flux:select.option value="{{ $option->id }}">{{ $option->name }}</flux:select.option>
                     @endforeach
                 </flux:select>
-            @endunless
+            @endif
 
             <div class="flex gap-2">
                 <flux:button type="submit" variant="primary" data-test="save-role">إسناد</flux:button>

@@ -50,7 +50,7 @@ abstract class UserRoleAssignment with _$UserRoleAssignment {
 ///
 /// بدونه كان على الديسكتوب أن ينسخ `PanelRole` وهرمَه وتسمياتِه العربية، فيفترق
 /// السطحان عند أوّل تعديل عليه
-/// ([PHASE-6-STAGES.MD §0](../../../../docs/PHASE-6-STAGES.MD) القرار 3).
+/// ([PHASE-6-STAGES.MD §0](../../../../docs/phases/PHASE-6-STAGES.MD) القرار 3).
 /// و`rank` الأصغرُ أعلى — وعليه تقوم قاعدة «لا يُسند دورٌ أعلى من دور المُسنِد».
 @freezed
 abstract class RoleOption with _$RoleOption {
@@ -70,7 +70,7 @@ abstract class RoleOption with _$RoleOption {
 /// لا قناةَ بريد في المشروع، فالتسليمُ طباعةٌ ونسخٌ يدوي — ولهذا كانت هذه الكتابةُ
 /// REST مباشراً لا نوعَ عمليةٍ في الطابور: من يُنشئ حساباً ينتظر الكلمةَ ليطبعها،
 /// ولا معنى لطابورٍ يحمل سرّاً إلى وقتٍ لاحق
-/// ([PHASE-6-STAGES.MD §3.1](../../../../docs/PHASE-6-STAGES.MD)).
+/// ([PHASE-6-STAGES.MD §3.1](../../../../docs/phases/PHASE-6-STAGES.MD)).
 @freezed
 abstract class IssuedCredentials with _$IssuedCredentials {
   const factory IssuedCredentials({

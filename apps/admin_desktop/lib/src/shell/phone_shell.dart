@@ -5,20 +5,22 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../config.dart';
 import '../di/app_scope.dart';
+import '../widgets/sign_out.dart';
+import '../widgets/sync_bar.dart';
 import 'destinations.dart';
 
 /// أبوابُ الشريط السفلي على الهاتف — **أربعةٌ وبابُ «المزيد»**.
 ///
 /// الشريطُ لا يسع خمسةَ عشرَ باباً، ولا يصحّ أن يقصّها أوّلُ القائمة أعمى: فهنا
 /// ترتيبٌ بما يفتحه المشرفُ من هاتفه في المسجد — يومُ المعهد، ثم التفقّد، ثم
-/// الطلاب، ثم الحلقات. وما لا يملكه صاحبُ الحساب يسقط فيتقدّم ما بعده، فلكلّ دورٍ
+/// الطلاب، ثم أعذار الغياب — والحلقاتُ في «المزيد»: التفقّدُ يفتحها كلَّ يوم، وسجلُّ جلساتها فيه. وما لا يملكه صاحبُ الحساب يسقط فيتقدّم ما بعده، فلكلّ دورٍ
 /// أبوابُه الأربعة الأقرب. والبقيّةُ في «المزيد» بعناوين القائمة الجانبية نفسها.
 const List<String> phonePriority = [
   'dashboard',
   'attendance',
   'students',
-  'circles',
   'excuses',
+  'circles',
   'enrollments',
   'reports',
 ];
@@ -73,6 +75,7 @@ String phoneLabelOf(DesktopSection section) => switch (section.id) {
 String roleLabelOf(String role) => switch (role) {
   'developer' => 'مبرمج',
   'super_admin' => 'المشرف الأعلى',
+  'region_supervisor' => 'مشرف معاهد',
   'admin' => 'مدير معهد',
   'supervisor' => 'مشرف',
   'teacher' => 'أستاذ',
@@ -325,7 +328,10 @@ class MoreScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('المزيد')),
+      appBar: AppBar(
+        title: const Text('المزيد'),
+        actions: const [PhoneSyncAction()],
+      ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
           NzSpace.s4,
@@ -352,6 +358,11 @@ class MoreScreen extends StatelessWidget {
           const _GroupLabel('حول'),
           _Group(
             children: [
+              _DoorTile(
+                icon: NzIcons.sun,
+                label: 'المظهر',
+                onTap: () => showAppearanceSheet(context),
+              ),
               _DoorTile(
                 icon: NzIcons.informationCircle,
                 label: 'حول التطبيق',
@@ -691,36 +702,7 @@ class _SignOutTile extends StatelessWidget {
       icon: NzIcons.logout,
       label: 'تسجيل الخروج',
       danger: true,
-      onTap: () => _confirm(context),
+      onTap: () => confirmAndSignOut(context),
     );
-  }
-
-  Future<void> _confirm(BuildContext context) async {
-    final session = AppScope.of(context).session;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('تسجيل الخروج'),
-        content: const Text(
-          'يُمسح مخزنُ هذا الجهاز عند الخروج، فما لم يُزامَن من كتاباتك يضيع. '
-          'تأكّد أن شريطَ المزامنة لا يعرض عملياتٍ معلّقة.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('خروج'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed ?? false) {
-      await session.signOut();
-    }
   }
 }

@@ -5,9 +5,9 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 import 'config.dart';
 import 'di/app_scope.dart';
 import 'features/guardian/di/app_scope.dart' as guardian;
-import 'features/guardian/screens/children_screen.dart';
+import 'features/guardian/screens/guardian_shell.dart';
 import 'features/student/di/app_scope.dart' as student;
-import 'features/student/screens/home_screen.dart';
+import 'features/student/screens/student_shell.dart';
 import 'features/teacher/di/app_scope.dart' as teacher;
 import 'features/teacher/screens/circles_screen.dart';
 import 'screens/login_screen.dart';
@@ -18,9 +18,20 @@ import 'screens/login_screen.dart';
 /// المدفوعة إلى الملّاح تُبنى تحت `MaterialApp` لا تحت `home`، فلو لُفّت الرئيسيّةُ
 /// وحدها لَما وجدت شاشةٌ مدفوعةٌ نطاقَها.
 class NuzulApp extends StatefulWidget {
-  const NuzulApp({super.key, required this.dependencies});
+  const NuzulApp({
+    super.key,
+    required this.dependencies,
+    this.appearance,
+    this.updater,
+  });
 
   final NuzulDependencies dependencies;
+
+  /// الوضعُ وحجمُ الخط كما اختارهما صاحبُ الجهاز — `null` في الاختبارات.
+  final AppearanceController? appearance;
+
+  /// التحديثُ من داخل التطبيق — `null` في الاختبارات.
+  final AppUpdater? updater;
 
   @override
   State<NuzulApp> createState() => _NuzulAppState();
@@ -43,7 +54,7 @@ class _NuzulAppState extends State<NuzulApp> {
   }
 
   /// دورةُ المزامنة للأستاذ وحده: وليُّ الأمر والطالب خارجَ `sync/pull` كلِّه،
-  /// يقرآن عند فتح كل شاشة ([CHECKPOINT-PHASE-7.1.MD §2](../../../../docs/CHECKPOINT-PHASE-7.1.MD)).
+  /// يقرآن عند فتح كل شاشة ([CHECKPOINT-PHASE-7.1.MD §2](../../../../docs/checkpoints/CHECKPOINT-PHASE-7.1.MD)).
   void _onSessionChanged() {
     final sync = widget.dependencies.teacher.sync;
 
@@ -60,6 +71,29 @@ class _NuzulAppState extends State<NuzulApp> {
   Widget build(BuildContext context) {
     final deps = widget.dependencies;
 
+    final app = MousqeApp(
+      title: AppConfig.launcherName,
+      theme: MousqeTheme.light(),
+      darkTheme: MousqeTheme.dark(),
+      appearance: widget.appearance,
+      home: SplashGate(
+        ready: _session.stage != SessionStage.starting,
+        caption: AppConfig.label,
+        onServerChoice: (context) =>
+            showServerChoiceDialog(context, _serverChoice),
+        // التحديثُ يحرس الدخولَ أيضاً: إصدارٌ إلزاميّ لا ينتظر حساباً.
+        child: UpdateGate(
+          child: switch (_session.stage) {
+            // تحت شاشة البدء لا يُبنى شيء: تغطّيه حتى تُحسم الجلسة.
+            SessionStage.starting => const SizedBox.shrink(),
+            SessionStage.signedOut => const LoginScreen(),
+            SessionStage.ready => _home(_session.app),
+          },
+        ),
+      ),
+    );
+    final updater = widget.updater;
+
     return NuzulScope(
       dependencies: deps,
       child: teacher.AppScope(
@@ -68,23 +102,13 @@ class _NuzulAppState extends State<NuzulApp> {
           dependencies: deps.guardian,
           child: student.AppScope(
             dependencies: deps.student,
-            child: MousqeApp(
-              title: AppConfig.launcherName,
-              theme: MousqeTheme.light(),
-              darkTheme: MousqeTheme.dark(),
-              home: SplashGate(
-                ready: _session.stage != SessionStage.starting,
-                caption: AppConfig.label,
-                onServerChoice: (context) =>
-                    showServerChoiceDialog(context, _serverChoice),
-                child: switch (_session.stage) {
-                  // تحت شاشة البدء لا يُبنى شيء: تغطّيه حتى تُحسم الجلسة.
-                  SessionStage.starting => const SizedBox.shrink(),
-                  SessionStage.signedOut => const LoginScreen(),
-                  SessionStage.ready => _home(_session.app),
-                },
-              ),
-            ),
+            child: updater == null
+                ? app
+                : AppUpdateScope(
+                    updater: updater,
+                    appName: AppConfig.launcherName,
+                    child: app,
+                  ),
           ),
         ),
       ),
@@ -97,8 +121,8 @@ class _NuzulAppState extends State<NuzulApp> {
         key: ValueKey(surface),
         child: switch (surface) {
           Surface.teacher => const CirclesScreen(),
-          Surface.guardian => const ChildrenScreen(),
-          Surface.student => const HomeScreen(),
+          Surface.guardian => const GuardianShell(),
+          Surface.student => const StudentShell(),
           // الجلسةُ لا تبلغ `ready` بلا سطح؛ فرعٌ للمحلّل لا للمستخدم.
           _ => const LoginScreen(),
         },

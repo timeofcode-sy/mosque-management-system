@@ -7,7 +7,7 @@ import '../di/app_scope.dart';
 /// إعلاناتُ المعهد والحلقة.
 ///
 /// 🔑 **والترشيحُ وقع في الخادم**: إعلانٌ وُجِّه إلى حلقةٍ ليست له لا يصل جهازَه
-/// أصلاً، فلا يعرف بوجوده ([CHECKPOINT-PHASE-8.1.MD §3](../../../../../../../docs/CHECKPOINT-PHASE-8.1.MD)).
+/// أصلاً، فلا يعرف بوجوده ([CHECKPOINT-PHASE-8.1.MD §3](../../../../../../../docs/checkpoints/CHECKPOINT-PHASE-8.1.MD)).
 /// فليس في هذه الشاشة سطرُ ترشيحٍ واحد — وذاك مقصود.
 class AnnouncementsScreen extends StatelessWidget {
   const AnnouncementsScreen({super.key});
@@ -35,6 +35,22 @@ class AnnouncementsScreen extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// زرُّ الإعلانات في شريط كل لسان — الإعلانُ يُقرأ من أيّ مكانٍ في التطبيق لا من بابٍ واحد.
+class AnnouncementsAction extends StatelessWidget {
+  const AnnouncementsAction({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'الإعلانات',
+      icon: const NzIcon(NzIcons.announcement),
+      onPressed: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const AnnouncementsScreen()),
       ),
     );
   }

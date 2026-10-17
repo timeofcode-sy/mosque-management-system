@@ -7,7 +7,7 @@ import 'dart:convert';
 /// ([SYNC-PROTOCOL.md §7](../../../../../docs/SYNC-PROTOCOL.md)): هو أثرُ الدفعة
 /// لا بيانُ المعهد، فلا يعبر `change_log` ولا يمكن أن يعبره. وهذه هي **النقطةُ
 /// الوحيدة** التي يقرأ فيها الديسكتوب من الخادم لا من مخزنه — نفسُ ما قالته
-/// [CHECKPOINT-PHASE-6.1.MD §4](../../../../../docs/CHECKPOINT-PHASE-6.1.MD).
+/// [CHECKPOINT-PHASE-6.1.MD §4](../../../../../docs/checkpoints/CHECKPOINT-PHASE-6.1.MD).
 ///
 /// **وبلا freezed عمداً:** [serverPayload] و[clientPayload] خريطتان **حرّتا
 /// الشكل** — حمولةُ صفٍّ من أيّ جدولٍ كان. ونمذجتُهما تعني تعدادَ أعمدةِ كل جدول

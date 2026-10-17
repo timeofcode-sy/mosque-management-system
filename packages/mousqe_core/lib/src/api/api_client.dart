@@ -290,7 +290,7 @@ abstract class ApiClient {
   // **وهي كلُّ مصادر تطبيقه**: لا `syncPull` ولا `syncPush` في تطبيق ولي الأمر
   // إطلاقاً. التيّارُ يبثّ معهداً كاملاً لكل الأدوار، وذاك على جهاز الأب تسريبٌ
   // لا حِمل — ولا يحتاجه لأنه لا يكتب في الطابور أصلاً
-  // ([CHECKPOINT-PHASE-7.1.MD §2](../../../../../docs/CHECKPOINT-PHASE-7.1.MD)).
+  // ([CHECKPOINT-PHASE-7.1.MD §2](../../../../../docs/checkpoints/CHECKPOINT-PHASE-7.1.MD)).
 
   @GET('/guardian/children')
   Future<HttpResponse<dynamic>> guardianChildren();
@@ -300,6 +300,10 @@ abstract class ApiClient {
 
   @GET('/guardian/children/{uuid}/progress')
   Future<HttpResponse<dynamic>> guardianChildProgress(@Path('uuid') String uuid);
+
+  /// الجانبُ السلوكي لابنٍ بعينه — ملاحظاتُ التفقّد والصفاتُ ونقاطُ السلوك.
+  @GET('/guardian/children/{uuid}/behavior')
+  Future<HttpResponse<dynamic>> guardianChildBehavior(@Path('uuid') String uuid);
 
   @GET('/guardian/excuses')
   Future<HttpResponse<dynamic>> guardianExcuses();
@@ -314,7 +318,7 @@ abstract class ApiClient {
   //
   // 🔑 و`standing` تُحسب في الخادم عمداً — لو حُسبت على الجهاز لَاستقبل صفوفَ
   // حضورِ كلِّ زملائه ليستخرج رقماً واحداً
-  // ([PHASE-8-STAGES.MD §1.1](../../../../../docs/PHASE-8-STAGES.MD)).
+  // ([PHASE-8-STAGES.MD §1.1](../../../../../docs/phases/PHASE-8-STAGES.MD)).
 
   @GET('/student/me/attendance')
   Future<HttpResponse<dynamic>> studentAttendance();
@@ -324,6 +328,9 @@ abstract class ApiClient {
 
   @GET('/student/me/standing')
   Future<HttpResponse<dynamic>> studentStanding();
+
+  @GET('/student/me/behavior')
+  Future<HttpResponse<dynamic>> studentBehavior();
 
   @GET('/student/me/points')
   Future<HttpResponse<dynamic>> studentPoints();
@@ -338,4 +345,70 @@ abstract class ApiClient {
   /// إعلاناتُ المعهد وحلقاتِه الموجَّهة إلى الأساتذة — والترشيحُ في الخادم.
   @GET('/teacher/announcements')
   Future<HttpResponse<dynamic>> teacherAnnouncements();
+
+  // ---------------------------------------------------------------- سجلُّ التسميع
+
+  /// تسميعاتُ الطالب الأخيرة — تحت شريط الأجزاء في «حفظي».
+  @GET('/student/me/recitations')
+  Future<HttpResponse<dynamic>> studentRecitations();
+
+  /// تسميعاتُ ابنٍ بعينه — تحت شريط الأجزاء في لسان «الحفظ».
+  @GET('/guardian/children/{uuid}/recitations')
+  Future<HttpResponse<dynamic>> guardianChildRecitations(@Path('uuid') String uuid);
+
+  // ---------------------------------------------------------------- ما كان في اللوحة وحدها
+
+  @POST('/admin/teachers')
+  Future<HttpResponse<dynamic>> storeTeacher(@Body() Map<String, dynamic> body);
+
+  @PUT('/admin/teachers/{uuid}')
+  Future<HttpResponse<dynamic>> updateTeacher(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @DELETE('/admin/teachers/{uuid}')
+  Future<HttpResponse<dynamic>> deleteTeacher(@Path('uuid') String uuid);
+
+  @POST('/admin/teachers/{uuid}/account')
+  Future<HttpResponse<dynamic>> teacherAccount(@Path('uuid') String uuid);
+
+  @GET('/admin/announcements')
+  Future<HttpResponse<dynamic>> adminAnnouncements();
+
+  @POST('/admin/announcements')
+  Future<HttpResponse<dynamic>> storeAnnouncement(@Body() Map<String, dynamic> body);
+
+  @PUT('/admin/announcements/{uuid}')
+  Future<HttpResponse<dynamic>> updateAnnouncement(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @POST('/admin/announcements/{uuid}/unpublish')
+  Future<HttpResponse<dynamic>> unpublishAnnouncement(@Path('uuid') String uuid);
+
+  @POST('/admin/custom-fields')
+  Future<HttpResponse<dynamic>> storeCustomField(@Body() Map<String, dynamic> body);
+
+  @PUT('/admin/custom-fields/{uuid}')
+  Future<HttpResponse<dynamic>> updateCustomField(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @DELETE('/admin/custom-fields/{uuid}')
+  Future<HttpResponse<dynamic>> deleteCustomField(@Path('uuid') String uuid);
+
+  @POST('/admin/traits')
+  Future<HttpResponse<dynamic>> storeTrait(@Body() Map<String, dynamic> body);
+
+  @PUT('/admin/traits/{uuid}')
+  Future<HttpResponse<dynamic>> updateTrait(
+    @Path('uuid') String uuid,
+    @Body() Map<String, dynamic> body,
+  );
+
+  @DELETE('/admin/traits/{uuid}')
+  Future<HttpResponse<dynamic>> deleteTrait(@Path('uuid') String uuid);
 }

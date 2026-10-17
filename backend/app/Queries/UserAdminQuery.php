@@ -4,6 +4,7 @@ namespace App\Queries;
 
 use App\Models\Institute;
 use App\Models\User;
+use App\Support\ArabicSearch;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -19,9 +20,10 @@ use Illuminate\Support\Facades\DB;
 class UserAdminQuery
 {
     /**
+     * @param  int|array<int, int>|null  $institutes  معهدٌ واحد، أو معاهدُ صاحب اللوحة، أو كلُّها (null)
      * @return LengthAwarePaginator<int, User>
      */
-    public function list(string $search = '', string $role = '', ?int $instituteId = null, int $perPage = 20): LengthAwarePaginator
+    public function list(string $search = '', string $role = '', int|array|null $institutes = null, int $perPage = 20): LengthAwarePaginator
     {
         $pivotTable = config('permission.table_names.model_has_roles');
         $rolesTable = config('permission.table_names.roles');
@@ -36,15 +38,12 @@ class UserAdminQuery
 
         return User::query()
             ->with(['teacher:id,user_id,display_name', 'guardian:id,user_id,full_name', 'student:id,user_id,first_name,family_name'])
-            ->when($search !== '', fn ($query) => $query->where(fn ($inner) => $inner
-                ->where('first_name', 'like', "%{$search}%")
-                ->orWhere('last_name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%")))
+            ->tap(fn ($query) => ArabicSearch::constrain($query, $search, ['first_name', 'last_name', 'father_name', 'username', 'email']))
             ->when($role !== '', fn ($query) => $query->whereExists(
                 fn ($sub) => $matchesAssignment($sub)->where("{$rolesTable}.name", $role),
             ))
-            ->when($instituteId !== null, fn ($query) => $query->whereExists(
-                fn ($sub) => $matchesAssignment($sub)->where($pivotTable.'.'.$teamKey, $instituteId),
+            ->when($institutes !== null, fn ($query) => $query->whereExists(
+                fn ($sub) => $matchesAssignment($sub)->whereIn($pivotTable.'.'.$teamKey, (array) $institutes),
             ))
             ->orderBy('first_name')
             ->orderBy('last_name')

@@ -38,6 +38,31 @@ enum AttendanceStatus {
         AttendanceStatus.late => 'late',
         AttendanceStatus.excused => 'excused',
       };
+
+  /// غائبٌ بعذرٍ أو بغيره: لم يحضر الجلسة، فلا ملاحظةَ عليه فيها ولا نقاطَ ولا
+  /// تسميع — نظيرُ `AttendanceStatus::isAbsence()` على الخادم.
+  bool get isAbsence =>
+      this == AttendanceStatus.absent || this == AttendanceStatus.excused;
+}
+
+/// نوعُ ملاحظة التفقّد — نظيرُ `App\Enums\NotePolarity`. والملاحظةُ بلا نوع
+/// (`null`) ملاحظةٌ مجرّدة لا تدخل في مقياس «الأدب».
+enum NotePolarity {
+  @JsonValue('positive')
+  positive,
+  @JsonValue('negative')
+  negative;
+
+  String get value => switch (this) {
+        NotePolarity.positive => 'positive',
+        NotePolarity.negative => 'negative',
+      };
+
+  static NotePolarity? fromValue(String? value) => switch (value) {
+        'positive' => NotePolarity.positive,
+        'negative' => NotePolarity.negative,
+        _ => null,
+      };
 }
 
 /// حالة إذن الغياب.

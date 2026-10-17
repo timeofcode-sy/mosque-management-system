@@ -31,7 +31,7 @@
                 </nav>
 
                 <a href="{{ auth()->check() ? route('dashboard') : route('login') }}" class="nz-btn nz-btn--primary nz-btn--sm ms-auto sm:ms-0">
-                    {{ auth()->check() ? 'لوحة المعلومات' : 'تسجيل الدخول' }}
+                    {{ auth()->check() ? 'حسابي' : 'تسجيل الدخول' }}
                 </a>
             </div>
         </header>

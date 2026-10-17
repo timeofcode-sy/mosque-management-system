@@ -48,8 +48,8 @@ Future<void> _loadBrandFonts() async {
   const root = '../../packages/nuzul_ui/fonts';
   const families = {
     'ReemKufi': ['Regular', 'SemiBold', 'Bold'],
-    'IBMPlexSansArabic': ['Light', 'Regular', 'Medium', 'SemiBold', 'Bold'],
-    'Amiri': ['Regular', 'Bold'],
+    'IBMPlexSansArabic': ['Regular', 'Medium', 'SemiBold', 'Bold'],
+    'Amiri': ['Regular'],
   };
 
   for (final MapEntry(key: family, value: weights) in families.entries) {
@@ -188,6 +188,22 @@ void main() {
         ],
       }),
     );
+    when(() => api.adminAnnouncements()).thenAnswer(
+      (_) async => _response({
+        'data': [
+          {
+            'uuid': 'ann-1',
+            'title': 'عطلة الجمعة القادمة لكل حلقات المعهد',
+            'body': 'لا دوام يوم الجمعة القادم بسبب الصيانة، ويعود الدوام يوم السبت.',
+            'scope': 'circle',
+            'scope_ids': [1],
+            'audience': ['students', 'guardians', 'teachers'],
+            'published_at': '2026-10-10T08:00:00+03:00',
+            'author': 'مدير المعهد',
+          },
+        ],
+      }),
+    );
     when(() => api.syncConflicts(any())).thenAnswer(
       (_) async => _response({
         'data': [
@@ -230,6 +246,7 @@ void main() {
       students: StudentRepository(db: db, syncEngine: engine),
       catalog: CatalogRepository(db: db, apiClient: api),
       admin: AdminRepository(apiClient: api),
+      content: InstituteContentRepository(db: db, apiClient: api),
       stats: StatsRepository(db: db),
       conflicts: ConflictRepository(apiClient: api),
     );
@@ -570,7 +587,7 @@ void main() {
       'الرئيسية',
       'التفقّد',
       'الطلاب',
-      'الحلقات',
+      'الأعذار',
       'المزيد',
     ]) {
       expect(navItem(label), findsOneWidget, reason: label);
@@ -584,7 +601,7 @@ void main() {
     await idle(tester);
 
     // البقيّةُ في «المزيد» بعناوين القائمة الجانبية، والخروجُ آخرُها.
-    expect(find.text('أعذار الغياب'), findsOneWidget);
+    expect(find.text('الحلقات'), findsOneWidget);
     expect(find.text('معهد النور'), findsWidgets);
     await shot(tester, '02-more');
 
@@ -618,17 +635,17 @@ void main() {
 
     await tester.tap(navItem('المزيد'));
     await idle(tester);
-    await tester.tap(find.text('أعذار الغياب'));
+    await tester.tap(find.text('الحلقات'));
     await idle(tester);
 
-    expect(find.text('سفرٌ عائليّ إلى حلب لحضور عرس ابن العم'), findsOneWidget);
+    expect(find.text('حلقات المعهد'), findsOneWidget);
 
     // زرُّ الرجوع في أندرويد يغلق البابَ ولا يُخرج من التطبيق.
     await tester.binding.handlePopRoute();
     await idle(tester);
 
     expect(find.byType(MoreScreen), findsOneWidget);
-    expect(find.text('سفرٌ عائليّ إلى حلب لحضور عرس ابن العم'), findsNothing);
+    expect(find.text('حلقات المعهد'), findsNothing);
     await settle(tester);
   });
 
@@ -645,7 +662,7 @@ void main() {
       'dashboard',
       'attendance',
       'students',
-      'circles',
+      'excuses',
     ]);
     expect(tabs.secondary.map((s) => s.id), isNot(contains('users')));
     await settle(tester);

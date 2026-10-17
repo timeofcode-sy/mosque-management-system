@@ -33,7 +33,7 @@ class NzAttendanceBadge extends StatelessWidget {
 
   final NzAttendance status;
 
-  /// Replaces the default word, e.g. «متأخر ١٠ د».
+  /// Replaces the default word, e.g. «متأخر 10 د».
   final String? text;
 
   @override

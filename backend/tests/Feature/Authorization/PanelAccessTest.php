@@ -50,7 +50,7 @@ class PanelAccessTest extends TestCase
              */
             'الإعلانات' => ['announcements.index', ['admin', 'supervisor', 'super_admin', 'developer']],
             'التفقّد' => ['attendance.index', ['admin', 'supervisor', 'teacher', 'super_admin', 'developer']],
-            'أذونات الغياب' => ['excuses.index', ['admin', 'supervisor', 'teacher', 'super_admin', 'developer']],
+            'أعذار الغياب' => ['excuses.index', ['admin', 'supervisor', 'teacher', 'super_admin', 'developer']],
             /**
              * 🔄 م.7.1: **خرج ولي الأمر من الصفّين.** كان يحمل reports.view منذ
              * المرحلة الأولى فيفتح تقاريرَ المعهد كلِّه وإحصائياتِه في اللوحة —
@@ -66,6 +66,7 @@ class PanelAccessTest extends TestCase
             'تعارضات المزامنة' => ['system.conflicts', ['admin', 'supervisor', 'super_admin', 'developer']],
             'الأجهزة' => ['system.devices', ['developer']],
             'سجل التغييرات' => ['system.change-log', ['developer']],
+            'تحديثات التطبيقات' => ['system.app-releases', ['developer']],
         ];
     }
 

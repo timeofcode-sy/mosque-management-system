@@ -34,7 +34,7 @@
             <flux:sidebar.nav>
                 <flux:sidebar.group heading="المتابعة" class="grid">
                     <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
-                        لوحة المعلومات
+                        الصفحة الرئيسية
                     </flux:sidebar.item>
 
                     @can('attendance.take')
@@ -45,7 +45,7 @@
 
                     @can('excuses.review')
                         <flux:sidebar.item icon="envelope-open" :href="route('excuses.index')" :current="request()->routeIs('excuses.*')" wire:navigate>
-                            أذونات الغياب
+                            أعذار الغياب
                         </flux:sidebar.item>
                     @endcan
 
@@ -66,7 +66,7 @@
                                 الدورات
                             </flux:sidebar.item>
                             <flux:sidebar.item icon="clock" :href="route('shifts.index')" :current="request()->routeIs('shifts.*')" wire:navigate>
-                                الدوامات
+                                أوقات الدوام
                             </flux:sidebar.item>
                         @endcan
 
@@ -117,12 +117,15 @@
                     </flux:sidebar.group>
                 @endcanany
 
-                @canany(['institutes.manage', 'users.manage'])
+                @canany(['institutes.manage', 'institutes.overview', 'users.manage'])
                     <flux:sidebar.group heading="الإدارة العليا" class="grid">
                         @can('institutes.manage')
                             <flux:sidebar.item icon="building-office-2" :href="route('institutes.index')" :current="request()->routeIs('institutes.index') || request()->routeIs('institutes.create') || request()->routeIs('institutes.edit')" wire:navigate>
                                 المعاهد
                             </flux:sidebar.item>
+                        @endcan
+
+                        @can('institutes.overview')
                             <flux:sidebar.item icon="presentation-chart-line" :href="route('institutes.overview')" :current="request()->routeIs('institutes.overview')" wire:navigate>
                                 لوحة المعاهد
                             </flux:sidebar.item>
@@ -164,6 +167,9 @@
                             </flux:sidebar.item>
                             <flux:sidebar.item icon="list-bullet" :href="route('system.change-log')" :current="request()->routeIs('system.change-log')" wire:navigate>
                                 سجل التغييرات
+                            </flux:sidebar.item>
+                            <flux:sidebar.item icon="arrow-down-tray" :href="route('system.app-releases')" :current="request()->routeIs('system.app-releases')" wire:navigate>
+                                تحديثات التطبيقات
                             </flux:sidebar.item>
                         @endcan
                     </flux:sidebar.group>

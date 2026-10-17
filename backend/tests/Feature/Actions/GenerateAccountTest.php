@@ -65,6 +65,21 @@ class GenerateAccountTest extends TestCase
         $this->assertSame($usernames->count(), $usernames->unique()->count());
     }
 
+    /**
+     * توأمان بجوالٍ واحد، أو أستاذٌ هو وليُّ أمر طالب: users.phone فريد، فالحساب الثاني يُولَّد
+     * بلا رقم بدل أن يسقط تسجيلُ صاحبه كلُّه.
+     */
+    public function test_a_phone_already_on_an_account_does_not_block_the_next_one(): void
+    {
+        $teacher = Teacher::factory()->create(['institute_id' => $this->institute->id, 'phone' => '0968572096']);
+        $father = Guardian::factory()->create(['institute_id' => $this->institute->id, 'phone' => '0968572096']);
+
+        $this->assertSame('0968572096', $teacher->fresh()->user->phone);
+        $this->assertNotNull($father->fresh()->user);
+        $this->assertNull($father->fresh()->user->phone);
+        $this->assertSame('0968572096', $father->fresh()->phone);
+    }
+
     public function test_a_second_account_is_not_generated_for_a_linked_record(): void
     {
         $student = Student::factory()->create(['institute_id' => $this->institute->id]);

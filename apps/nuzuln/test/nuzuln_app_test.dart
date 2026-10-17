@@ -6,8 +6,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:nuzuln/src/app.dart';
 import 'package:nuzuln/src/di/app_scope.dart';
-import 'package:nuzuln/src/features/guardian/screens/children_screen.dart';
-import 'package:nuzuln/src/features/student/screens/home_screen.dart';
+import 'package:nuzuln/src/features/guardian/screens/guardian_shell.dart';
+import 'package:nuzuln/src/features/student/screens/student_shell.dart';
 import 'package:nuzuln/src/screens/login_screen.dart';
 import 'package:retrofit/retrofit.dart';
 
@@ -83,6 +83,8 @@ void main() {
         pushTokenReads++;
         return 'fcm-1';
       },
+      // قراءةُ المنصّة الحقيقية لا تكتمل في زمن الاختبار المزيَّف.
+      deviceDetails: () async => const {'platform': 'android', 'app_version': '1.0.0'},
     );
 
     when(() => api.registerDevice(any())).thenAnswer(
@@ -126,7 +128,7 @@ void main() {
 
     await signIn(tester, 'guardian1000');
 
-    expect(find.byType(ChildrenScreen), findsOneWidget);
+    expect(find.byType(GuardianShell), findsOneWidget);
     final registration =
         verify(() => api.registerDevice(captureAny())).captured.single
             as Map<String, dynamic>;
@@ -139,7 +141,7 @@ void main() {
     account('guardian');
     await launch(tester);
     await signIn(tester, 'guardian1000');
-    expect(find.byType(ChildrenScreen), findsOneWidget);
+    expect(find.byType(GuardianShell), findsOneWidget);
 
     await dependencies.session.signOut();
     await tester.pumpAndSettle();
@@ -150,8 +152,8 @@ void main() {
     account('student');
     await signIn(tester, 'student1000');
 
-    expect(find.byType(HomeScreen), findsOneWidget);
-    expect(find.byType(ChildrenScreen), findsNothing);
+    expect(find.byType(StudentShell), findsOneWidget);
+    expect(find.byType(GuardianShell), findsNothing);
     final registration =
         verify(() => api.registerDevice(captureAny())).captured.single
             as Map<String, dynamic>;

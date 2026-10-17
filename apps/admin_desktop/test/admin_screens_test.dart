@@ -7,11 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mousqe_admin_desktop/src/di/app_scope.dart';
+import 'package:mousqe_admin_desktop/src/screens/announcements_screen.dart';
 import 'package:mousqe_admin_desktop/src/screens/catalog_screen.dart';
 import 'package:mousqe_admin_desktop/src/screens/curricula_screen.dart';
 import 'package:mousqe_admin_desktop/src/screens/excuses_screen.dart';
+import 'package:mousqe_admin_desktop/src/screens/fields_traits_screen.dart';
 import 'package:mousqe_admin_desktop/src/screens/student_form_screen.dart';
 import 'package:mousqe_admin_desktop/src/screens/students_screen.dart';
+import 'package:mousqe_admin_desktop/src/screens/teachers_screen.dart';
 import 'package:mousqe_admin_desktop/src/state/institute_switcher.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
@@ -96,6 +99,7 @@ void main() {
       students: StudentRepository(db: db, syncEngine: engine),
       catalog: CatalogRepository(db: db, apiClient: api),
       admin: AdminRepository(apiClient: api),
+      content: InstituteContentRepository(db: db, apiClient: api),
       stats: StatsRepository(db: db),
       conflicts: ConflictRepository(apiClient: api),
     );
@@ -215,6 +219,48 @@ void main() {
       await settle(tester);
     });
 
+    testWidgets('search folds hamza and the circle filter finds the unplaced',
+        (tester) async {
+      await boot(SeededRoles.supervisor);
+      await seed();
+      // طالبٌ ثانٍ بلا حلقة، وأبوه متوفى.
+      await db.into(db.students).insert(
+            StudentsCompanion.insert(
+              id: const Value(2),
+              uuid: 'stu-2',
+              instituteId: 1,
+              firstName: 'أحمد',
+              fatherName: 'محمود',
+              familyName: 'سكر',
+            ),
+          );
+      await pump(tester, const StudentsScreen());
+      await tester.pump();
+
+      // «احمد» بلا همزة تجد «أحمد».
+      await tester.enterText(find.byType(TextField).first, 'احمد سكر');
+      await tester.pump();
+      expect(find.text('أحمد محمود سكر'), findsOneWidget);
+      expect(find.text('علي حسن الشامي'), findsNothing);
+
+      await tester.enterText(find.byType(TextField).first, '');
+      await tester.pump();
+
+      await tester.tap(find.text('كل الحلقات'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('بلا حلقة').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('أحمد محمود سكر'), findsOneWidget);
+      expect(find.text('علي حسن الشامي'), findsNothing);
+      // وشارةُ التصفية تُزال فيعود الكشف كاملاً.
+      await tester.tap(find.byIcon(Icons.clear).first);
+      await tester.pumpAndSettle();
+      expect(find.text('علي حسن الشامي'), findsOneWidget);
+
+      await settle(tester);
+    });
+
     testWidgets('an account that only reads gets no register button',
         (tester) async {
       // الأستاذُ يملك `students.view` ولا يملك `students.manage`.
@@ -299,7 +345,10 @@ void main() {
 
       expect(field.controller!.text, 'حسان الأحمد');
       expect(field.readOnly, isTrue);
-      expect(find.text('اسم الأم الكامل'), findsOneWidget);
+      // اسمُ الأم بقسمين يُكتبان، لا حقلٌ واحدٌ للاسم الكامل.
+      expect(find.text('اسم الأم'), findsOneWidget);
+      expect(find.text('كنية الأم'), findsOneWidget);
+      expect(find.text('اسم الأم الكامل'), findsNothing);
 
       await settle(tester);
     });
@@ -314,7 +363,8 @@ void main() {
       await type(tester, 'اسم الطالب *', 'عمر');
       await type(tester, 'اسم الأب *', 'حسن');
       await type(tester, 'اسم العائلة *', 'الشامي');
-      await type(tester, 'اسم الأم الكامل', 'مريم العلي');
+      await type(tester, 'اسم الأم', 'مريم');
+      await type(tester, 'كنية الأم', 'العلي');
 
       await tester.tap(find.text('حفظ'));
       // مؤشّرُ الحفظ يدور ما دام السؤال مفتوحاً، فلا يستقرّ الإطار.
@@ -351,7 +401,8 @@ void main() {
       await type(tester, 'اسم الطالب *', 'عمر');
       await type(tester, 'اسم الأب *', 'حسن');
       await type(tester, 'اسم العائلة *', 'الشامي');
-      await type(tester, 'اسم الأم الكامل', 'مريم العلي');
+      await type(tester, 'اسم الأم', 'مريم');
+      await type(tester, 'كنية الأم', 'العلي');
 
       await tester.tap(find.text('حفظ'));
       // مؤشّرُ الحفظ يدور ما دام السؤال مفتوحاً، فلا يستقرّ الإطار.
@@ -365,10 +416,12 @@ void main() {
       final payload = jsonDecode(operation.payload) as Map<String, dynamic>;
 
       expect(payload.containsKey('sibling_guardian_uuids'), isFalse);
-      expect(
-        (payload['guardians'] as Map)['father']['full_name'],
-        'حسن الشامي',
-      );
+      final guardians = payload['guardians'] as Map;
+
+      expect(guardians['father']['first_name'], 'حسن');
+      expect(guardians['father']['family_name'], 'الشامي');
+      expect(guardians['mother']['first_name'], 'مريم');
+      expect(guardians['mother']['family_name'], 'العلي');
 
       await settle(tester);
     });
@@ -421,7 +474,7 @@ void main() {
       await tester.pump();
 
       // «المعلَّقة» هو الافتراضي، فالمبتوتُ فيه لا يظهر أصلاً.
-      expect(find.text('لا إذنَ ينتظر المراجعة.'), findsOneWidget);
+      expect(find.text('لا عذرَ ينتظر المراجعة.'), findsOneWidget);
 
       await tester.tap(find.text('الكل'));
       await tester.pump();
@@ -441,7 +494,7 @@ void main() {
       await tester.pump();
 
       expect(find.text('الدورات'), findsOneWidget);
-      expect(find.text('الدوامات'), findsOneWidget);
+      expect(find.text('أوقات الدوام'), findsOneWidget);
       expect(find.text('الحلقات'), findsOneWidget);
       expect(find.text('دورة 1447'), findsOneWidget);
 
@@ -468,7 +521,7 @@ void main() {
       await pump(tester, const CatalogScreen());
       await tester.pump();
 
-      await tester.tap(find.text('الدوامات'));
+      await tester.tap(find.text('أوقات الدوام'));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('الاثنين'), findsOneWidget);
@@ -546,6 +599,117 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('عدد الأبيات: 34'), findsOneWidget);
+
+      await settle(tester);
+    });
+  });
+
+  // ما كان في لوحة الويب وحدها فصار في برنامج الإدارة.
+  group('institute content', () {
+    testWidgets('a teacher is deleted only after the confirmation',
+        (tester) async {
+      await boot(SeededRoles.admin);
+      await seed();
+      await db.into(db.teachers).insert(TeachersCompanion.insert(
+            uuid: 'tch-1',
+            instituteId: 1,
+            displayName: 'أحمد المصري',
+            phone: const Value('0933000000'),
+          ));
+      when(() => api.deleteTeacher('tch-1'))
+          .thenAnswer((_) async => _response({'deleted': true}));
+      when(() => api.syncPull(any(), any(), any())).thenAnswer(
+        (_) async => _response({'server_seq': 0, 'changes': <dynamic>[]}),
+      );
+
+      await pump(tester, const TeachersScreen());
+      await tester.pump();
+
+      expect(find.text('أحمد المصري'), findsOneWidget);
+      expect(find.text('على رأس العمل · 0933000000'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('حذف'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('إلغاء'));
+      await tester.pumpAndSettle();
+      verifyNever(() => api.deleteTeacher(any()));
+
+      await tester.tap(find.byTooltip('حذف'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'حذف'));
+      await tester.pumpAndSettle();
+      verify(() => api.deleteTeacher('tch-1')).called(1);
+
+      await settle(tester);
+    });
+
+    testWidgets('announcements read from the server, drafts marked as such',
+        (tester) async {
+      await boot(SeededRoles.admin);
+      when(() => api.adminAnnouncements()).thenAnswer(
+        (_) async => _response({
+          'data': [
+            {
+              'uuid': 'ann-1',
+              'title': 'عطلة الجمعة',
+              'body': 'لا دوام يوم الجمعة القادم.',
+              'scope': 'all',
+              'scope_ids': <int>[],
+              'audience': ['students', 'guardians'],
+              'published_at': '2026-10-10T08:00:00+03:00',
+              'author': 'المدير',
+            },
+            {
+              'uuid': 'ann-2',
+              'title': 'مسابقة الحفظ',
+              'body': 'تفاصيل لاحقاً.',
+              'scope': 'circle',
+              'scope_ids': [1],
+              'audience': ['teachers'],
+              'published_at': null,
+            },
+          ],
+        }),
+      );
+
+      await pump(tester, const AnnouncementsScreen());
+      await tester.pumpAndSettle();
+
+      expect(find.text('عطلة الجمعة'), findsOneWidget);
+      expect(find.text('منشور'), findsOneWidget);
+      expect(find.text('مسودّة'), findsOneWidget);
+      expect(find.textContaining('إلى: الطلاب، أولياء الأمور'), findsOneWidget);
+      expect(find.textContaining('1 حلقة'), findsOneWidget);
+
+      await settle(tester);
+    });
+
+    testWidgets('a global trait is locked, an institute one is editable',
+        (tester) async {
+      await boot(SeededRoles.admin);
+      await seed();
+      await db.into(db.personalTraits).insert(PersonalTraitsCompanion.insert(
+            uuid: 'trt-1',
+            name: 'مثابر',
+            slug: 'persistent',
+            polarity: const Value('positive'),
+          ));
+      await db.into(db.personalTraits).insert(PersonalTraitsCompanion.insert(
+            uuid: 'trt-2',
+            instituteId: const Value(1),
+            name: 'كثير الغياب',
+            slug: 'absent',
+            polarity: const Value('negative'),
+            sortOrder: const Value(1),
+          ));
+
+      await pump(tester, const FieldsTraitsScreen());
+      await tester.tap(find.text('الصفات الشخصية'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('صفة إيجابية · عامّة لكل المعاهد'), findsOneWidget);
+      expect(find.text('صفة تحتاج متابعة'), findsOneWidget);
+      expect(find.byTooltip('إجراءات'), findsOneWidget);
 
       await settle(tester);
     });

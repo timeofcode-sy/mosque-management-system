@@ -3,7 +3,9 @@
 use App\Http\Controllers\Api\V1\Admin\CatalogController;
 use App\Http\Controllers\Api\V1\Admin\CurriculumAdminController;
 use App\Http\Controllers\Api\V1\Admin\InstituteAdminController;
+use App\Http\Controllers\Api\V1\Admin\InstituteContentController;
 use App\Http\Controllers\Api\V1\Admin\UserAdminController;
+use App\Http\Controllers\Api\V1\AppUpdateController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BootstrapController;
 use App\Http\Controllers\Api\V1\DeviceController;
@@ -18,6 +20,14 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function (): void {
     /** ✅ م.9.1 — سقفٌ على العنوان يسبق bcrypt؛ والقفلُ على الحساب في المتحكّم نفسِه */
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:api-login');
+
+    /**
+     * تحديثاتُ التطبيقات: بلا توكن، فالتطبيقُ يسأل قبل الدخول أيضاً — تحديثٌ إلزاميّ يصلح
+     * خللاً في الدخول لا ينتظر دخولاً لا ينجح. والتنزيلُ بسقفٍ أوسع: الاستئنافُ طلباتٌ متتابعة.
+     */
+    Route::middleware('throttle:60,1')->get('/app-updates/check', [AppUpdateController::class, 'check']);
+    Route::middleware('throttle:120,1')->get('/app-updates/{uuid}/download', [AppUpdateController::class, 'download'])
+        ->whereUuid('uuid');
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::post('/auth/logout', [AuthController::class, 'logout']);
@@ -93,6 +103,31 @@ Route::prefix('v1')->group(function (): void {
                 Route::post('/circles/{uuid}/run', [CatalogController::class, 'runCircle']);
             });
 
+            // ما كان في اللوحة وحدها: الأساتذة والإعلانات والواصفات المخصّصة والصفات —
+            // بحرّاس شاشاتها في اللوحة نفسِها.
+            Route::middleware('permission:teachers.manage')->group(function (): void {
+                Route::post('/teachers', [InstituteContentController::class, 'storeTeacher']);
+                Route::put('/teachers/{uuid}', [InstituteContentController::class, 'updateTeacher']);
+                Route::delete('/teachers/{uuid}', [InstituteContentController::class, 'destroyTeacher']);
+                Route::post('/teachers/{uuid}/account', [InstituteContentController::class, 'teacherAccount']);
+            });
+
+            Route::middleware('permission:announcements.manage')->group(function (): void {
+                Route::get('/announcements', [InstituteContentController::class, 'announcements']);
+                Route::post('/announcements', [InstituteContentController::class, 'storeAnnouncement']);
+                Route::put('/announcements/{uuid}', [InstituteContentController::class, 'updateAnnouncement']);
+                Route::post('/announcements/{uuid}/unpublish', [InstituteContentController::class, 'unpublishAnnouncement']);
+            });
+
+            Route::middleware('permission:settings.manage')->group(function (): void {
+                Route::post('/custom-fields', [InstituteContentController::class, 'storeField']);
+                Route::put('/custom-fields/{uuid}', [InstituteContentController::class, 'updateField']);
+                Route::delete('/custom-fields/{uuid}', [InstituteContentController::class, 'destroyField']);
+                Route::post('/traits', [InstituteContentController::class, 'storeTrait']);
+                Route::put('/traits/{uuid}', [InstituteContentController::class, 'updateTrait']);
+                Route::delete('/traits/{uuid}', [InstituteContentController::class, 'destroyTrait']);
+            });
+
             // ✅ م.6.5 — الفجوة المسمّاة منذ م.6.2: المناهج بلا نقطة.
             Route::middleware('permission:curricula.manage')->group(function (): void {
                 Route::post('/curricula', [CurriculumAdminController::class, 'store']);
@@ -116,6 +151,10 @@ Route::prefix('v1')->group(function (): void {
             // (القرار 0.1 في PHASE-7-STAGES.MD)، فما كان يصله في التيّار — حالةُ
             // إذنه وتقدُّمُ حفظِ ابنه — صار له نقطتُه.
             Route::get('/children/{student}/progress', [GuardianController::class, 'childProgress']);
+            // الجانب السلوكي: ملاحظات التفقّد والصفات ونقاط السلوك.
+            Route::get('/children/{student}/behavior', [GuardianController::class, 'childBehavior']);
+            // سجلُّ تسميع الابن — تحت شريط الأجزاء في لسان «الحفظ».
+            Route::get('/children/{student}/recitations', [GuardianController::class, 'childRecitations']);
             Route::get('/excuses', [GuardianController::class, 'excuses']);
             Route::get('/announcements', [GuardianController::class, 'announcements']);
             Route::post('/excuses', [GuardianController::class, 'submitExcuse']);
@@ -124,10 +163,12 @@ Route::prefix('v1')->group(function (): void {
         Route::middleware('role:student')->prefix('/student')->group(function (): void {
             Route::get('/me/attendance', [StudentSelfController::class, 'attendance']);
             Route::get('/me/progress', [StudentSelfController::class, 'progress']);
+            Route::get('/me/recitations', [StudentSelfController::class, 'recitations']);
             // ✅ م.8.1 — ثلاثٌ جديدة. الطالبُ خارجَ `sync/pull` كوليّ الأمر
             // (§1.1 في PHASE-8-STAGES.MD)، **والرتبةُ تُحسب في الخادم** فلا يصل
             // جهازَه صفُّ زميلٍ واحد.
             Route::get('/me/standing', [StudentSelfController::class, 'standing']);
+            Route::get('/me/behavior', [StudentSelfController::class, 'behavior']);
             Route::get('/me/points', [StudentSelfController::class, 'points']);
             Route::get('/me/announcements', [StudentSelfController::class, 'announcements']);
         });

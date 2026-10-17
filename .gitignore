@@ -26,7 +26,8 @@ backend/.cursor/
 build/
 .flutter-plugins
 .flutter-plugins-dependencies
-pubspec.lock
+# pubspec.lock is tracked: the workspace builds applications, and every export must resolve the
+# same versions (sqlite3's build hook fetches the SQLite binary that matches its own version).
 *.g.dart
 *.freezed.dart
 
@@ -52,3 +53,9 @@ dist/
 # Brand identity source delivered by the designer (videos, mock-ups, reference images: 24MB).
 # Generated outputs are committed; scripts/build-*.mjs|py read from it.
 /brand-v3/
+
+# بيانات المعاهد الحقيقية (أسماء وأرقام) — لا تدخل المستودع
+temp data/
+
+# The marketing campaigns (renders, videos, screenshots) are large and regenerated from marketing/campaign-*/_source.
+/marketing/

@@ -1,7 +1,21 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// The permanent release key (keystore + key.properties) lives outside the repository, by default
+// in ~/.nuzuln-signing/ or wherever NUZULN_SIGNING_PROPERTIES points. Without it a release build is
+// signed with the debug key, which cannot update an installed app: scripts/export-apps.ps1 refuses
+// to export Android apps then. See docs/APP-UPDATES.md (signing key).
+val signingProperties = file(
+    System.getenv("NUZULN_SIGNING_PROPERTIES")
+        ?: "${System.getProperty("user.home")}/.nuzuln-signing/key.properties",
+)
+val releaseSigning = Properties().apply {
+    if (signingProperties.exists()) signingProperties.inputStream().use { load(it) }
 }
 
 android {
@@ -30,11 +44,34 @@ android {
         versionName = flutter.versionName
     }
 
+    // Native libraries compressed inside the APK: stored, they made two thirds of a 66-75 MB file;
+    // compressed the download halves, and Android unpacks them once at install
+    // (docs/suggestions/SUGGESTIONS.md, 1.2 #1).
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
+    signingConfigs {
+        if (signingProperties.exists()) {
+            create("release") {
+                storeFile = file(releaseSigning.getProperty("storeFile"))
+                storePassword = releaseSigning.getProperty("storePassword")
+                keyAlias = releaseSigning.getProperty("keyAlias")
+                keyPassword = releaseSigning.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (signingProperties.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                logger.warn("Nuzuln: no release key at $signingProperties - signing with the debug key.")
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

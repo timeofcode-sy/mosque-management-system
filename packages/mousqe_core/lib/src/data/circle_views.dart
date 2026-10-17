@@ -1,4 +1,5 @@
 import '../models/enums.dart';
+import '../models/student_behavior.dart';
 import '../db/database.dart';
 import '../support/attendance_rate.dart';
 import '../support/quran.dart';
@@ -145,6 +146,7 @@ class RosterEntry {
     required this.lateMinutes,
     this.lateMinutesOverride,
     required this.note,
+    this.notePolarity,
     required this.recordedAt,
     this.recitations = const [],
     this.points = const [],
@@ -169,12 +171,24 @@ class RosterEntry {
   final int? lateMinutesOverride;
 
   final String? note;
+
+  /// نوعُ [note]: ثناءٌ أو تنبيه، و`null` لملاحظةٍ مجرّدة — ولا معنى له بلا ملاحظة.
+  final NotePolarity? notePolarity;
+
   final DateTime? recordedAt;
 
   /// تسميعات الطالب ونقاطه في هذه الجلسة — تُعرض تحت اسمه ويُنقر عليها لتصحيحها.
   final List<RecitationEntry> recitations;
 
   final List<PointEntry> points;
+
+  /// ما سُجّل للطالب في الجلسة ولا يقع إلا بحضوره — فلا يُعلَّم غائباً قبل حذفه،
+  /// كما لا يُسجَّل شيءٌ منه لغائب ([AttendanceStatus.isAbsence]).
+  List<String> get presenceRecords => [
+    if (note != null) 'الملاحظة',
+    if (recitations.isNotEmpty) 'التسميع',
+    if (points.isNotEmpty) 'النقاط',
+  ];
 
   RosterEntry copyWith({
     AttendanceStatus? status,
@@ -183,7 +197,9 @@ class RosterEntry {
     int? lateMinutesOverride,
     bool clearLateMinutes = false,
     String? note,
+    NotePolarity? notePolarity,
     bool clearNote = false,
+    bool clearNotePolarity = false,
     DateTime? recordedAt,
   }) {
     return RosterEntry(
@@ -197,6 +213,9 @@ class RosterEntry {
           ? null
           : (lateMinutesOverride ?? this.lateMinutesOverride),
       note: clearNote ? null : (note ?? this.note),
+      notePolarity: clearNote || clearNotePolarity
+          ? null
+          : (notePolarity ?? this.notePolarity),
       recordedAt: recordedAt ?? this.recordedAt,
       recitations: recitations,
       points: points,
@@ -357,6 +376,83 @@ class SessionLogEntry {
 
 /// ملفّ الطالب كما يبنيه العميل محلياً — الإحصاءات مشتقّة تُحسب هنا لا تُنقل
 /// عبر الشبكة ([SYNC-PROTOCOL.md §7](../../../../../docs/SYNC-PROTOCOL.md)).
+/// ما يعرفه الأستاذ عن طالبه سوى حضوره وتسميعه — من صفّ الطالب ووليّيه وواصفاته في drift.
+class StudentDetails {
+  const StudentDetails({
+    this.birthDate,
+    this.gradeLevel,
+    this.phone,
+    this.address,
+    this.studentJob,
+    this.familyMembersCount,
+    this.healthStatus,
+    this.familyHealthStatus,
+    this.notes,
+    this.registrationDate,
+    this.father,
+    this.mother,
+    this.memorizedJuz = const [],
+    this.currentJuz,
+    this.otherMemorized = const [],
+    this.customFields = const {},
+  });
+
+  final DateTime? birthDate;
+  final String? gradeLevel;
+  final String? phone;
+  final String? address;
+  final String? studentJob;
+  final int? familyMembersCount;
+  final String? healthStatus;
+  final String? familyHealthStatus;
+  final String? notes;
+  final DateTime? registrationDate;
+  final ParentInfo? father;
+  final ParentInfo? mother;
+
+  /// أرقامُ الأجزاء المحفوظة، تنازلياً كما تُحفظ عادةً (30، 29…).
+  final List<int> memorizedJuz;
+
+  /// الجزءُ الذي يُحفظ الآن — الجاري الأكثرُ تقدّماً، أو `null`.
+  final int? currentJuz;
+
+  /// محفوظاتٌ من غير القرآن (الأربعون النووية، تحفة الأطفال…).
+  final List<String> otherMemorized;
+
+  /// عنوانُ الواصفة ← قيمتُها.
+  final Map<String, String> customFields;
+
+  /// عمرُه بالسنوات اليوم.
+  int? ageOn(DateTime today) {
+    final born = birthDate;
+
+    if (born == null) {
+      return null;
+    }
+
+    final birthdayPassed =
+        today.month > born.month ||
+        (today.month == born.month && today.day >= born.day);
+
+    return today.year - born.year - (birthdayPassed ? 0 : 1);
+  }
+}
+
+/// أحدُ الوالدين كما يراه الأستاذ.
+class ParentInfo {
+  const ParentInfo({
+    required this.name,
+    this.phone,
+    this.occupation,
+    this.isAlive = true,
+  });
+
+  final String name;
+  final String? phone;
+  final String? occupation;
+  final bool isAlive;
+}
+
 class StudentProfile {
   const StudentProfile({
     required this.studentId,
@@ -366,6 +462,8 @@ class StudentProfile {
     required this.attendance,
     required this.recitations,
     required this.points,
+    this.details = const StudentDetails(),
+    this.behavior = const StudentBehavior(),
   });
 
   final int studentId;
@@ -375,6 +473,12 @@ class StudentProfile {
   final List<StudentAttendanceEntry> attendance;
   final List<RecitationRow> recitations;
   final List<StudentPointRow> points;
+
+  /// من هو: عمرُه وصفُّه وأهلُه ووضعُه الصحي ومحفوظاتُه — ليعرفه أستاذه.
+  final StudentDetails details;
+
+  /// الجانبُ السلوكي بالشكل الذي يقرؤه وليُّ الأمر (`StudentBehavior`).
+  final StudentBehavior behavior;
 
   int countOf(AttendanceStatus status) =>
       attendance.where((entry) => entry.status == status).length;

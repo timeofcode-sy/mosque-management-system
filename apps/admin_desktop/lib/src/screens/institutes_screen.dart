@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
+import '../config.dart';
 import '../di/app_scope.dart';
 import '../widgets/connected_action.dart';
+import '../widgets/sync_bar.dart';
 
 /// إدارةُ المعاهد — ✅ م.6.5، خلف `institutes.manage`.
 ///
@@ -40,6 +42,13 @@ class _InstitutesScreenState extends State<InstitutesScreen> {
     });
   }
 
+  /// سحبُ القائمة إلى الأسفل يعيد قراءتها — على الهاتف بدل زرّ التحديث.
+  Future<void> _pull() {
+    _reload();
+
+    return _future!.then((_) {}, onError: (_) {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final active = AppScope.of(context).session.snapshot?.institute.uuid;
@@ -48,11 +57,14 @@ class _InstitutesScreenState extends State<InstitutesScreen> {
       appBar: AppBar(
         title: const Text('المعاهد'),
         actions: [
-          IconButton(
-            tooltip: 'تحديث',
-            icon: const NzIcon(NzIcons.review),
-            onPressed: _reload,
-          ),
+          const PhoneSyncAction(),
+          // على الهاتف تُسحب القائمةُ إلى الأسفل بدل الزرّ.
+          if (!AppConfig.isPhone)
+            IconButton(
+              tooltip: 'تحديث',
+              icon: const NzIcon(NzIcons.review),
+              onPressed: _reload,
+            ),
           Padding(
             padding: const EdgeInsetsDirectional.only(start: 8, end: 12),
             child: FilledButton.icon(
@@ -63,65 +75,68 @@ class _InstitutesScreenState extends State<InstitutesScreen> {
           ),
         ],
       ),
-      body: FutureBuilder<List<InstituteOption>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return EmptyState(
-              message: isOffline(snapshot.error!)
-                  ? 'قائمةُ المعاهد تحتاج اتصالاً.'
-                  : messageFor(snapshot.error!),
-              icon: NzIcons.offline,
-              onRetry: _reload,
-            );
-          }
-
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final institutes = snapshot.data!;
-
-          if (institutes.isEmpty) {
-            return const EmptyState(
-              message: 'لا معاهد بعد.',
-              icon: NzIcons.mosque,
-            );
-          }
-
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: institutes.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final institute = institutes[index];
-
-              return ListTile(
-                leading: const NzIcon(NzIcons.mosque),
-                title: Row(
-                  spacing: 8,
-                  children: [
-                    Flexible(child: Text(institute.name)),
-                    if (institute.uuid == active)
-                      const Chip(
-                        label: Text(
-                          'المعهد العامل',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        padding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                  ],
-                ),
-                subtitle: Text(institute.isActive ? 'فعّال' : 'موقوف'),
-                trailing: IconButton(
-                  icon: const NzIcon(NzIcons.edit, size: 18),
-                  onPressed: () => _edit(context, institute),
-                ),
+      body: RefreshIndicator(
+        onRefresh: _pull,
+        child: FutureBuilder<List<InstituteOption>>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return EmptyState(
+                message: isOffline(snapshot.error!)
+                    ? 'قائمةُ المعاهد تحتاج اتصالاً.'
+                    : messageFor(snapshot.error!),
+                icon: NzIcons.offline,
+                onRetry: _reload,
               );
-            },
-          );
-        },
+            }
+
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final institutes = snapshot.data!;
+
+            if (institutes.isEmpty) {
+              return const EmptyState(
+                message: 'لا معاهد بعد.',
+                icon: NzIcons.mosque,
+              );
+            }
+
+            return ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: institutes.length,
+              separatorBuilder: (_, _) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final institute = institutes[index];
+
+                return ListTile(
+                  leading: const NzIcon(NzIcons.mosque),
+                  title: Row(
+                    spacing: 8,
+                    children: [
+                      Flexible(child: Text(institute.name)),
+                      if (institute.uuid == active)
+                        const Chip(
+                          label: Text(
+                            'المعهد العامل',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                          padding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                    ],
+                  ),
+                  subtitle: Text(institute.isActive ? 'فعّال' : 'موقوف'),
+                  trailing: IconButton(
+                    icon: const NzIcon(NzIcons.edit, size: 18),
+                    onPressed: () => _edit(context, institute),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

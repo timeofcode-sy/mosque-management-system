@@ -13,7 +13,7 @@ use Livewire\Component;
 
 /**
  * إعلاناتُ المعهد — ✅ م.8.1، **وهي الطرفُ الكاتب** الذي كان ينقص جدولاً قائماً
- * منذ م.1 ([PHASE-8-STAGES.MD §1.3](../../../../docs/PHASE-8-STAGES.MD)).
+ * منذ م.1 ([PHASE-8-STAGES.MD §1.3](../../../../docs/phases/PHASE-8-STAGES.MD)).
  *
  * بلا هذه الشاشة تبقى `GET /student/me/announcements` نقطةً لا محتوى لها، وشاشةُ
  * الطالب وعداً لا يُنجَز — نظيرَ ما تحذّر منه [CLIENTS.md §3](CLIENTS.md) عن

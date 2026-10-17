@@ -3,6 +3,7 @@ import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
+import 'announcements_screen.dart';
 
 /// حضوري: الملخّصُ والمنحنى والسجلّ يوماً بيوم.
 class AttendanceScreen extends StatelessWidget {
@@ -13,7 +14,10 @@ class AttendanceScreen extends StatelessWidget {
     final repository = AppScope.of(context).repository;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('حضوري')),
+      appBar: AppBar(
+        title: const Text('حضوري'),
+        actions: const [AnnouncementsAction()],
+      ),
       body: SnapshotView<ChildAttendance>(
         load: () async => (await repository.attendance()).ui,
         errorMessageBuilder: messageFor,
@@ -45,11 +49,14 @@ class _SummaryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // الهامشُ بين البطاقات هنا لا فيها: بطاقاتُ الثيم بلا هامش.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Column(
+        spacing: 8,
         children: [
           Row(
+            spacing: 8,
             children: [
               Expanded(
                 child: StatCard(
@@ -70,6 +77,7 @@ class _SummaryGrid extends StatelessWidget {
             ],
           ),
           Row(
+            spacing: 8,
             children: [
               Expanded(child: StatCard(value: '${summary.present}', label: 'حاضر')),
               Expanded(child: StatCard(value: '${summary.absent}', label: 'غائب')),

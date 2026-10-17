@@ -161,6 +161,8 @@ class SyncPayloadApplier {
           uuid: payload['uuid'] as String,
           instituteId: _int(payload['institute_id'])!,
           fullName: payload['full_name'] as String,
+          firstName: Value(payload['first_name'] as String?),
+          familyName: Value(payload['family_name'] as String?),
           phone: Value(payload['phone'] as String?),
           alternatePhone: Value(payload['alternate_phone'] as String?),
           occupation: Value(payload['occupation'] as String?),

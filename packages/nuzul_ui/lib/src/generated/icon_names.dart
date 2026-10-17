@@ -65,7 +65,7 @@ abstract final class NzIcons {
   static const qrCode = 'qr-code';
   static const play = 'play';
   static const pause = 'pause';
-  static const megaphone = 'megaphone';
+  static const announcement = 'announcement';
   static const list = 'list';
   static const shield = 'shield';
   static const envelope = 'envelope';

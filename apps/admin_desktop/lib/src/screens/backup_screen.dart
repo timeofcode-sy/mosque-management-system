@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../di/app_scope.dart';
+import '../widgets/sync_bar.dart';
 
 /// نسخٌ احتياطي محلي لملفّ drift — ✅ م.6.6، وآخرُ بنود المرحلة السادسة.
 ///
@@ -100,7 +101,10 @@ class _BackupScreenState extends State<BackupScreen> {
     final deps = AppScope.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('نسخٌ احتياطي')),
+      appBar: AppBar(
+        title: const Text('نسخٌ احتياطي'),
+        actions: const [PhoneSyncAction()],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

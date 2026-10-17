@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:mousqe_core/mousqe_core.dart';
 import 'package:mousqe_ui/mousqe_ui.dart';
 
+import '../config.dart';
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/sync_bar.dart';
 import 'student_profile_screen.dart' show badgeOf;
 
 /// داشبورد المعهد — ✅ م.6.6، **محسوبٌ على الجهاز** من الصفوف المتزامنة.
@@ -24,13 +26,16 @@ class DashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الداشبورد'),
+        title: const Text('الصفحة الرئيسية'),
         actions: [
-          AdaptiveAction(
-            icon: NzIcons.review,
-            label: 'مزامنة الآن',
-            onPressed: deps.sync.syncNow,
-          ),
+          const PhoneSyncAction(),
+          // على الهاتف «زامن الآن» في ورقة زرّ المزامنة، فلا يتكرّر الفعلُ أيقونتين متجاورتين.
+          if (!AppConfig.isPhone)
+            AdaptiveAction(
+              icon: NzIcons.review,
+              label: 'مزامنة الآن',
+              onPressed: deps.sync.syncNow,
+            ),
         ],
       ),
       body: StreamBuilder<InstituteOverview>(
@@ -46,14 +51,17 @@ class DashboardScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              // الحديثُ الذي سُمّي منه النظامُ في رأس الرئيسيّة، بعرض الصفحة كبقيّة بطاقاتها.
+              const HomeHadith(padding: EdgeInsets.zero),
+              const SizedBox(height: 16),
               _Counters(counters: overview.counters),
               const SizedBox(height: 16),
               if (!overview.hasCurrentCourse)
                 // معهدٌ بلا دورةٍ جارية لا كشفَ له — ولا معنى لرسم صفرٍ عنه.
                 const EmptyState(
                   message:
-                      'لا دورةَ جاريةٌ في هذا المعهد بعد. تُهيَّأ الدورةُ ودواماتُها '
-                      'وحلقاتُها من باب «الدورات والدوامات»، ثم تظهر أرقامُها هنا.',
+                      'لا دورةَ جاريةٌ في هذا المعهد بعد. تُهيَّأ الدورةُ وأوقاتُ دوامها '
+                      'وحلقاتُها من باب «الدورات وأوقات الدوام»، ثم تظهر أرقامُها هنا.',
                   icon: NzIcons.calendar,
                 )
               else ...[
@@ -116,7 +124,7 @@ class _Counters extends StatelessWidget {
         ),
         StatCard(
           value: '${counters.circles}',
-          label: 'حلقةٌ مشغَّلة',
+          label: 'حلقةٌ مفعّلة',
           icon: NzIcons.halaqa,
         ),
         StatCard(
@@ -291,7 +299,7 @@ class _StandingsCard extends StatelessWidget {
 
     if (standings.isEmpty) {
       return const EmptyState(
-        message: 'لا حلقةَ مشغَّلةٌ في الدورة الجارية بعد.',
+        message: 'لا حلقةَ مفعّلةٌ في الدورة الجارية بعد.',
         icon: NzIcons.halaqa,
       );
     }

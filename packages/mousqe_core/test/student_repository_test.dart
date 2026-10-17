@@ -179,6 +179,81 @@ void main() {
       expect(form.courseCircleUuid, TestInstitute.circleUuid);
     });
 
+    test('the mother name reads back in its two parts', () async {
+      await seedFormData();
+
+      for (final (id, relation, guardian) in [
+        // صفٌّ وصل بقسمَي اسمه — كنيةٌ من كلمتين تبقى كما هي.
+        (
+          1,
+          'mother',
+          GuardiansCompanion.insert(
+            id: const Value(1),
+            uuid: 'grd-1',
+            instituteId: 1,
+            fullName: 'هنادي الشيخ حسن',
+            firstName: const Value('هنادي'),
+            familyName: const Value('الشيخ حسن'),
+          ),
+        ),
+        // وصفٌّ وصل قبل القسمة: الكلمةُ الأولى اسم والباقي كنية.
+        (
+          2,
+          'father',
+          GuardiansCompanion.insert(
+            id: const Value(2),
+            uuid: 'grd-2',
+            instituteId: 1,
+            fullName: 'فواز  الزغلول',
+          ),
+        ),
+      ]) {
+        await db.into(db.guardians).insert(guardian);
+        await db.into(db.guardianStudentTable).insert(
+              GuardianStudentTableCompanion.insert(
+                uuid: 'gs-$id',
+                guardianId: id,
+                studentId: TestInstitute.ali,
+                relation: Value(relation),
+              ),
+            );
+      }
+
+      final form = (await repository.loadStudentForm('stu-ali'))!;
+
+      expect(form.mother.firstName, 'هنادي');
+      expect(form.mother.familyName, 'الشيخ حسن');
+      expect(form.mother.fullName, 'هنادي الشيخ حسن');
+      expect(form.father.firstName, 'فواز');
+      expect(form.father.familyName, 'الزغلول');
+    });
+
+    test('the mother is sent as a name and a family name', () async {
+      await repository.saveStudent(const StudentForm(
+        firstName: 'جابر',
+        fatherName: 'فواز',
+        familyName: 'الزغلول',
+        mother: GuardianDraft(
+          firstName: ' هنادي ',
+          familyName: 'الشيخ حسن',
+          phone: '0999249219',
+        ),
+      ));
+
+      final guardians =
+          (await queue()).single['guardians'] as Map<String, dynamic>;
+
+      expect(guardians['mother'], {
+        'first_name': ' هنادي ',
+        'family_name': 'الشيخ حسن',
+        'occupation': null,
+        'phone': '0999249219',
+      });
+      // والأبُ من البيانات الشخصية: اسمُ الأب والكنية.
+      expect(guardians['father']['first_name'], 'فواز');
+      expect(guardians['father']['family_name'], 'الزغلول');
+    });
+
     test('a new student and the enrolment ride the same batch', () async {
       final uuid = await repository.saveStudent(const StudentForm(
         firstName: 'يوسف',
@@ -224,7 +299,7 @@ void main() {
         firstName: 'يوسف',
         fatherName: 'عمر',
         familyName: 'الحربي',
-        father: GuardianDraft(fullName: 'عمر الحربي'),
+        father: GuardianDraft(firstName: 'عمر', familyName: 'الحربي'),
         // الأمُّ متروكةٌ فارغةً — وإرسالُها كان يعني صفَّ وليٍّ بلا اسم.
       ));
 
@@ -340,18 +415,20 @@ void main() {
           fatherName: 'حسن',
           familyName: 'الشامي',
           // ما في حقل الاسم الكامل لا يُرسَل: الاسمُ يُبنى من البيانات الشخصية.
-          father: GuardianDraft(fullName: 'اسمٌ قديم'),
-          mother: GuardianDraft(fullName: 'مريم العلي'),
+          father: GuardianDraft(firstName: 'اسمٌ', familyName: 'قديم'),
+          mother: GuardianDraft(firstName: 'مريم', familyName: 'العلي'),
         ),
         sibling: families.single,
       );
 
       final operation = (await queue()).single;
 
-      expect(
-        (operation['guardians'] as Map)['father']['full_name'],
-        'حسن الشامي',
-      );
+      final guardians = operation['guardians'] as Map;
+
+      expect(guardians['father']['first_name'], 'حسن');
+      expect(guardians['father']['family_name'], 'الشامي');
+      expect(guardians['mother']['first_name'], 'مريم');
+      expect(guardians['mother']['family_name'], 'العلي');
       expect(
         operation['sibling_guardian_uuids'],
         {'father': 'grd-1', 'mother': 'grd-2'},
@@ -422,7 +499,7 @@ void main() {
       await repository.reviewExcuse(
         excuseUuid: 'exc-1',
         approve: true,
-        note: 'إذن مقبول',
+        note: 'عذر مقبول',
       );
 
       final excuse = (await repository.loadExcuses()).single;
@@ -435,7 +512,7 @@ void main() {
 
       expect(operation['type'], 'excuse.review');
       expect(operation['decision'], 'approved');
-      expect(operation['note'], 'إذن مقبول');
+      expect(operation['note'], 'عذر مقبول');
     });
 
     test('a rejection is a decision too, never a silent no-op', () async {

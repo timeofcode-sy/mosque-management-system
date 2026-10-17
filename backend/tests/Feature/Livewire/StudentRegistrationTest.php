@@ -64,7 +64,8 @@ class StudentRegistrationTest extends TestCase
             ->assertSeeHtml('data-test="father-full-name"')
             ->set('father_occupation', 'نجّار')
             ->set('father_phone', '0911111111')
-            ->set('mother_full_name', 'أم عبد الرحمن')
+            ->set('mother_first_name', 'هنادي')
+            ->set('mother_family_name', ' الشيخ  حسن ')
             ->set('mother_occupation', 'ربّة منزل')
             ->set('mother_phone', '0922222222')
             ->set('family_members_count', '6')
@@ -88,7 +89,10 @@ class StudentRegistrationTest extends TestCase
 
         $this->assertSame('سامر الخطيب', $student->father()?->full_name);
         $this->assertSame('نجّار', $student->father()?->occupation);
-        $this->assertSame('أم عبد الرحمن', $student->mother()?->full_name);
+        $this->assertSame('هنادي الشيخ حسن', $student->mother()?->full_name);
+        $this->assertSame('هنادي', $student->mother()?->first_name);
+        $this->assertSame('الشيخ حسن', $student->mother()?->family_name);
+        $this->assertSame(['سامر', 'الخطيب'], [$student->father()?->first_name, $student->father()?->family_name]);
         $this->assertSame(
             GuardianRelation::Father->value,
             $student->guardians->firstWhere('full_name', 'سامر الخطيب')->pivot->relation,
@@ -136,6 +140,22 @@ class StudentRegistrationTest extends TestCase
         $this->register('يوسف', 'حسان', 'الأحمد', 'عائشة العلي');
 
         $this->assertSame('حسان الأحمد', Student::query()->sole()->father()?->full_name);
+    }
+
+    public function test_editing_reads_the_mother_name_back_in_its_two_parts(): void
+    {
+        $student = $this->register('يوسف', 'حسان', 'الأحمد', 'عائشة الشيخ حسن');
+
+        Livewire::test('pages::students.form', ['student' => $student])
+            ->assertSee('كنية الأم')
+            ->assertDontSee('اسم الأم الكامل')
+            ->assertSet('mother_first_name', 'عائشة')
+            ->assertSet('mother_family_name', 'الشيخ حسن')
+            ->set('mother_family_name', 'العلي')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame('عائشة العلي', $student->refresh()->mother()->full_name);
     }
 
     public function test_a_confirmed_sibling_shares_the_guardians_of_the_registered_brother(): void
@@ -198,19 +218,25 @@ class StudentRegistrationTest extends TestCase
         $this->assertTrue($ibrahim->mother()->is($brother->mother()));
     }
 
-    private function fillForm(string $firstName, string $fatherName, string $familyName, string $motherFullName, string $fatherPhone = ''): Testable
+    /**
+     * @param  string  $mother  اسم الأم ثم كنيتها بعد أول فراغ
+     */
+    private function fillForm(string $firstName, string $fatherName, string $familyName, string $mother, string $fatherPhone = ''): Testable
     {
+        [$motherName, $motherFamilyName] = explode(' ', $mother, 2);
+
         return Livewire::test('pages::students.form')
             ->set('first_name', $firstName)
             ->set('father_name', $fatherName)
             ->set('family_name', $familyName)
-            ->set('mother_full_name', $motherFullName)
+            ->set('mother_first_name', $motherName)
+            ->set('mother_family_name', $motherFamilyName)
             ->set('father_phone', $fatherPhone);
     }
 
-    private function register(string $firstName, string $fatherName, string $familyName, string $motherFullName, string $fatherPhone = ''): Student
+    private function register(string $firstName, string $fatherName, string $familyName, string $mother, string $fatherPhone = ''): Student
     {
-        $this->fillForm($firstName, $fatherName, $familyName, $motherFullName, $fatherPhone)
+        $this->fillForm($firstName, $fatherName, $familyName, $mother, $fatherPhone)
             ->call('save')
             ->assertHasNoErrors()
             ->assertSet('siblingPrompt', []);

@@ -37,6 +37,7 @@ class NuzulDependencies {
     ApiClient? api,
     ServerEndpoint? endpoint,
     PushTokenReader? pushToken,
+    DeviceDetailsReader? deviceDetails,
     String baseUrl = AppConfig.baseUrl,
   }) async {
     final db = database ?? AppDatabase();
@@ -73,6 +74,7 @@ class NuzulDependencies {
       appLabel: AppConfig.label,
       pushToken: () async =>
           session.app == Surface.guardian ? readPushToken() : null,
+      deviceDetails: deviceDetails,
     );
 
     // `sync/pull?app=teacher` — المحرّكُ للأستاذ وحده، فاسمُه ثابت.

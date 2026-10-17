@@ -6,6 +6,7 @@ import '../widgets/adaptive.dart';
 import '../widgets/color_field.dart';
 import '../widgets/connected_action.dart';
 import '../widgets/form_section.dart';
+import '../widgets/sync_bar.dart';
 
 /// بياناتُ المعهد وألوانُه الثلاثة — ✅ م.6.5، فوق `PUT /admin/institute`.
 ///
@@ -16,7 +17,7 @@ import '../widgets/form_section.dart';
 /// **والحمولةُ الجزئية لا تمسح ما قبلها**: قواعدُ `InstituteForm` تطلب الألوانَ
 /// والتفقّدَ والنقاطَ كاملةً لأن اللوحة ترسل النموذج كلَّه، وهذه الشاشةُ ترسل
 /// بابين. فبدل تليين القاعدة تُكمَّل الحمولةُ على الخادم من الحالة المخزَّنة قبل
-/// التحقّق ([CHECKPOINT-PHASE-6.2.MD §3.4](../../../../../docs/CHECKPOINT-PHASE-6.2.MD)).
+/// التحقّق ([CHECKPOINT-PHASE-6.2.MD §3.4](../../../../../docs/checkpoints/CHECKPOINT-PHASE-6.2.MD)).
 ///
 /// ⚠️ **والشعارُ خارج هذه الشاشة**: رفعُ ملفٍّ عقدٌ آخر (`multipart`) لم يُفتح
 /// بعد — [API.md §8]، وهو أثرٌ باقٍ من م.6.2.
@@ -80,6 +81,7 @@ class _InstituteSettingsScreenState extends State<InstituteSettingsScreen> {
       appBar: AppBar(
         title: const Text('بيانات المعهد'),
         actions: [
+          const PhoneSyncAction(),
           AdaptiveAction(
             icon: NzIcons.save,
             label: 'حفظ',

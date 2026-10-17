@@ -13,6 +13,8 @@ use App\Models\Guardian;
 use App\Models\Student;
 use App\Queries\AnnouncementQuery;
 use App\Queries\GuardianChildrenQuery;
+use App\Queries\RecitationLogQuery;
+use App\Queries\StudentBehaviorQuery;
 use App\Queries\StudentProfileQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,7 +24,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * ما يقرؤه وليُّ الأمر عن أبنائه، وكتابتُه الوحيدة: تقديمُ إذن غياب.
  *
  * 🔑 **وليُّ الأمر لا يستدعي `sync/pull` إطلاقاً** — القرارُ 0.1 في
- * [PHASE-7-STAGES.MD](../../../../../docs/PHASE-7-STAGES.MD). التيّارُ يبثّ
+ * [PHASE-7-STAGES.MD](../../../../../docs/phases/PHASE-7-STAGES.MD). التيّارُ يبثّ
  * **معهداً كاملاً** لكل الأدوار ([SYNC-PROTOCOL.md §4](../../../../../docs/SYNC-PROTOCOL.md))،
  * وذاك على جهاز الأستاذ حِملٌ وعلى جهاز الأب **تسريب**: أسماءُ كلِّ طلاب المعهد
  * وحضورُهم في هاتف كلِّ وليّ. ولا يحتاجه أصلاً — من يستدعي التيّارَ من يكتب في
@@ -92,6 +94,32 @@ class GuardianController extends Controller
         return response()->json([
             'data' => $this->groupedProgress($profile, $child),
         ]);
+    }
+
+    /**
+     * سجلُّ تسميع ابنٍ بعينه — الأحدثُ أولاً.
+     */
+    public function childRecitations(
+        Request $request,
+        string $student,
+        GuardianChildrenQuery $children,
+        RecitationLogQuery $recitations,
+    ): JsonResponse {
+        return response()->json([
+            'data' => $recitations->forStudent($children->child($this->guardian($request), $student)),
+        ]);
+    }
+
+    /**
+     * الجانب السلوكي لابنٍ بعينه: ملاحظات أساتذته في التفقّد وصفاتُه ونقاطُ سلوكه.
+     */
+    public function childBehavior(
+        Request $request,
+        string $student,
+        GuardianChildrenQuery $children,
+        StudentBehaviorQuery $behavior,
+    ): JsonResponse {
+        return response()->json($behavior->for($children->child($this->guardian($request), $student)));
     }
 
     /**

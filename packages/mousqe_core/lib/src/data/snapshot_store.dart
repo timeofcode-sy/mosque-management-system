@@ -7,7 +7,7 @@ import '../db/database.dart';
 ///
 /// [isStale] `true` تعني «هذه لقطةٌ محفوظة، والشبكةُ لم تُجب». والشاشةُ ملزمةٌ
 /// بأن تقول ذلك: بيانٌ قديم يُعرض بلا إعلانِ قِدَمه يقرؤه صاحبُه حاضراً
-/// ([PHASE-7-STAGES.MD §4](../../../../../docs/PHASE-7-STAGES.MD)).
+/// ([PHASE-7-STAGES.MD §4](../../../../../docs/phases/PHASE-7-STAGES.MD)).
 class Snapshot<T> {
   const Snapshot(this.value, {this.fetchedAt, this.isStale = false});
 
@@ -39,7 +39,7 @@ class Snapshot<T> {
 ///
 /// ما يصل عبر `sync/pull` يسكن جداولَ الدومين المطابقةَ لمخطط الخادم؛ وما يصل
 /// عبر نقطةٍ مخصّصة يسكن **مخزنَ لقطاتٍ** بشكل تلك النقطة، لأنه لا يُستعلَم عليه
-/// بل يُعرض كما وصل ([CHECKPOINT-PHASE-7.2.MD §2](../../../../../docs/CHECKPOINT-PHASE-7.2.MD)).
+/// بل يُعرض كما وصل ([CHECKPOINT-PHASE-7.2.MD §2](../../../../../docs/checkpoints/CHECKPOINT-PHASE-7.2.MD)).
 ///
 /// والمخزنُ `app_state` — نفسُ ما تسكنه لقطةُ `/bootstrap`، **ويُمسح في
 /// `clearAll()`** عند الخروج أو قفل الحساب.

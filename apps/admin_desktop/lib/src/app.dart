@@ -10,7 +10,18 @@ import 'shell/desktop_shell.dart';
 /// جذر التطبيق: يعيد بناء الثيم كلّما تغيّرت لقطةُ المعهد، ويبدّل بين شاشة
 /// الدخول والهيكل بحسب حالة الجلسة.
 class AdminDesktopApp extends StatefulWidget {
-  const AdminDesktopApp({super.key, required this.dependencies});
+  const AdminDesktopApp({
+    super.key,
+    required this.dependencies,
+    this.appearance,
+    this.updater,
+  });
+
+  /// الوضعُ وحجمُ الخط كما اختارهما صاحبُ الجهاز — `null` في الاختبارات.
+  final AppearanceController? appearance;
+
+  /// التحديثُ من داخل البرنامج — `null` في الاختبارات.
+  final AppUpdater? updater;
 
   final AppDependencies dependencies;
 
@@ -53,17 +64,18 @@ class _AdminDesktopAppState extends State<AdminDesktopApp> {
 
   @override
   Widget build(BuildContext context) {
-    return AppScope(
-      dependencies: widget.dependencies,
-      child: MousqeApp(
-        title: AppConfig.isPhone ? AppConfig.launcherName : Brand.name,
-        theme: adaptTheme(MousqeTheme.light()),
-        darkTheme: adaptTheme(MousqeTheme.dark()),
-        home: SplashGate(
-          ready: _session.stage != SessionStage.starting,
-          caption: AppConfig.label,
-          onServerChoice: (context) =>
-              showServerChoiceDialog(context, _serverChoice),
+    final app = MousqeApp(
+      title: AppConfig.isPhone ? AppConfig.launcherName : Brand.name,
+      theme: adaptTheme(MousqeTheme.light()),
+      darkTheme: adaptTheme(MousqeTheme.dark()),
+      appearance: widget.appearance,
+      home: SplashGate(
+        ready: _session.stage != SessionStage.starting,
+        caption: AppConfig.label,
+        onServerChoice: (context) =>
+            showServerChoiceDialog(context, _serverChoice),
+        // التحديثُ يحرس الدخولَ أيضاً: إصدارٌ إلزاميّ لا ينتظر حساباً.
+        child: UpdateGate(
           child: switch (_session.stage) {
             // تحت شاشة البدء لا يُبنى شيء: تغطّيه حتى تُحسم الجلسة.
             SessionStage.starting => const SizedBox.shrink(),
@@ -72,6 +84,18 @@ class _AdminDesktopAppState extends State<AdminDesktopApp> {
           },
         ),
       ),
+    );
+    final updater = widget.updater;
+
+    return AppScope(
+      dependencies: widget.dependencies,
+      child: updater == null
+          ? app
+          : AppUpdateScope(
+              updater: updater,
+              appName: AppConfig.isPhone ? AppConfig.launcherName : Brand.name,
+              child: app,
+            ),
     );
   }
 

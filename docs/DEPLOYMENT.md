@@ -47,9 +47,11 @@ php artisan queue:listen          # نافذة ثانية: الطابور (datab
 
 1. اعرف عنوان الحاسوب: `ipconfig` ثم عنوان IPv4 للمحوّل الفعّال (مثل `192.168.1.10`).
 2. افتح المنفذ في جدار ويندوز (PowerShell كمدير):
+
    ```powershell
    New-NetFirewallRule -DisplayName "Nuzuln dev 8000" -Direction Inbound -Protocol TCP -LocalPort 8000 -Action Allow -Profile Private
    ```
+
    وتأكد أن الشبكة معرَّفة «خاصة» (Private)، فقاعدة الجدار أعلاه لا تسري على الشبكات العامة.
 3. جرّب من هاتف على الشبكة نفسها: افتح `http://192.168.1.10:8000` في المتصفح. تظهر الصفحة الرئيسية للموقع.
 4. **لا إنترنت؟** فعّل نقطة اتصال (Mobile Hotspot) من إعدادات ويندوز وصِل الهواتف بها. عنوان الحاسوب عليها غالباً `192.168.137.1`، فاستعمله بدل عنوان الشبكة.
@@ -160,7 +162,9 @@ NUZULN_EMAIL=
 ```bash
 php artisan key:generate --force
 php artisan migrate --force
-php artisan db:seed --class=RolesAndPermissionsSeeder --force   # الأدوار والصلاحيات فقط
+php artisan db:seed --class=RolesAndPermissionsSeeder --force   # الأدوار والصلاحيات
+php artisan db:seed --class=CurriculumSeeder --force            # المناهج العامة: الأجزاء والحديث والمتون
+php artisan db:seed --class=PersonalTraitSeeder --force         # الصفات الشخصية العامة
 php artisan storage:link
 php artisan config:cache && php artisan route:cache && php artisan view:cache
 ```
@@ -178,7 +182,8 @@ $u->email_verified_at = now(); $u->save();
 $u->assignGlobalRole('super_admin');
 ```
 
-ثم من اللوحة أنشئ المعهد (**المعاهد ← إضافة**) والدورة والحلقات والحسابات.
+ثم من اللوحة أنشئ المعهد (**المعاهد ← إضافة**) والدورة والحلقات والحسابات — أو **استورده كاملاً** ببياناته القديمة
+(`php artisan institute:import`) كما في [IMPORT.md](IMPORT.md).
 
 ### ب.7 المهام المجدولة والطابور (إلزامية)
 
@@ -212,7 +217,7 @@ php artisan config:cache && php artisan route:cache && php artisan view:cache
 
 ```powershell
 .\scripts\export-apps.ps1 -DryRun                       # ما الإصدار التالي؟
-.\scripts\export-apps.ps1                               # بيتا جديدة لكل التطبيقات في dist/
+.\scripts\export-apps.ps1                               # بيتا جديدة لكل التطبيقات في dist/beta/<الإصدار>/
 .\scripts\export-apps.ps1 -Channel release              # إصدار نهائي (من commit نظيف)
 .\scripts\export-apps.ps1 -BaseUrl http://192.168.1.10:8000/api/v1   # يخبز عنواناً محلياً افتراضياً
 .\scripts\export-apps.ps1 -SkipPubGet                   # حين يتعذر الوصول إلى pub.dev
@@ -221,6 +226,6 @@ php artisan config:cache && php artisan route:cache && php artisan view:cache
 > إن منع ويندوز تشغيل السكربت («running scripts is disabled») فشغّله بسياقٍ مؤقت لهذه النافذة فقط: `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass` ثم الأمر. ولتمرير ملاحظات عربية استعمل المتغيّر: `$notes = 'ملاحظة 1','ملاحظة 2'; .\scripts\export-apps.ps1 -Notes $notes`.
 > يمرّ التصدير باختبارات كل تطبيق قبل بنائه، ولا يكتب في `VERSION.md` إن فشل أيّ بناء. أنشئ ملفات السجلّ خارج المستودع (أو التزم قبل التصدير) وإلا عُدَّ المستودع «غير نظيف».
 
-الناتج في `dist/`: حزمةُ APK لتطبيق «نزلاً» للهاتف (`mobile` ← `apps/nuzuln`، للأستاذ وولي الأمر والطالب) وأخرى للإدارة (`admin_android`)، ومجلد ويندوز مضغوط لبرنامج المكتب. وحتى تُحذف التطبيقات القديمة الثلاثة تخرج حزمُها أيضاً، فحدِّد `-Only mobile,admin_desktop,admin_android` لتجنّبها. وبرنامجُ الإدارة مشروعٌ واحد (`apps/admin_desktop`) يخرج منه ويندوز وأندرويد، فتُشغَّل اختباراتُه مرّةً واحدة. ويُسجَّل كل تصدير ناجح في [`VERSION.md`](../VERSION.md). يلزم لبناء APK حزمة Android SDK (`flutter doctor`)، ولبناء ويندوز Visual Studio بحمل «Desktop development with C++».
+الناتج في `dist/<القناة>/<الإصدار>/` (مثل `dist/beta/1.0.0-beta.5/`) فلا تتراكم الملفاتُ في `dist/`: حزمةُ APK لتطبيق «نزلاً» للهاتف (`mobile` ← `apps/nuzuln`، للأستاذ وولي الأمر والطالب) وأخرى للإدارة (`admin_android`)، ومجلد ويندوز مضغوط لبرنامج المكتب. وبرنامجُ الإدارة مشروعٌ واحد (`apps/admin_desktop`) يخرج منه ويندوز وأندرويد، فتُشغَّل اختباراتُه مرّةً واحدة. ويُسجَّل كل تصدير ناجح في [`VERSION.md`](VERSION.md). يلزم لبناء APK حزمة Android SDK (`flutter doctor`)، ولبناء ويندوز Visual Studio بحمل «Desktop development with C++».
 
 **تثبيت APK على الهاتف:** انسخ الملف وافتحه (فعّل «تثبيت من مصادر غير معروفة» لتطبيق الملفات). التوقيع حالياً بمفتاح التصحيح (debug)؛ نشر المتجر يحتاج مفتاح توقيع خاصاً.

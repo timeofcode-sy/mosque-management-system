@@ -9,6 +9,8 @@ use App\Http\Resources\V1\ProgressResource;
 use App\Http\Resources\V1\StandingResource;
 use App\Models\Student;
 use App\Queries\AnnouncementQuery;
+use App\Queries\RecitationLogQuery;
+use App\Queries\StudentBehaviorQuery;
 use App\Queries\StudentPointsQuery;
 use App\Queries\StudentProfileQuery;
 use App\Queries\StudentStandingQuery;
@@ -57,12 +59,28 @@ class StudentSelfController extends Controller
     }
 
     /**
+     * سجلُّ تسميعي — الأحدثُ أولاً، تحت شريط الأجزاء في «حفظي».
+     */
+    public function recitations(Request $request, RecitationLogQuery $recitations): JsonResponse
+    {
+        return response()->json(['data' => $recitations->forStudent($this->student($request))]);
+    }
+
+    /**
      * موقعُه بين زملائه — ✅ م.8.1، **رقمٌ لا كشف**.
      *
      * 🔑 الرتبةُ تُحسب في الخادم لأن حسابَها على الجهاز يعني أن يستقبل هاتفُ
      * الطالب صفوفَ حضورِ كلِّ زملائه ليستخرج منها رقماً واحداً
-     * ([PHASE-8-STAGES.MD §1.1](../../../../../docs/PHASE-8-STAGES.MD)).
+     * ([PHASE-8-STAGES.MD §1.1](../../../../../docs/phases/PHASE-8-STAGES.MD)).
      */
+    /**
+     * الجانب السلوكي للطالب نفسه — ما كتبه أساتذته عنه، بالشكل الذي يقرؤه وليُّ أمره.
+     */
+    public function behavior(Request $request, StudentBehaviorQuery $query): JsonResponse
+    {
+        return response()->json($query->for($this->student($request)));
+    }
+
     public function standing(Request $request, StudentStandingQuery $query): JsonResponse
     {
         return response()->json([

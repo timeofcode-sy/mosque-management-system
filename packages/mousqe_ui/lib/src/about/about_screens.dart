@@ -5,7 +5,11 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../brand/brand.dart';
+import '../theme/appearance.dart';
+import '../update/update_gate.dart';
+import '../update/update_screen.dart';
 import 'developer.dart';
+import 'legal.dart';
 
 /// ما يختلف بين تطبيقٍ وآخر في «حول التطبيق»: اسمُه على الهاتف وجملةٌ عمّن يخدم.
 /// وما سواهما — النظامُ ومزاياه ومطوّرُه — واحدٌ في كل التطبيقات.
@@ -30,30 +34,95 @@ void openAboutDeveloper(BuildContext context) {
   );
 }
 
-/// زرُّ «حول» في شريط التطبيق: قائمةٌ ببابين.
+/// بندٌ يضيفه التطبيقُ إلى قائمة [AboutMenuButton] — «سجل الجلسات»، «تسجيل الخروج».
+class AboutMenuEntry {
+  const AboutMenuEntry({
+    required this.label,
+    required this.onSelected,
+    this.icon,
+    this.danger = false,
+  });
+
+  final String label;
+  final String? icon;
+  final VoidCallback? onSelected;
+
+  /// بلون الخطر — الخروج.
+  final bool danger;
+}
+
+/// زرُّ «حول» في شريط التطبيق: المظهرُ (الوضع وحجم الخط)، ثم «حول التطبيق» و«حول المطوِّر»،
+/// و«التحقق من التحديثات» حيث يحمل التطبيقُ محدِّثاً ([AppUpdateScope]).
+///
+/// وبنودُ التطبيق ([leading] أعلاها و[trailing] أسفلها) تجعله قائمةَ «المزيد» (⋮): شريطُ
+/// هاتفٍ بعرض 360 لا يتّسع لكل فعلٍ أيقونةً.
 class AboutMenuButton extends StatelessWidget {
-  const AboutMenuButton({super.key, required this.app});
+  const AboutMenuButton({
+    super.key,
+    required this.app,
+    this.leading = const [],
+    this.trailing = const [],
+  });
 
   final AboutAppInfo app;
+  final List<AboutMenuEntry> leading;
+  final List<AboutMenuEntry> trailing;
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<_AboutPage>(
-      tooltip: 'حول',
-      icon: const NzIcon(NzIcons.informationCircle),
-      onSelected: (page) => switch (page) {
+    final updates = AppUpdateScope.read(context) != null;
+    final more = leading.isNotEmpty || trailing.isNotEmpty;
+
+    return PopupMenuButton<Object>(
+      tooltip: more ? 'المزيد' : 'حول',
+      icon: NzIcon(more ? NzIcons.moreVertical : NzIcons.informationCircle),
+      onSelected: (selected) => switch (selected) {
+        _AboutPage.appearance => showAppearanceSheet(context),
+        _AboutPage.updates => openUpdateScreen(context),
         _AboutPage.app => openAboutApp(context, app),
         _AboutPage.developer => openAboutDeveloper(context),
+        AboutMenuEntry(:final onSelected) => onSelected?.call(),
+        _ => null,
       },
-      itemBuilder: (context) => const [
-        PopupMenuItem(value: _AboutPage.app, child: Text('حول التطبيق')),
-        PopupMenuItem(value: _AboutPage.developer, child: Text('حول المطوِّر')),
+      itemBuilder: (context) => [
+        for (final entry in leading) _entry(context, entry),
+        if (leading.isNotEmpty) const PopupMenuDivider(),
+        const PopupMenuItem(value: _AboutPage.appearance, child: Text('المظهر')),
+        if (updates)
+          const PopupMenuItem(
+            value: _AboutPage.updates,
+            child: Text('التحقق من التحديثات'),
+          ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(value: _AboutPage.app, child: Text('حول التطبيق')),
+        const PopupMenuItem(value: _AboutPage.developer, child: Text('حول المطوِّر')),
+        if (trailing.isNotEmpty) const PopupMenuDivider(),
+        for (final entry in trailing) _entry(context, entry),
       ],
+    );
+  }
+
+  PopupMenuItem<Object> _entry(BuildContext context, AboutMenuEntry entry) {
+    final c = context.nz;
+    final color = entry.danger ? c.danger : c.ink;
+
+    return PopupMenuItem<Object>(
+      value: entry,
+      enabled: entry.onSelected != null,
+      child: Row(
+        children: [
+          if (entry.icon != null) ...[
+            NzIcon(entry.icon!, size: 20, color: color),
+            const SizedBox(width: NzSpace.s3),
+          ],
+          Text(entry.label, style: TextStyle(color: color)),
+        ],
+      ),
     );
   }
 }
 
-enum _AboutPage { app, developer }
+enum _AboutPage { appearance, updates, app, developer }
 
 /// رابطا «حول» نصّاً — أسفلَ شاشة الدخول حيث لا شريطَ تطبيق.
 class AboutLinks extends StatelessWidget {
@@ -70,6 +139,11 @@ class AboutLinks extends StatelessWidget {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         TextButton(
+          onPressed: () => showAppearanceSheet(context),
+          child: const Text('المظهر'),
+        ),
+        Text('·', style: TextStyle(color: muted)),
+        TextButton(
           onPressed: () => openAboutApp(context, app),
           child: const Text('حول التطبيق'),
         ),
@@ -78,6 +152,13 @@ class AboutLinks extends StatelessWidget {
           onPressed: () => openAboutDeveloper(context),
           child: const Text('حول المطوِّر'),
         ),
+        if (AppUpdateScope.read(context) != null) ...[
+          Text('·', style: TextStyle(color: muted)),
+          TextButton(
+            onPressed: () => openUpdateScreen(context),
+            child: const Text('التحديثات'),
+          ),
+        ],
       ],
     );
   }
@@ -144,6 +225,22 @@ class AboutAppScreen extends StatelessWidget {
           const _Label('المزيد'),
           _Group(
             children: [
+              if (AppUpdateScope.read(context) case final scope?)
+                ListenableBuilder(
+                  listenable: scope.updater,
+                  builder: (context, _) {
+                    final next = scope.updater.info;
+
+                    return _Row(
+                      icon: NzIcons.download,
+                      title: next == null ? 'التحديثات' : 'تحديثٌ متاح',
+                      subtitle: next == null
+                          ? 'تحقّق من وجود إصدارٍ أحدث'
+                          : 'الإصدار ${_ltr(next.version)}',
+                      onTap: () => openUpdateScreen(context),
+                    );
+                  },
+                ),
               _Row(
                 icon: NzIcons.informationCircle,
                 title: 'حول المطوِّر',
@@ -158,12 +255,16 @@ class AboutAppScreen extends StatelessWidget {
                 onTap: () => openLink(context, 'https://${Brand.domain}'),
               ),
               _Row(
+                icon: NzIcons.shield,
+                title: 'الخصوصية',
+                subtitle: 'ما نجمعه من بيانات وكيف نحميه',
+                onTap: () => openLegal(context, Legal.privacy),
+              ),
+              _Row(
                 icon: NzIcons.note,
-                title: 'تراخيص البرمجيات مفتوحة المصدر',
-                onTap: () => showLicensePage(
-                  context: context,
-                  applicationName: app.title,
-                ),
+                title: 'الشروط والأحكام',
+                subtitle: 'ما يُتّفق عليه عند استعمال ${Brand.name}',
+                onTap: () => openLegal(context, Legal.terms),
               ),
             ],
           ),

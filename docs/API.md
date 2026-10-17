@@ -34,7 +34,7 @@
 
 **سلسلة الوسائط (middleware) بالترتيب الفعلي:**
 
-```
+```text
 كل نقاط api  →  EnsureUserIsActive        (ملحق بمجموعة api في bootstrap/app.php)
 /auth/login  →  (بلا مصادقة)
 باقي النقاط  →  auth:sanctum
@@ -63,6 +63,8 @@
 | `POST` | `/auth/logout` | إبطال التوكن الحالي وحده | `auth:sanctum` |
 | `GET` | `/auth/me` | هوية صاحب التوكن | `auth:sanctum` |
 | `POST` | `/devices/register` | فتح مؤشّر مزامنة للجهاز + تسجيل `fcm_token` | `auth:sanctum` |
+| `GET` | `/app-updates/check` | هل لهذه النسخة تحديث؟ وسجلُّ ما فاتها — [التفصيل](#تحديثات-التطبيقات) | — (مفتوحة، 60/دقيقة) |
+| `GET` | `/app-updates/{uuid}/download` | ملفُّ الإصدار، بدعم `Range` للاستئناف | — (مفتوحة، 120/دقيقة) |
 | `GET` | `/bootstrap` | لقطة أولى لنطاق المستخدم — أول استدعاء بعد الدخول | `institute.scope` |
 | `GET` | `/institutes` ✅ م.6.1 | معاهد صاحب التوكن — مصدر مبدّل المعاهد | `institute.scope` |
 | `GET` | `/sync/pull` | تغييرات `change_log` منذ `since` ضمن نطاق المستخدم | `permission:sync.pull` |
@@ -74,11 +76,15 @@
 | `GET` | `/guardian/children` | أبناء ولي الأمر | `role:guardian` |
 | `GET` | `/guardian/children/{student_uuid}/attendance` | 🔄 م.7.1 — ملخّصُ ابنٍ ومنحناه وآخر 30 سجلاً | `role:guardian` |
 | `GET` | `/guardian/children/{student_uuid}/progress` ✅ م.7.1 | محفوظاتُ ابنٍ مجمّعةً بالمنهج | `role:guardian` |
+| `GET` | `/guardian/children/{student_uuid}/behavior` ✅ 2026-10 | الجانب السلوكي لابن: `summary{positive,negative,neutral,behavior_points}` · `notes[{date,polarity,note,circle}]` (ملاحظات التفقّد، الأحدث أولاً) · `traits[{name,polarity,note}]` · `points[{date,points,note}]` (سبب «سلوك») | `role:guardian` |
+| `GET` | `/guardian/children/{student_uuid}/recitations` ✅ beta.7 | سجلُّ تسميع ابنٍ — آخرُ 50، الأحدثُ أولاً (§3.11) | `role:guardian` |
 | `GET` | `/guardian/excuses` ✅ م.7.1 | أعذارُ أبنائه وحالتُها وجوابُ الطاقم | `role:guardian` |
 | `POST` | `/guardian/excuses` | تقديم إذن غياب مسبق | `role:guardian` |
 | `GET` | `/student/me/attendance` | ملخّص الطالب ومنحناه وآخر 20 سجلاً | `role:student` |
 | `GET` | `/student/me/progress` | محفوظات الطالب مجمّعة بالمنهج | `role:student` |
+| `GET` | `/student/me/recitations` ✅ beta.7 | سجلُّ تسميعه — بشكل نقطة ولي الأمر نفسه (§3.11) | `role:student` |
 | `GET` | `/student/me/standing` ✅ م.8.1 | رتبتُه في حلقته — **رقمٌ لا كشف** | `role:student` |
+| `GET` | `/student/me/behavior` ✅ 2026-10 | جانبُه السلوكي — بشكل نقطة ولي الأمر نفسه | `role:student` |
 | `GET` | `/student/me/points` ✅ م.8.1 | نقاطُه بمصادرها في الدورة الجارية | `role:student` |
 | `GET` | `/student/me/announcements` ✅ م.8.1 | إعلاناتُ معهده وحلقته | `role:student` |
 | `GET` | `/guardian/announcements` ✅ م.10 | إعلاناتُ المعهد وحلقاتِ أبنائه الموجَّهة إلى أولياء الأمور | `role:guardian` |
@@ -100,6 +106,13 @@
 | `POST` · `PUT` | `/admin/shifts` · `/admin/shifts/{uuid}` | دوامٌ وأيامُه الأسبوعية | `permission:shifts.manage` |
 | `POST` · `PUT` | `/admin/circles` · `/admin/circles/{uuid}` | حلقةٌ — هويّتُها الثابتة عبر الدورات | `permission:circles.manage` |
 | `POST` | `/admin/circles/{uuid}/run` | تشغيلُ الحلقة في دورةٍ ودوام | `permission:circles.manage` |
+| **ما كان في اللوحة وحدها ✅ beta.7** — §3.10.6 | | | |
+| `POST` · `PUT` · `DELETE` | `/admin/teachers` · `/admin/teachers/{uuid}` | أستاذٌ — بأفعال اللوحة نفسِها (`SaveTeacher`) | `permission:teachers.manage` |
+| `POST` | `/admin/teachers/{uuid}/account` | حسابُ دخولٍ لأستاذٍ بلا حساب ⇐ الكلمةُ مرّةً واحدة | `permission:teachers.manage` |
+| `GET` · `POST` · `PUT` | `/admin/announcements` · `/admin/announcements/{uuid}` | الإعلاناتُ منشورةً ومسودّة، ونشرُها وتحريرُها | `permission:announcements.manage` |
+| `POST` | `/admin/announcements/{uuid}/unpublish` | سحبُ النشر — إخفاءٌ لا حذف | `permission:announcements.manage` |
+| `POST` · `PUT` · `DELETE` | `/admin/custom-fields` · `/admin/custom-fields/{uuid}` | الواصفاتُ الإضافية (`SaveCustomField`) | `permission:settings.manage` |
+| `POST` · `PUT` · `DELETE` | `/admin/traits` · `/admin/traits/{uuid}` | الصفاتُ الشخصية (`SavePersonalTrait`) — المُسندةُ لا تُحذف 422 | `permission:settings.manage` |
 | **المناهج ✅ م.6.5** — §3.10.5 | | | |
 | `POST` | `/admin/curricula` | إنشاءُ منهج | `permission:curricula.manage` |
 | `PUT` | `/admin/curricula/{uuid}` | تحريرُ منهج — والعامُّ يُرفض 422 | `permission:curricula.manage` |
@@ -146,7 +159,7 @@ spatie غير مضبوط. صار `AuthController::identity()` يحسم النط�
 و«حسابك غير مربوط بمعهد»، والثاني يُكتشف عند أول نقطة بيانات (§4).
 
 🔄 **م.4.7:** الحقل كان `email` فصار `username` يقبل الاثنين — الطالب وولي الأمر لا بريد لهما وهما
-جمهور هذه التطبيقات. التفصيل في [CHECKPOINT-PHASE-4.7.MD](CHECKPOINT-PHASE-4.7.MD) §3–4.
+جمهور هذه التطبيقات. التفصيل في [CHECKPOINT-PHASE-4.7.MD](checkpoints/CHECKPOINT-PHASE-4.7.MD) §3–4.
 
 ### 3.2 `POST /auth/logout` · `GET /auth/me`
 
@@ -163,7 +176,14 @@ spatie غير مضبوط. صار `AuthController::identity()` يحسم النط�
   "app": "teacher",           // مطلوب · ≤24 — نفس القيمة تُرسل لاحقاً في sync/pull
   "platform": "android",      // اختياري ≤32
   "app_version": "1.0.0",     // اختياري ≤32
-  "fcm_token": "…"            // اختياري ≤512 — يُكتب في devices ⬜ لا مُرسِل بعد (م.7)
+  "fcm_token": "…",           // اختياري ≤512 — يُكتب في devices
+  // ✅ beta.7 — وصفُ الجهاز لإحصاءات المطوّر («الأجهزة المزامِنة»)، كلُّه اختياري:
+  "app_build": 7,             // رقمُ البناء
+  "device_type": "phone",     // phone | tablet | desktop
+  "manufacturer": "samsung", "brand": "samsung", "model": "SM-A155F",
+  "os_version": "Android 14", "sdk_int": 34,
+  "screen": "384x854",        // نقاطٌ منطقية، أصغرُ الضلعين أولاً
+  "locale": "ar-SY", "memory_mb": 8192, "is_physical": true
 }
 ```
 
@@ -173,7 +193,9 @@ spatie غير مضبوط. صار `AuthController::identity()` يحسم النط�
 ```
 
 استدعاؤه ثانيةً بنفس `device_uuid` **تحديثٌ لا إنشاء** (`updateOrCreate`) ولا يُصفّر
-`last_pulled_seq` — فإعادة التسجيل عند كل إقلاع آمنة.
+`last_pulled_seq` — فإعادة التسجيل عند كل إقلاع آمنة. والتطبيقاتُ منذ beta.7 تعيده **مرّةً بعد كل
+تحديث** (نسختُها محفوظةٌ في `app_state`)، فتبقى نسخةُ الجهاز في اللوحة صحيحة. ولا شيءَ في الوصف
+يعرّف صاحبَه: لا اسمُ الحاسوب ولا اسمُ المستخدم ولا معرّفُ العتاد.
 
 ### 3.4 `GET /bootstrap` — أول استدعاء بعد الدخول
 
@@ -263,7 +285,7 @@ sRGB نحو الأبيض للفواتح ونحو الأسود للدواكن، �
 
 **`circles` تُملأ للأستاذ ولمن يملك `circles.view`** 🔄 م.6.1:
 
-```
+```text
 user->teacher موجود؟        ⇒ حلقاتُه المسنَدة في الدورة الجارية   (كما كان)
 وإلا can('circles.view')؟   ⇒ حلقاتُ الدورة الجارية كلُّها          (المشرف ومدير المعهد)
 وإلا:                        ⇒ []                                   (ولي الأمر والطالب)
@@ -322,7 +344,7 @@ user->teacher موجود؟        ⇒ حلقاتُه المسنَدة في ال�
 >
 > ولذلك تعيد هذه النقاطُ **ما يُعرَض جاهزاً** — الملخّصَ والمنحنى محسوبين — لا صفوفاً يجمعها
 > العميل. والأوف-لاين يبقى قائماً: العميلُ يخزّن استجابةَ كلِّ نقطةٍ لقطةً في drift ويقرأ منها
-> بلا شبكة. القرارُ وحجّتُه في [PHASE-7-STAGES.MD §0.1](PHASE-7-STAGES.MD).
+> بلا شبكة. القرارُ وحجّتُه في [PHASE-7-STAGES.MD §0.1](phases/PHASE-7-STAGES.MD).
 
 `GET /guardian/children` ⇒ `{"data": [ StudentResource ]}`:
 
@@ -401,12 +423,12 @@ user->teacher موجود؟        ⇒ حلقاتُه المسنَدة في ال�
 ```
 
 🔑 **م.7.1: يومٌ بلا جلسة `rate: null` لا `0.0`** — وكان صفراً. هذه قاعدةُ م.6.6 حرفياً («ما لم
-يُسجَّل لا يُفترض، و`null` ليست صفراً» — [CHECKPOINT-PHASE-6.6.MD §3](CHECKPOINT-PHASE-6.6.MD))
+يُسجَّل لا يُفترض، و`null` ليست صفراً» — [CHECKPOINT-PHASE-6.6.MD §3](checkpoints/CHECKPOINT-PHASE-6.6.MD))
 مطبَّقةً على السطح الخادمي بعد أن طُبِّقت في `StatsRepository` على سطح الديسكتوب. الصفرُ كان يقول
 «حضر صفراً بالمئة» عن يومِ جمعةٍ لا تفقُّدَ فيه أصلاً؛ ولم يظهر أثرُه في اللوحة لأن مكوّنَ المنحنى
 يرشّح دوائرَه بـ`sessions > 0` — لكنّ **الخطَّ الواصلَ** كان يهبط إليها، فيبدو منحنى طالبٍ مواظبٍ
 مسنَّناً بين المئة والصفر. **ويومٌ كلُّ سجلّاته «غائب بعذر» ⇒ `null` كذلك**: الغائبُ بعذر خارج المقام،
-ويومٌ لا مقامَ له لا نسبةَ له. **فالعميلُ يميّز الحالتين**: `null` تُعرَض «لا جلسة» لا «٠٪».
+ويومٌ لا مقامَ له لا نسبةَ له. **فالعميلُ يميّز الحالتين**: `null` تُعرَض «لا جلسة» لا «0%».
 
 `GET /student/me/progress` ⇒ `{"data": { "<اسم المنهج>": [ ProgressResource ] }}` — مجمَّعة باسم
 المنهج العربي، ومقصورة على `in_progress` و`memorized` و`mastered`:
@@ -561,7 +583,7 @@ user->teacher موجود؟        ⇒ حلقاتُه المسنَدة في ال�
 
 **ولماذا كتالوجُ أدوارٍ من الخادم؟** لأن البديل كان نسخَ `PanelRole` وهرمَه وتسمياتِه العربية إلى
 Dart، فيفترق السطحان عند أوّل تعديل — وهو القرار 3 في
-[PHASE-6-STAGES.MD §0](PHASE-6-STAGES.MD): الفرق بين الأدوار صلاحياتٌ لا نسخةُ برنامج.
+[PHASE-6-STAGES.MD §0](phases/PHASE-6-STAGES.MD): الفرق بين الأدوار صلاحياتٌ لا نسخةُ برنامج.
 
 **والحراسةُ رتبةٌ لا صلاحيةٌ وحدها:** لا يُسند أحدٌ دوراً أعلى من دوره (`assertAssignable`)، ولا
 يبدّل مشرفٌ كلمةَ مشرفٍ نظيره ولا يُقفل حسابَه (`outranks`). ورفضُ الفعل **422 برسالته العربية** لا
@@ -610,7 +632,39 @@ Dart، فيفترق السطحان عند أوّل تعديل — وهو الق�
 |---|---|
 | بندٌ جديدٌ أو محذوفٌ في منهج القرآن | «أجزاء القرآن ثابتة ولا تُضاف ولا تُحذف.» — وتحريرُ اسم جزءٍ قائمٍ **مسموح**: الثابتُ عددُها لا أسماؤها |
 | بندٌ عليه سجلُّ محفوظات | «لا يمكن حذف بند مرتبط بسجل محفوظات.» |
-| 🔴 تحريرُ **منهجٍ عامّ** من داخل معهد | «المناهج العامة لا تُحرَّر من داخل معهد…» — عطبٌ كشفته م.6.5، تفصيلُه في [CHECKPOINT-PHASE-6.5.MD §3](CHECKPOINT-PHASE-6.5.MD) |
+| 🔴 تحريرُ **منهجٍ عامّ** من داخل معهد | «المناهج العامة لا تُحرَّر من داخل معهد…» — عطبٌ كشفته م.6.5، تفصيلُه في [CHECKPOINT-PHASE-6.5.MD §3](checkpoints/CHECKPOINT-PHASE-6.5.MD) |
+
+---
+
+#### 3.10.6 الأساتذةُ والإعلاناتُ والواصفاتُ والصفات ✅ beta.7
+
+ما كان في اللوحة وحدها، **بأفعال اللوحة نفسِها** لا بقواعد ثانية: `SaveTeacher` و`SaveCustomField` و
+`SavePersonalTrait` و`PublishAnnouncement`. الأساتذةُ والواصفاتُ والصفاتُ جداولُ تُزامَن، فلا `GET`
+لها ويعود أثرُ الكتابة في `sync/pull`؛ والإعلاناتُ لا تصل الإدارةَ في التيّار، فلها قراءتُها.
+
+| النقطة | الجسم |
+|---|---|
+| `POST · PUT /admin/teachers[/{uuid}]` | `{display_name, status, phone?, national_id?, birth_date?, specialization?, qualification?, address?, hired_on?, notes?}` — **الحقولُ الغائبة لا تُمسح** |
+| `POST · PUT /admin/announcements[/{uuid}]` | `{title, body, scope: all\|circle, scope_ids?: [course_circle_id], audience: [students\|guardians\|teachers], publish?: bool}` — `publish: false` مسودّة، والتحريرُ يُبقي تاريخَ النشر الأول |
+| `POST · PUT /admin/custom-fields[/{uuid}]` | `{entity: student\|teacher\|circle, label, type, key?, options?: [..], group?, is_required?, is_active?, sort_order?}` — **المفتاحُ لا يتغيّر بتغيّر العنوان**: القيمُ المحفوظة معلَّقةٌ عليه |
+| `POST · PUT /admin/traits[/{uuid}]` | `{name, polarity: positive\|neutral\|negative, color?, sort_order?, is_active?}` — العامّةُ (بلا معهد) لا تُحرَّر من معهد |
+
+### 3.11 سجلُّ التسميع ✅ beta.7
+
+`GET /student/me/recitations` و`GET /guardian/children/{uuid}/recitations` (`RecitationLogQuery`):
+آخرُ 50 تسميعاً، الأحدثُ أولاً، تحت شريط الأجزاء في «حفظي» ولسان «الحفظ» بدل نسبةٍ لكل جزء.
+
+```jsonc
+{ "data": [ {
+  "uuid": "…", "date": "2026-10-12",
+  "type": "hifz", "type_label": "حفظ",
+  "grade": "excellent", "grade_label": "ممتاز",
+  "from_surah_name": "الملك", "from_ayah": 1, "to_surah_name": "الملك", "to_ayah": 15,
+  "lines": 12, "points": 5, "notes": null
+} ] }
+```
+
+وابنٌ لا يتبع وليَّ الأمر ⇐ 404 كسائر نقاطه.
 
 ---
 
@@ -658,6 +712,7 @@ institute() = ترويسة X-Institute إن وصلت  ⇒ يُتحقَّق أن�
 | `guardian` | أبناؤه وحدهم | `guardian->students()->where('students.uuid', …)` — لا استعلام مفتوح على `students` |
 | `student` | نفسه وحده | `user->student` مباشرةً؛ لا معرّف في أي مسار |
 | `supervisor` · `admin` ✅ م.6.1 | معهدَه كاملاً | إسنادُ الدور في `model_has_roles.institute_id` |
+| `region_supervisor` 🔄 2026-10-15 | معاهدَه المسندة، واحداً في كل طلب | إسنادٌ في كل معهد، والترويسة تختار بينها |
 | `super_admin` · `developer` ✅ م.6.1 | المعاهد كلَّها، واحداً في كل طلب | الترويسة، وإلا أوّلُ معهدٍ فعّال |
 | **الجميع** | **معهدهم كاملاً في `sync/pull`** | `scope_key = "institute:{uuid}"` — أوسع من النطاق أعلاه عمداً، انظر [SYNC-PROTOCOL.md §4](SYNC-PROTOCOL.md) |
 
@@ -680,7 +735,7 @@ institute() = ترويسة X-Institute إن وصلت  ⇒ يُتحقَّق أن�
 | `422` | **توكن بلا معهد مرتبط** | `{"message":"لا يملك هذا المستخدم معهداً مرتبطاً."}` | `SetApiInstituteScope` |
 | `422` | فشل تحقّق، **وكذلك كلمة مرور خاطئة وحسابٌ مقفل عند الدخول** | `{"message":…,"errors":{"username":["بيانات الدخول غير صحيحة."]}}` | `validate()` / `ValidationException` |
 | `422` | **رفضُ فعلٍ إداري بالرتبة أو بالهرم** ✅ م.6.2 — «لا تملك إسناد دور…» · «لا تملك تبديل كلمة مرور هذا الحساب» | `{"message":"…"}` | `AssignUserRole` · `ChangeUserPassword` · `ToggleUserActivation` عبر `/admin/*` |
-| ~~`500`~~ | ~~نوع عملية غير معروف في `sync/push`~~ | 🔄 **م.6.1: لم يعد 500.** العملية المرفوضة تعود في `failed[]` بـ200 ولا تُسقط الدفعة معها (§6) | `SyncPush` |
+| ~~`500`~~ | ~~نوع عملية غير معروف في `sync/push`~~ | 🔄 **م.6.1: لم يعد 500.** العملية المرفوضة تعود في `failed[]` ب200 ولا تُسقط الدفعة معها (§6) | `SyncPush` |
 
 **لا يوجد `409` في هذا النظام.** تعارض المزامنة **لا يُعاد للعميل خطأً**: الخادم يحسمه بنفسه، ويردّ
 `200` مع العملية ضمن `applied`، ويحفظ المرفوض في `sync_conflicts` — [SYNC-PROTOCOL.md §5](SYNC-PROTOCOL.md).
@@ -706,7 +761,7 @@ institute() = ترويسة X-Institute إن وصلت  ⇒ يُتحقَّق أن�
 | `points.award` | `uuid?` ✅ م.5.4 · `student_uuid` · `points` · `reason` · `note?` · `awarded_on?` · `session_uuid?` · `course_circle_uuid?` + `session_date?` ✅ م.5.3 | `reason`: `behavior`/`participation`/`competition`/`reward`/`excellence`/`volunteering`/`other`. و`uuid` كنظيره في `recitation.save` |
 | `points.delete` ✅ م.5.4 | `point_uuid` | منحةٌ لا وجود لها ⇒ نجاحٌ صامت لا 404 |
 | `excuse.review` ✅ م.6.2 | `excuse_uuid` · `decision` · `note?` | `decision`: `approved`/`rejected` — وقبولُ الإذن يحوّل غيابَ الجلسات **غيرِ المقفلة** إلى «غائب بعذر» (`ReviewAbsenceExcuse`). يتطلّب `excuses.review` |
-| `student.save` ✅ م.6.2 | `uuid?` · `student{…}` · `guardians{father,mother}` · `trait_uuids[]?` · `memorized_item_uuids[]?` · `custom_fields{}?` · `course_circle_uuid?` | استمارةُ التسجيل كاملةً ⇐ `SaveStudentRegistration`. و`uuid` كنظيره في `recitation.save`: معرّفٌ قائم ⇒ تحريرٌ في مكانه. **والمراجعُ كلُّها بالـ`uuid`** (انظر أسفل الجدول). يتطلّب `students.manage` |
+| `student.save` ✅ م.6.2 | `uuid?` · `student{…}` · `guardians{father,mother}` (كلٌّ منهما `{first_name, family_name, occupation?, phone?}` 🔄 2026-10-14؛ و`full_name` وحده من نسخةٍ أقدم يُقسم على أول فراغ) · `trait_uuids[]?` · `memorized_item_uuids[]?` · `custom_fields{}?` · `course_circle_uuid?` | استمارةُ التسجيل كاملةً ⇐ `SaveStudentRegistration`. و`uuid` كنظيره في `recitation.save`: معرّفٌ قائم ⇒ تحريرٌ في مكانه. **والمراجعُ كلُّها بالـ`uuid`** (انظر أسفل الجدول). يتطلّب `students.manage` |
 | `enrollment.save` ✅ م.6.2 | `student_uuid` · `course_circle_uuid` · `enrolled_on?` | ⇐ `EnrollStudent` — تسجيلٌ واحد لكل دورة، والطاقةُ الاستيعابية تُحترم. يتطلّب `enrollments.manage` |
 | `student.transfer` ✅ م.6.2 | `student_uuid` · `to_course_circle_uuid` · `reason?` · `transferred_on?` | ⇐ `TransferStudent` — التسجيلُ القديم يُغلق «منقولاً» ولا يُحذف. يتطلّب `transfers.manage` |
 
@@ -771,7 +826,7 @@ institute() = ترويسة X-Institute إن وصلت  ⇒ يُتحقَّق أن�
 أوف-لاين بمعرّفٍ آخر — فالصفُّ القائم يحمل معرّفاً لا يعرفه هذا الجهاز. لذلك يحسم `SyncPush`
 الجلسةَ بهذا الترتيب:
 
-```
+```text
 session_uuid موجود وطابق صفّاً في المعهد؟      ⇒ هي
 وإلا: course_circle_uuid + session_date طابقا؟  ⇒ هي   (قيد unique في الهجرة)
 وإلا:                                            ⇒ 404
@@ -792,7 +847,7 @@ session_uuid موجود وطابق صفّاً في المعهد؟      ⇒ هي
 الحلّ نفسُ حلّ الجلسة في م.5.3: **العميل يولّد المعرّف**. يرسله في `recitation.save`
 (داخل `recitation{}`) وفي `points.award` (في جذر العملية)، فيُحسم الصفّ به:
 
-```
+```text
 uuid فارغ؟                    ⇒ تسجيلٌ جديد بمعرّفٍ يولّده الخادم   (سلوك العملاء القدامى)
 uuid لا يطابق صفّاً؟           ⇒ تسجيلٌ جديد يحمل معرّف العميل
 uuid يطابق صفّاً (ولو محذوفاً)؟ ⇒ تصحيحٌ في مكانه، والمحذوف يُحيا
@@ -810,7 +865,7 @@ uuid يطابق صفّاً (ولو محذوفاً)؟ ⇒ تصحيحٌ في مك�
 الحقل **اختياري ومقصودٌ تركُه فارغاً**. حين لا يصل، يحسبه `TakeAttendance` من
 `shifts.starts_at` وزمنِ `recorded_at`، مطروحاً منه `late_grace_minutes` من `/bootstrap`:
 
-```
+```text
 late_minutes = max(0, minutes(recorded_at − shift.starts_at) − late_grace_minutes)
 ```
 
@@ -877,7 +932,7 @@ late_minutes = max(0, minutes(recorded_at − shift.starts_at) − late_grace_mi
 > 🔑 **الطالبُ يخرج من `sync/pull` كوليّ الأمر — وحجّتُه أقوى**: وليُّ الأمر يقرأ عن أبنائه وهم
 > أكثرُ من واحد، والطالبُ يقرأ عن **نفسه وحدها**. فنقاطُ `/student/me/*` الخمسُ هي كلُّ مصادر
 > تطبيقه، و drift **مخزنُ لقطاتها**
-> ([CHECKPOINT-PHASE-8.1.MD §2](CHECKPOINT-PHASE-8.1.MD)).
+> ([CHECKPOINT-PHASE-8.1.MD §2](checkpoints/CHECKPOINT-PHASE-8.1.MD)).
 
 `GET /student/me/standing` — **رقمٌ لا كشف**:
 
@@ -931,3 +986,35 @@ late_minutes = max(0, minutes(recorded_at − shift.starts_at) − late_grace_mi
 - الشكلُ واحد في النقاط الثلاث: `{uuid, title, body, scope, audience, published_at}` (دون `scope_ids`)، الأحدثُ أولاً، ≤30.
 - الإعلاناتُ التي سبقت الفئات بلا `audience` فتُعامَل كـ`["students"]` (وملأتها الهجرةُ بذلك).
 - 🔴 **تصحيح:** كانت اللوحةُ تخزّن `scope_ids` نصوصاً (`"3"`) والبحثُ بالرقم، فلا يصل إعلانُ حلقةٍ أحداً؛ تُخزَّن الآن أرقاماً وصحّحت الهجرةُ ما سبق.
+
+## تحديثات التطبيقات
+
+ينشرها المبرمج من شاشة **«تحديثات التطبيقات»** في اللوحة (`system/app-releases`، `system.debug`)، ويسأل عنها كلُّ تطبيقٍ عند فتحه وكلما عاد إلى الواجهة بعد ست ساعات. **بلا توكن**: التطبيقُ يسأل قبل الدخول أيضاً، فتحديثٌ إلزاميّ يصلح خللاً في الدخول لا ينتظر دخولاً لا ينجح.
+
+`GET /app-updates/check?target=mobile&build=5&version=1.0.0-beta.5&device=<uuid>`
+
+| المعامل | |
+|---|---|
+| `target` | `mobile` (نزلاً للهاتف) · `admin_android` · `admin_desktop` — أسماءُ `scripts/export-apps.ps1` نفسُها |
+| `build` | رقمُ البناء المثبَّت — **وحده ما يُقارَن** |
+| `version` · `device` | اختياريان: يُحفظان في `app_installs` فيرى المبرمج كم جهازاً على كل بناء |
+
+```json
+{
+  "target": "mobile",
+  "current_build": 5,
+  "update": {
+    "uuid": "…", "version": "1.0.0-beta.6", "build_number": 6, "title": "…",
+    "mandatory": false, "published_at": "…",
+    "file_name": "nuzuln-mobile-1.0.0-beta.6-b6.apk", "size": 40023456, "sha256": "…",
+    "download_url": null, "download_path": "app-updates/<uuid>/download",
+    "changes": [{ "version": "1.0.0-beta.6", "build_number": 6, "title": "…", "mandatory": false, "notes": ["…"], "published_at": "…" }]
+  }
+}
+```
+
+- `update: null` حين لا أحدث من المثبَّت.
+- **`mandatory` يُحسب من كل ما فات الجهاز** لا من الأخير وحده: جهازٌ على 3، والبناءُ 4 إلزاميّ والبناءُ 5 اختياريّ، يُعرض عليه 5 إلزامياً.
+- `changes`: كلُّ ما فات الجهازَ، الأحدثُ أولاً، ≤10. والبنودُ أسطرُ الحقل في اللوحة بلا علامات القوائم.
+- الملفُّ المرفوع يُنزَّل من **`download_path` نسبةً إلى عنوان الـ API الذي سأله التطبيق** (فيعمل على الخادم المحلّي كما على الرئيسي)، ومعه `size` و`sha256` يتحقّق منهما التطبيق قبل التثبيت. والرابطُ الخارجي في `download_url` بلا بصمة.
+- `GET /app-updates/{uuid}/download`: الإصدارُ المنشور وحده (المسودّة 404). يدعم `Range` فيُستأنف التنزيلُ المنقطع، ويُعدّ التنزيلُ مرّةً عند أول طلبٍ لا عند كل استئناف. والرابطُ الخارجي يُحوَّل إليه (302).

@@ -177,7 +177,7 @@ class GuardianPushTest extends TestCase
 
         app(ReviewAbsenceExcuse::class)->handle($excuse, ExcuseStatus::Rejected, $this->admin, 'الدورة في أيامها الأخيرة.');
 
-        $this->assertSame(['رُفض إذن الغياب'], $this->push->titles());
+        $this->assertSame(['رُفض عذر الغياب'], $this->push->titles());
         $this->assertSame([$token], $this->push->allTokens());
         $this->assertSame('0', $this->push->sent[0]['message']->data['approved']);
     }
@@ -189,7 +189,7 @@ class GuardianPushTest extends TestCase
 
         app(ReviewAbsenceExcuse::class)->handle($excuse, ExcuseStatus::Approved, $this->admin);
 
-        $this->assertSame(['قُبل إذن الغياب'], $this->push->titles());
+        $this->assertSame(['قُبل عذر الغياب'], $this->push->titles());
         $this->assertSame('1', $this->push->sent[0]['message']->data['approved']);
     }
 
