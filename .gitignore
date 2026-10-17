@@ -57,5 +57,5 @@ dist/
 # بيانات المعاهد الحقيقية (أسماء وأرقام) — لا تدخل المستودع
 temp data/
 
-# The marketing pack (renders, videos, screenshots) is large and regenerated from marketing/_source.
+# The marketing campaigns (renders, videos, screenshots) are large and regenerated from marketing/campaign-*/_source.
 /marketing/
