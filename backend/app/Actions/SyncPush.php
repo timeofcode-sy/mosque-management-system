@@ -257,6 +257,7 @@ class SyncPush
                 'status' => $row['status'] ?? null,
                 'late_minutes' => $row['late_minutes'] ?? null,
                 'note' => $row['note'] ?? null,
+                'note_polarity' => $row['note_polarity'] ?? null,
                 'recorded_at' => $row['recorded_at'] ?? null,
             ];
         }

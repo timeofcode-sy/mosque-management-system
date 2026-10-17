@@ -5,6 +5,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/sync_button.dart';
+import '../widgets/note_dialog.dart';
 import 'points_screen.dart';
 import 'recitation_screen.dart';
 import 'student_profile_screen.dart';
@@ -210,6 +211,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       return;
     }
 
+    if (status.isAbsence && entry.presenceRecords.isNotEmpty) {
+      _explainAbsence(entry);
+      return;
+    }
+
     final now = DateTime.now();
     final computed = status == AttendanceStatus.late
         ? LateMinutes.afterGrace(
@@ -240,6 +246,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     RosterEntry entry,
     bool editable,
   ) async {
+    // الغائبُ لم يحضر: لا تسميعَ له في الجلسة ولا نقاطَ ولا ملاحظةَ سلوك.
+    final absent = entry.status.isAbsence;
     final action = await showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -262,11 +270,15 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             ListTile(
               leading: const NzIcon(NzIcons.mushaf),
               title: const Text('تسجيل تسميع'),
+              subtitle: absent ? const Text(_absentHint) : null,
+              enabled: !absent,
               onTap: () => Navigator.of(context).pop('recitation'),
             ),
             ListTile(
               leading: const NzIcon(NzIcons.star),
               title: const Text('منح نقاط'),
+              subtitle: absent ? const Text(_absentHint) : null,
+              enabled: !absent,
               onTap: () => Navigator.of(context).pop('points'),
             ),
             if (editable) ...[
@@ -279,6 +291,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               ListTile(
                 leading: const NzIcon(NzIcons.note),
                 title: const Text('ملاحظة'),
+                subtitle: absent ? const Text(_absentHint) : null,
+                enabled: !absent,
                 onTap: () => Navigator.of(context).pop('note'),
               ),
             ],
@@ -316,6 +330,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     RosterEntry entry,
     RecitationEntry? recitation,
   ) async {
+    if (entry.status.isAbsence) {
+      return;
+    }
+
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => RecitationScreen(
@@ -332,6 +350,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     RosterEntry entry,
     PointEntry? award,
   ) async {
+    if (entry.status.isAbsence) {
+      return;
+    }
+
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) =>
@@ -465,35 +487,23 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   }
 
   Future<void> _editNote(RosterEntry entry) async {
-    final controller = TextEditingController(text: entry.note ?? '');
+    if (entry.status.isAbsence) {
+      return;
+    }
 
-    final value = await showDialog<String>(
+    final result = await showDialog<(String, NotePolarity?)>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('ملاحظة'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLines: 3,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('حفظ'),
-          ),
-        ],
+      builder: (context) => NoteDialog(
+        note: entry.note ?? '',
+        polarity: entry.notePolarity,
       ),
     );
 
-    controller.dispose();
-
-    if (!mounted || value == null) {
+    if (!mounted || result == null) {
       return;
     }
+
+    final (value, polarity) = result;
 
     setState(() {
       _edits[entry.studentId] = entry.copyWith(
@@ -501,8 +511,31 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         recordedAt: entry.recordedAt ?? DateTime.now(),
         note: value.isEmpty ? null : value,
         clearNote: value.isEmpty,
+        notePolarity: polarity,
+        clearNotePolarity: polarity == null,
       );
     });
+  }
+
+  /// لماذا لا يُعلَّم غائباً: ما سُجّل له في الجلسة يشهد بحضوره، فيُحذف أولاً.
+  void _explainAbsence(RosterEntry entry) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('لا يُسجَّل غائباً'),
+        content: Text(
+          'سُجّل لـ${entry.fullName} في هذه الجلسة: '
+          '${entry.presenceRecords.join('، ')}.\n'
+          'الغائبُ لا ملاحظةَ له ولا نقاطَ ولا تسميع — احذفها أولاً ثم غيّر حالته.',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('حسناً'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _pickDate() async {
@@ -585,6 +618,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     return '${award.points > 0 ? '+' : ''}$value '
         '${pointsReasonLabels[award.reason] ?? ''}'.trim();
   }
+
+  static const _absentHint = 'الطالب غائب في هذه الجلسة';
 
   static String _originLabel(AttendanceOrigin origin) => switch (origin) {
     AttendanceOrigin.suggested => 'قيمة مقترحة — لم تُسجَّل بعد',
@@ -783,8 +818,14 @@ class _StudentTile extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(
-                'ملاحظة: ${entry.note}',
-                style: theme.textTheme.bodySmall,
+                '${noteKindLabel(entry.notePolarity)}: ${entry.note}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: switch (entry.notePolarity) {
+                    NotePolarity.positive => context.nz.success,
+                    NotePolarity.negative => context.nz.danger,
+                    null => null,
+                  },
+                ),
               ),
             ),
           // ما سُجّل للطالب في هذه الجلسة، معروضاً تحت اسمه: الأستاذ يرى أثر ما
@@ -801,6 +842,8 @@ class _StudentTile extends StatelessWidget {
                       label: _recitationLabel(recitation),
                       pending: recitation.pending,
                       editable: editable,
+                      // ما بقي لغائبٍ يُحذف ولا يُصحَّح: الخادمُ يرفض تصحيحَه.
+                      correctable: !entry.status.isAbsence,
                       onTap: () => onRecitation(recitation),
                       onDelete: () => onDeleteRecitation(recitation),
                     ),
@@ -809,6 +852,7 @@ class _StudentTile extends StatelessWidget {
                       label: _awardLabel(award),
                       pending: award.pending,
                       editable: editable,
+                      correctable: !entry.status.isAbsence,
                       color: award.points < 0
                           ? theme.colorScheme.error
                           : null,
@@ -853,12 +897,14 @@ class _RecordChip extends StatelessWidget {
     required this.editable,
     required this.onTap,
     required this.onDelete,
+    this.correctable = true,
     this.color,
   });
 
   final String label;
   final bool pending;
   final bool editable;
+  final bool correctable;
   final VoidCallback onTap;
   final VoidCallback onDelete;
   final Color? color;
@@ -874,10 +920,10 @@ class _RecordChip extends StatelessWidget {
       labelStyle: theme.textTheme.bodySmall,
       // جلسةٌ مقفلة تُعرَض ولا تُحرَّر: الأستاذ لا يملك attendance.amend، وعمليةٌ
       // مصيرُها الرفض بعد ساعات لا تُصفّ من الأصل.
-      onPressed: editable ? onTap : null,
+      onPressed: editable && correctable ? onTap : null,
       onDeleted: editable ? onDelete : null,
       deleteIcon: const NzIcon(NzIcons.close, size: 16),
-      tooltip: editable ? 'اضغط للتعديل' : null,
+      tooltip: editable && correctable ? 'اضغط للتعديل' : null,
     );
   }
 }

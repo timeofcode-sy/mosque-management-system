@@ -4,6 +4,7 @@ import 'package:mousqe_ui/mousqe_ui.dart';
 
 import '../di/app_scope.dart';
 import '../widgets/adaptive.dart';
+import '../widgets/note_dialog.dart';
 import '../widgets/sync_bar.dart';
 import 'points_dialog.dart';
 import 'recitation_dialog.dart';
@@ -179,6 +180,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       return;
     }
 
+    if (status.isAbsence && entry.presenceRecords.isNotEmpty) {
+      _explainAbsence(entry);
+      return;
+    }
+
     final now = DateTime.now();
     final computed = status == AttendanceStatus.late
         ? LateMinutes.afterGrace(
@@ -277,38 +283,24 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   }
 
   Future<void> _editNote(RosterEntry entry) async {
-    final controller = TextEditingController(text: entry.note ?? '');
+    if (entry.status.isAbsence) {
+      return;
+    }
 
-    final value = await showDialog<String>(
+    final result = await showDialog<(String, NotePolarity?)>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('ملاحظة على ${entry.fullName}'),
-        content: SizedBox(
-          width: 420,
-          child: TextField(
-            controller: controller,
-            autofocus: true,
-            maxLines: 3,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('حفظ'),
-          ),
-        ],
+      builder: (context) => NoteDialog(
+        title: 'ملاحظة على ${entry.fullName}',
+        note: entry.note ?? '',
+        polarity: entry.notePolarity,
       ),
     );
 
-    controller.dispose();
-
-    if (!mounted || value == null) {
+    if (!mounted || result == null) {
       return;
     }
+
+    final (value, polarity) = result;
 
     setState(() {
       _edits[entry.studentId] = entry.copyWith(
@@ -316,8 +308,31 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         recordedAt: entry.recordedAt ?? DateTime.now(),
         note: value.isEmpty ? null : value,
         clearNote: value.isEmpty,
+        notePolarity: polarity,
+        clearNotePolarity: polarity == null,
       );
     });
+  }
+
+  /// لماذا لا يُعلَّم غائباً: ما سُجّل له في الجلسة يشهد بحضوره، فيُحذف أولاً.
+  void _explainAbsence(RosterEntry entry) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('لا يُسجَّل غائباً'),
+        content: Text(
+          'سُجّل لـ${entry.fullName} في هذه الجلسة: '
+          '${entry.presenceRecords.join('، ')}.\n'
+          'الغائبُ لا ملاحظةَ له ولا نقاطَ ولا تسميع — احذفها أولاً ثم غيّر حالته.',
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('حسناً'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _pickDate() async {
@@ -471,7 +486,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     SessionView session,
     RosterEntry entry,
     RecitationEntry? recitation,
-  ) {
+  ) async {
+    // الغائبُ لم يحضر: لا تسميعَ له في الجلسة ولا نقاط.
+    if (entry.status.isAbsence) {
+      return;
+    }
+
     return showRecitationDialog(
       context: context,
       session: session,
@@ -484,7 +504,11 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     SessionView session,
     RosterEntry entry,
     PointEntry? award,
-  ) {
+  ) async {
+    if (entry.status.isAbsence) {
+      return;
+    }
+
     return showPointsDialog(
       context: context,
       session: session,
@@ -758,6 +782,11 @@ class _StudentRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final compact = context.isCompact;
+    final noteColor = switch (entry.notePolarity) {
+      NotePolarity.positive => context.nz.success,
+      NotePolarity.negative => context.nz.danger,
+      null => null,
+    };
 
     final lateButton = entry.status == AttendanceStatus.late
         ? TextButton(
@@ -765,8 +794,10 @@ class _StudentRow extends StatelessWidget {
             child: Text('${entry.lateMinutes ?? 0} د'),
           )
         : const SizedBox.shrink();
+    final absent = entry.status.isAbsence;
     final menu = _RowMenu(
       editable: editable,
+      absent: absent,
       onProfile: onProfile,
       onRecitation: () => onRecitation(null),
       onPoints: () => onPoint(null),
@@ -857,8 +888,19 @@ class _StudentRow extends StatelessWidget {
                 children: [
                   if (entry.note != null)
                     Chip(
-                      avatar: const NzIcon(NzIcons.note, size: 16),
-                      label: Text(entry.note!),
+                      avatar: NzIcon(
+                        switch (entry.notePolarity) {
+                          NotePolarity.positive => NzIcons.checkCircle,
+                          NotePolarity.negative => NzIcons.warning,
+                          null => NzIcons.note,
+                        },
+                        size: 16,
+                        color: noteColor,
+                      ),
+                      label: Text(
+                        '${noteKindLabel(entry.notePolarity)}: ${entry.note}',
+                        style: TextStyle(color: noteColor),
+                      ),
                       visualDensity: VisualDensity.compact,
                     ),
                   for (final recitation in entry.recitations)
@@ -870,7 +912,8 @@ class _StudentRow extends StatelessWidget {
                         '${recitation.pending ? ' (بانتظار المزامنة)' : ''}',
                       ),
                       visualDensity: VisualDensity.compact,
-                      onPressed: () => onRecitation(recitation),
+                      // ما بقي لغائبٍ يُحذف ولا يُصحَّح: الخادمُ يرفض تصحيحَه.
+                      onPressed: absent ? null : () => onRecitation(recitation),
                       onDeleted: () => onDeleteRecitation(recitation),
                     ),
                   for (final award in entry.points)
@@ -881,7 +924,7 @@ class _StudentRow extends StatelessWidget {
                         '${award.pending ? ' (بانتظار المزامنة)' : ''}',
                       ),
                       visualDensity: VisualDensity.compact,
-                      onPressed: () => onPoint(award),
+                      onPressed: absent ? null : () => onPoint(award),
                       onDeleted: () => onDeletePoint(award),
                     ),
                 ],
@@ -937,6 +980,7 @@ class _StatusPicker extends StatelessWidget {
 class _RowMenu extends StatelessWidget {
   const _RowMenu({
     required this.editable,
+    required this.absent,
     required this.onProfile,
     required this.onRecitation,
     required this.onPoints,
@@ -944,6 +988,10 @@ class _RowMenu extends StatelessWidget {
   });
 
   final bool editable;
+
+  /// الغائبُ لا تسميعَ له في الجلسة ولا نقاطَ ولا ملاحظة.
+  final bool absent;
+
   final VoidCallback onProfile;
   final VoidCallback onRecitation;
   final VoidCallback onPoints;
@@ -960,17 +1008,17 @@ class _RowMenu extends StatelessWidget {
         ),
         MenuItemButton(
           leadingIcon: const NzIcon(NzIcons.mushaf, size: 18),
-          onPressed: onRecitation,
+          onPressed: absent ? null : onRecitation,
           child: const Text('تسجيل تسميع'),
         ),
         MenuItemButton(
           leadingIcon: const NzIcon(NzIcons.star, size: 18),
-          onPressed: onPoints,
+          onPressed: absent ? null : onPoints,
           child: const Text('منح نقاط'),
         ),
         MenuItemButton(
           leadingIcon: const NzIcon(NzIcons.note, size: 18),
-          onPressed: editable ? onNote : null,
+          onPressed: editable && !absent ? onNote : null,
           child: const Text('ملاحظة'),
         ),
       ],

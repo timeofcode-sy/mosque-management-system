@@ -44,6 +44,12 @@ class TakeAttendance
 
                 $recordedAt = blank($row['recorded_at'] ?? null) ? now() : Carbon::parse($row['recorded_at']);
 
+                // الغائبُ لم يحضر فلا ملاحظةَ سلوكٍ عليه في الجلسة: تُسقَط ولا تُرفض
+                // الدفعةُ بها، فجهازٌ قديم يرسلها لا يعلق طابورُه.
+                if ($status->isAbsence()) {
+                    $row['note'] = null;
+                }
+
                 Attendance::updateOrCreate(
                     ['attendance_session_id' => $session->id, 'student_id' => (int) $studentId],
                     [

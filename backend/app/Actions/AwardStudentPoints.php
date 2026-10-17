@@ -28,6 +28,10 @@ class AwardStudentPoints
             throw new RuntimeException('الجلسة مقفلة ولا تقبل التعديل.');
         }
 
+        if ($session?->isAbsent($student)) {
+            throw new RuntimeException('الطالب غائب في هذه الجلسة — لا تُمنح له نقاطٌ فيها.');
+        }
+
         $reason = PointReason::tryFrom((string) $data['reason']);
 
         if ($reason === null) {

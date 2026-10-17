@@ -294,6 +294,67 @@ void main() {
     );
 
     test(
+      'a note carries its kind to the queue and back onto the roster',
+      () async {
+        final circle = await myCircle();
+        final session = await repository.loadSession(
+          circle: circle,
+          date: day,
+          graceMinutes: 0,
+        );
+
+        await repository.saveAttendance(
+          session: session,
+          entries: [
+            session.roster.first.copyWith(
+              origin: AttendanceOrigin.pending,
+              recordedAt: DateTime(2026, 9, 15, 8, 20),
+              note: 'أحسن التلاوة',
+              notePolarity: NotePolarity.positive,
+            ),
+          ],
+        );
+
+        final row = ((await queue()).last['attendances'] as List)
+            .cast<Map<String, dynamic>>()
+            .single;
+        expect(row['note'], 'أحسن التلاوة');
+        expect(row['note_polarity'], 'positive');
+
+        final reloaded = await repository.loadSession(
+          circle: circle,
+          date: day,
+          graceMinutes: 0,
+        );
+        expect(
+          reloaded.roster
+              .firstWhere((e) => e.studentId == session.roster.first.studentId)
+              .notePolarity,
+          NotePolarity.positive,
+        );
+      },
+    );
+
+    test('what only a present student gets blocks marking him absent', () {
+      final entry = RosterEntry(
+        studentId: 1,
+        studentUuid: 'stu-1',
+        fullName: 'علي',
+        status: AttendanceStatus.present,
+        origin: AttendanceOrigin.synced,
+        lateMinutes: null,
+        note: 'ملاحظة',
+        recordedAt: null,
+      );
+
+      expect(entry.presenceRecords, ['الملاحظة']);
+      expect(entry.copyWith(clearNote: true).presenceRecords, isEmpty);
+      expect(AttendanceStatus.absent.isAbsence, isTrue);
+      expect(AttendanceStatus.excused.isAbsence, isTrue);
+      expect(AttendanceStatus.late.isAbsence, isFalse);
+    });
+
+    test(
       'late minutes are left for the server unless the teacher typed them',
       () async {
         final circle = await myCircle();

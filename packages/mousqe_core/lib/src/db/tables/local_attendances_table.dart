@@ -13,6 +13,7 @@ class LocalAttendances extends Table {
   TextColumn get status => text()();
   IntColumn get lateMinutes => integer().nullable()();
   TextColumn get note => text().nullable()();
+  TextColumn get notePolarity => text().nullable()();
   DateTimeColumn get recordedAt => dateTime()();
 
   @override

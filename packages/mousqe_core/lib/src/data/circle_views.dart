@@ -146,6 +146,7 @@ class RosterEntry {
     required this.lateMinutes,
     this.lateMinutesOverride,
     required this.note,
+    this.notePolarity,
     required this.recordedAt,
     this.recitations = const [],
     this.points = const [],
@@ -170,12 +171,24 @@ class RosterEntry {
   final int? lateMinutesOverride;
 
   final String? note;
+
+  /// نوعُ [note]: ثناءٌ أو تنبيه، و`null` لملاحظةٍ مجرّدة — ولا معنى له بلا ملاحظة.
+  final NotePolarity? notePolarity;
+
   final DateTime? recordedAt;
 
   /// تسميعات الطالب ونقاطه في هذه الجلسة — تُعرض تحت اسمه ويُنقر عليها لتصحيحها.
   final List<RecitationEntry> recitations;
 
   final List<PointEntry> points;
+
+  /// ما سُجّل للطالب في الجلسة ولا يقع إلا بحضوره — فلا يُعلَّم غائباً قبل حذفه،
+  /// كما لا يُسجَّل شيءٌ منه لغائب ([AttendanceStatus.isAbsence]).
+  List<String> get presenceRecords => [
+    if (note != null) 'الملاحظة',
+    if (recitations.isNotEmpty) 'التسميع',
+    if (points.isNotEmpty) 'النقاط',
+  ];
 
   RosterEntry copyWith({
     AttendanceStatus? status,
@@ -184,7 +197,9 @@ class RosterEntry {
     int? lateMinutesOverride,
     bool clearLateMinutes = false,
     String? note,
+    NotePolarity? notePolarity,
     bool clearNote = false,
+    bool clearNotePolarity = false,
     DateTime? recordedAt,
   }) {
     return RosterEntry(
@@ -198,6 +213,9 @@ class RosterEntry {
           ? null
           : (lateMinutesOverride ?? this.lateMinutesOverride),
       note: clearNote ? null : (note ?? this.note),
+      notePolarity: clearNote || clearNotePolarity
+          ? null
+          : (notePolarity ?? this.notePolarity),
       recordedAt: recordedAt ?? this.recordedAt,
       recitations: recitations,
       points: points,

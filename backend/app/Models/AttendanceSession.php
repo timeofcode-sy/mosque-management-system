@@ -6,6 +6,7 @@ use App\Casts\DateOnly;
 use App\Concerns\HasUuid;
 use App\Concerns\RecordsSyncChanges;
 use App\Contracts\Syncable;
+use App\Enums\AttendanceStatus;
 use App\Enums\SessionStatus;
 use App\Support\SyncScope;
 use Database\Factories\AttendanceSessionFactory;
@@ -65,6 +66,19 @@ class AttendanceSession extends Model implements Syncable
     public function isEditable(): bool
     {
         return $this->status === SessionStatus::Draft;
+    }
+
+    /**
+     * هل سُجّل الطالب في هذه الجلسة غائباً (بعذرٍ أو بغيره)؟ — فلا تسميعَ له فيها ولا نقاط.
+     */
+    public function isAbsent(Student $student): bool
+    {
+        $status = $this->attendances()
+            ->where('student_id', $student->id)
+            ->first()
+            ?->status;
+
+        return $status instanceof AttendanceStatus && $status->isAbsence();
     }
 
     /**

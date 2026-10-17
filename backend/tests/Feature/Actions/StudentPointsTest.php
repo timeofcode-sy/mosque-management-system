@@ -63,6 +63,44 @@ class StudentPointsTest extends TestCase
         $this->save(1, 30);
     }
 
+    public function test_an_absent_student_gets_no_recitation(): void
+    {
+        $this->markStudent(AttendanceStatus::Absent);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('الطالب غائب في هذه الجلسة');
+
+        $this->save(1, 30);
+    }
+
+    public function test_an_excused_student_gets_no_points_in_the_session(): void
+    {
+        $this->markStudent(AttendanceStatus::Excused);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('الطالب غائب في هذه الجلسة');
+
+        app(AwardStudentPoints::class)->handle(
+            $this->student,
+            ['points' => 2, 'reason' => 'participation'],
+            $this->admin,
+            $this->session,
+        );
+    }
+
+    public function test_an_absent_student_may_still_get_points_outside_the_session(): void
+    {
+        $this->markStudent(AttendanceStatus::Absent);
+
+        $award = app(AwardStudentPoints::class)->handle(
+            $this->student,
+            ['points' => 5, 'reason' => 'competition', 'awarded_on' => '2026-09-01'],
+            $this->admin,
+        );
+
+        $this->assertNull($award->attendance_session_id);
+    }
+
     public function test_an_ayah_beyond_the_surah_is_rejected(): void
     {
         $this->expectException(RuntimeException::class);
@@ -165,6 +203,15 @@ class StudentPointsTest extends TestCase
         $this->assertSame(0.0, $totals['hadith']);
         $this->assertSame(0.0, $totals['mutun']);
         $this->assertEqualsWithDelta((float) $recitation->points + 6, $totals['total'], 0.01);
+    }
+
+    private function markStudent(AttendanceStatus $status): void
+    {
+        Attendance::factory()->create([
+            'attendance_session_id' => $this->session->id,
+            'student_id' => $this->student->id,
+            'status' => $status,
+        ]);
     }
 
     private function save(int $from, int $to, RecitationGrade $grade = RecitationGrade::Excellent): MemorizationLog

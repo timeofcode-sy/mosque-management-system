@@ -28,8 +28,8 @@ use Illuminate\Support\Carbon;
 class ResolveAttendanceConflicts
 {
     /**
-     * @param  array<int, array{status?: string, late_minutes?: int|string|null, note?: string|null, recorded_at?: string|null}>  $rows  مفهرسة بمعرّف الطالب
-     * @return array<int, array{status?: string, late_minutes?: int|string|null, note?: string|null}>
+     * @param  array<int, array{status?: string, late_minutes?: int|string|null, note?: string|null, note_polarity?: string|null, recorded_at?: string|null}>  $rows  مفهرسة بمعرّف الطالب
+     * @return array<int, array{status?: string, late_minutes?: int|string|null, note?: string|null, note_polarity?: string|null}>
      */
     public function handle(AttendanceSession $session, array $rows, ?string $deviceUuid): array
     {

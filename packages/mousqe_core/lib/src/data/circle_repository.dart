@@ -301,6 +301,7 @@ class CircleRepository {
                 ),
             lateMinutesOverride: draft.lateMinutes,
             note: draft.note,
+            notePolarity: NotePolarity.fromValue(draft.notePolarity),
             recordedAt: draft.recordedAt,
           ),
         );
@@ -319,6 +320,7 @@ class CircleRepository {
             origin: AttendanceOrigin.synced,
             lateMinutes: confirmed.lateMinutes,
             note: confirmed.note,
+            notePolarity: NotePolarity.fromValue(confirmed.notePolarity),
             recordedAt: confirmed.recordedAt,
           ),
         );
@@ -715,6 +717,7 @@ class CircleRepository {
             // حين يصحّحها الأستاذ بيده (§0 البند 2 · API.md §6).
             lateMinutes: entry.lateMinutesOverride,
             note: entry.note,
+            notePolarity: entry.note == null ? null : entry.notePolarity?.value,
             recordedAt: entry.recordedAt ?? DateTime.now(),
           ),
           mode: InsertMode.insertOrReplace,
@@ -739,8 +742,11 @@ class CircleRepository {
             'status': entry.status.name,
             if (entry.lateMinutesOverride != null)
               'late_minutes': entry.lateMinutesOverride,
-            if (entry.note != null && entry.note!.isNotEmpty)
+            if (entry.note != null && entry.note!.isNotEmpty) ...{
               'note': entry.note,
+              // يُرسل مع الملاحظة وحدها: `TakeAttendance` يُسقطه حين لا ملاحظة.
+              'note_polarity': entry.notePolarity?.value,
+            },
             // زمنُ الجهاز وقت الحدث لا وقت الإرسال — به يحسم الخادم التعارض
             // (SYNC-PROTOCOL §8 البند 2).
             'recorded_at': (entry.recordedAt ?? DateTime.now())
